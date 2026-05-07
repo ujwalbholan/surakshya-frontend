@@ -1,69 +1,69 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import Link from "next/link"
-import { Eye, EyeOff, ShieldCheck, LockKeyhole, Mail } from "lucide-react"
-
-type FormState = {
-  email: string
-  password: string
-  remember: boolean
-}
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { Eye, EyeOff, ShieldCheck, LockKeyhole, Mail } from "lucide-react";
 
 const INITIAL_STATE: FormState = {
   email: "",
   password: "",
   remember: true,
-}
+};
+
+type FormState = {
+  email: string;
+  password: string;
+  remember: boolean;
+};
 
 function validateEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export default function LoginPage() {
-  const [form, setForm] = useState<FormState>(INITIAL_STATE)
-  const [showPassword, setShowPassword] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
+  const [form, setForm] = useState<FormState>(INITIAL_STATE);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const canSubmit = useMemo(() => {
-    return form.email.trim().length > 0 && form.password.trim().length > 0
-  }, [form.email, form.password])
+    return form.email.trim().length > 0 && form.password.trim().length > 0;
+  }, [form.email, form.password]);
 
   const onChange =
     (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = key === "remember" ? e.target.checked : e.target.value
-      setForm((prev) => ({ ...prev, [key]: value }))
-      if (error) setError("")
-      if (success) setSuccess("")
-    }
+      const value = key === "remember" ? e.target.checked : e.target.value;
+      setForm((prev) => ({ ...prev, [key]: value }));
+      if (error) setError("");
+      if (success) setSuccess("");
+    };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setError("")
-    setSuccess("")
+    e.preventDefault();
+    setError("");
+    setSuccess("");
 
     if (!validateEmail(form.email)) {
-      setError("Please enter a valid email address.")
-      return
+      setError("Please enter a valid email address.");
+      return;
     }
     if (form.password.length < 8) {
-      setError("Password must be at least 8 characters.")
-      return
+      setError("Password must be at least 8 characters.");
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       // Placeholder API call point; replace with real auth endpoint integration.
-      await new Promise((resolve) => setTimeout(resolve, 900))
-      setSuccess("Login request accepted. Connecting your secure session...")
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      setSuccess("Login request accepted. Connecting your secure session...");
     } catch {
-      setError("Unable to log in right now. Please try again.")
+      setError("Unable to log in right now. Please try again.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <main className="min-h-screen bg-background text-foreground px-6 py-10 lg:px-10 lg:py-14 overflow-auto">
@@ -214,5 +214,5 @@ export default function LoginPage() {
         </section>
       </div>
     </main>
-  )
+  );
 }
