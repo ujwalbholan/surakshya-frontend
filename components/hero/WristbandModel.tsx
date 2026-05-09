@@ -19,7 +19,8 @@ import gsap from "gsap"
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const WRISTBAND_GLB_PATH = "/models/wristband.glb"
-const USE_GLB_MODEL = true
+// Keep procedural mode as default; enable only when GLB exists in /public/models/.
+const USE_GLB_MODEL = false
 
 const ANIM = {
   ROTATION_SPEED:      0.003,   // rad/frame — ~0.4 RPM slow drift
@@ -266,36 +267,9 @@ class ModelErrorBoundary extends React.Component<
 
 // ─── Model Selector ───────────────────────────────────────────────────────────
 
-/**
- * HEAD-checks for model existence before passing path to useGLTF.
- * Prevents Three.js 404 errors appearing in the console during development.
- * Renders torus fallback immediately (no waiting/flash) while checking.
- */
 function ModelContent({ groupRef }: { groupRef: React.RefObject<THREE.Group | null> }) {
-  const [modelExists, setModelExists] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    if (!USE_GLB_MODEL) {
-      setModelExists(false)
-      return
-    }
-    let cancelled = false
-    // Server-side filesystem check prevents noisy 404 HEAD requests in browser logs.
-    fetch("/api/assets/wristband-model-exists", { cache: "no-store" })
-      .then((res) => res.json() as Promise<{ exists?: boolean }>)
-      .then((data) => {
-        if (!cancelled) setModelExists(Boolean(data?.exists))
-      })
-      .catch(() => {
-        if (!cancelled) setModelExists(false)
-      })
-    return () => { cancelled = true }
-  }, [])
-
   const fallback = <FallbackTorus groupRef={groupRef} />
-
-  // null = still checking, false = not found → both show fallback
-  if (modelExists !== true) return fallback
+  if (!USE_GLB_MODEL) return fallback
 
   return (
     <ModelErrorBoundary fallback={fallback}>

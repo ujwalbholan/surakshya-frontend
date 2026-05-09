@@ -9,16 +9,17 @@ const WristbandModel = dynamic(() => import("@/components/hero/WristbandModel"),
   loading: () => null,
 })
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [nameFocused, setNameFocused] = useState(false)
   const [emailFocused, setEmailFocused] = useState(false)
   const [passwordFocused, setPasswordFocused] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [eyeHovered, setEyeHovered] = useState(false)
-  const [forgotHovered, setForgotHovered] = useState(false)
   const [submitHovered, setSubmitHovered] = useState(false)
   const [submitPressed, setSubmitPressed] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -260,7 +261,7 @@ export default function LoginPage() {
                 marginBottom: 6,
               }}
             >
-              Sign in
+              Create account
             </h1>
             <p
               style={{
@@ -271,16 +272,33 @@ export default function LoginPage() {
                 marginBottom: 40,
               }}
             >
-              Welcome back.
+              Welcome to Suraksha.
             </p>
 
             <form onSubmit={onSubmit} style={{ margin: 0 }}>
               <div style={{ marginBottom: 24 }}>
-                <label htmlFor="login-email" style={labelStyle(emailFocused || email.length > 0)}>
+                <label htmlFor="signup-name" style={labelStyle(nameFocused || fullName.length > 0)}>
+                  Full Name
+                </label>
+                <input
+                  id="signup-name"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  onFocus={() => setNameFocused(true)}
+                  onBlur={() => setNameFocused(false)}
+                  autoComplete="name"
+                  required
+                  style={inputBaseStyle(nameFocused)}
+                />
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <label htmlFor="signup-email" style={labelStyle(emailFocused || email.length > 0)}>
                   Email
                 </label>
                 <input
-                  id="login-email"
+                  id="signup-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -292,18 +310,18 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div style={{ marginBottom: 18, position: "relative" }}>
-                <label htmlFor="login-password" style={labelStyle(passwordFocused || password.length > 0)}>
+              <div style={{ marginBottom: 24, position: "relative" }}>
+                <label htmlFor="signup-password" style={labelStyle(passwordFocused || password.length > 0)}>
                   Password
                 </label>
                 <input
-                  id="login-password"
+                  id="signup-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                   style={{ ...inputBaseStyle(passwordFocused), paddingRight: 28 }}
                 />
@@ -335,23 +353,6 @@ export default function LoginPage() {
                     <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.4" />
                   </svg>
                 </button>
-              </div>
-
-              <div style={{ textAlign: "right", marginBottom: 24 }}>
-                <a
-                  href="#"
-                  onMouseEnter={() => setForgotHovered(true)}
-                  onMouseLeave={() => setForgotHovered(false)}
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    color: "rgba(255,255,255,0.28)",
-                    textDecoration: forgotHovered ? "underline" : "none",
-                    textUnderlineOffset: "2px",
-                  }}
-                >
-                  Forgot password?
-                </a>
               </div>
 
               <button
@@ -388,7 +389,7 @@ export default function LoginPage() {
                     <span style={{ animation: "dotPulse 0.9s infinite", animationDelay: "0.3s" }}>·</span>
                   </span>
                 ) : (
-                  "Sign In"
+                  "Create Account"
                 )}
               </button>
 
@@ -400,9 +401,9 @@ export default function LoginPage() {
                   marginBottom: 20,
                 }}
               >
-                Don&apos;t have an account?{" "}
-                <a href="/signup" style={{ color: "#CC2233", textDecoration: "none" }}>
-                  Create one
+                Already have an account?{" "}
+                <a href="/login" style={{ color: "#CC2233", textDecoration: "none" }}>
+                  Sign in
                 </a>
               </div>
 

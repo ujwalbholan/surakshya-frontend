@@ -224,12 +224,12 @@ function Panel({ section, index, isActive, isWelcome }: PanelProps) {
         pointerEvents: isActive ? "auto" : "none",
         display: "flex",
         flexDirection: "column",
-        justifyContent: isWelcome ? "center" : "flex-start",
-        alignItems: isWelcome ? "center" : "flex-start",
-        textAlign: isWelcome ? "center" : "left",
-        paddingLeft: isWelcome ? "clamp(20px, 4vw, 60px)" : "clamp(60px, 8vw, 140px)",
-        paddingRight: isWelcome ? "clamp(20px, 4vw, 60px)" : "clamp(40px, 8vw, 120px)",
-        paddingTop: isWelcome ? "clamp(42px, 8vh, 84px)" : "9vh",
+        justifyContent: "flex-start",
+        alignItems: "flex-start",
+        textAlign: "left",
+        paddingLeft: isWelcome ? "clamp(56px, 8vw, 128px)" : "clamp(60px, 8vw, 140px)",
+        paddingRight: isWelcome ? "clamp(24px, 4vw, 72px)" : "clamp(40px, 8vw, 120px)",
+        paddingTop: isWelcome ? "clamp(18px, 3vh, 34px)" : "9vh",
       }}
     >
       <div
@@ -244,6 +244,23 @@ function Panel({ section, index, isActive, isWelcome }: PanelProps) {
           WebkitBackdropFilter: isWelcome ? "none" : "blur(3px)",
         }}
       >
+      {isWelcome && (
+        <p
+          style={{
+            margin: 0,
+            marginBottom: 22,
+            fontFamily: "'DM Mono', 'Courier New', monospace",
+            fontSize: "clamp(11px, 1.05vw, 13px)",
+            letterSpacing: "0.24em",
+            textTransform: "uppercase",
+            color: "#c0392b",
+            opacity: 0.95,
+          }}
+        >
+          Welcome
+        </p>
+      )}
+
         {/* Red accent line — draws in on entry */}
         <div
           data-accent-line
@@ -252,30 +269,12 @@ function Panel({ section, index, isActive, isWelcome }: PanelProps) {
             height: 1,
             background: "#c0392b",
             marginBottom: 22,
-            marginLeft: isWelcome ? "auto" : 0,
-            marginRight: isWelcome ? "auto" : 0,
+            marginLeft: 0,
+            marginRight: 0,
             transformOrigin: "left center",
             transform: "scaleX(0)",
           }}
         />
-
-      {/* Eyebrow — section identifier */}
-      <p
-        data-eyebrow
-        data-hero-eyebrow
-        style={{
-          fontFamily: "'DM Mono', 'Courier New', monospace",
-          fontSize: "clamp(10px, 1vw, 12px)",
-          letterSpacing: "0.22em",
-          color: "#c0392b",
-          textTransform: "uppercase",
-          marginBottom: isWelcome ? 20 : 28,
-          opacity: 0,
-          fontWeight: 400,
-        }}
-      >
-        {isWelcome ? "Welcome" : content.eyebrow}
-      </p>
 
       {/* Heading — mask reveal per line */}
       <h2
@@ -354,8 +353,8 @@ function Panel({ section, index, isActive, isWelcome }: PanelProps) {
               gap: 14,
               opacity: 0,
               cursor: "default",
-              alignSelf: isWelcome ? "flex-start" : "center",
-              marginLeft: isWelcome ? "clamp(24px, 6vw, 56px)" : 0,
+              alignSelf: "flex-start",
+              marginLeft: 0,
             }}
           >
             <a

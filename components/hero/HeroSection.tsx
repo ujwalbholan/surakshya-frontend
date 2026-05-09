@@ -28,14 +28,8 @@
  *   The two are intentionally separate with no compound interference.
  */
 
-import { useRef, useCallback } from "react"
 import dynamic from "next/dynamic"
-import SectionIndicator from "./SectionIndicator"
-import TextPanels from "./TextPanels"
-import FilmGrain from "./FilmGrain"
-import { useHeroScroll } from "@/hooks/useHeroScroll"
-import type { WristbandModelRef } from "./WristbandModel"
-import type { SectionIndicatorRefs } from "./SectionIndicator"
+import { useEffect, useState } from "react"
 
 // ─── Dynamic imports ──────────────────────────────────────────────────────────
 
@@ -170,129 +164,282 @@ function BottomFade() {
   )
 }
 
+function HeroText() {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 200)
+    return () => clearTimeout(t)
+  }, [])
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 10,
+        pointerEvents: "none",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        padding: "0 5vw",
+      }}
+    >
+      {/* Left-side vertical label */}
+      <div
+        style={{
+          position: "absolute",
+          left: 22,
+          top: "50%",
+          transform: "translateY(-50%) rotate(-90deg)",
+          transformOrigin: "center center",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          opacity: visible ? 0.38 : 0,
+          transition: "opacity 1.2s ease 1.2s",
+        }}
+      >
+        <div style={{ width: 24, height: 1, background: "rgba(255,255,255,0.3)" }} />
+        <span
+          style={{
+            fontFamily: "'DM Mono', ui-monospace, monospace",
+            fontSize: 8,
+            letterSpacing: "0.28em",
+            color: "rgba(255,255,255,0.6)",
+            textTransform: "uppercase",
+          }}
+        >
+          GUARDIAN SERIES
+        </span>
+      </div>
+
+      {/* Main heading */}
+      <div
+        style={{
+          maxWidth: 560,
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0)" : "translateY(18px)",
+          transition: "opacity 1s ease 0.3s, transform 1s ease 0.3s",
+        }}
+      >
+        {/* Eyebrow */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              width: 28,
+              height: 1.5,
+              background: "linear-gradient(to right, #cc0000, #ff3344)",
+              borderRadius: 1,
+            }}
+          />
+          <span
+            style={{
+              fontFamily: "'DM Mono', ui-monospace, monospace",
+              fontSize: 10,
+              letterSpacing: "0.3em",
+              color: "#cc2233",
+              textTransform: "uppercase",
+            }}
+          >
+            Suraksha — SRK‑X1
+          </span>
+        </div>
+
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: "'Bebas Neue', 'Impact', 'Arial Black', sans-serif",
+            fontSize: "clamp(52px, 8vw, 96px)",
+            lineHeight: 0.92,
+            letterSpacing: "-0.01em",
+            color: "#ffffff",
+            fontWeight: 900,
+          }}
+        >
+          <span style={{ display: "block" }}>THE GUARDIAN</span>
+          <span
+            style={{
+              display: "block",
+              WebkitTextStroke: "1px rgba(255,255,255,0.55)",
+              color: "transparent",
+            }}
+          >
+            ON YOUR WRIST
+          </span>
+        </h1>
+
+        <p
+          style={{
+            marginTop: 20,
+            maxWidth: 340,
+            fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
+            fontSize: 13,
+            lineHeight: 1.65,
+            color: "rgba(255,255,255,0.45)",
+            letterSpacing: "0.01em",
+            opacity: visible ? 1 : 0,
+            transition: "opacity 1s ease 0.7s",
+          }}
+        >
+          Military-grade SOS, real-time GPS, and an AI co-pilot engineered for
+          the moments that matter most.
+        </p>
+
+        {/* Stats row */}
+        <div
+          style={{
+            display: "flex",
+            gap: 28,
+            marginTop: 28,
+            opacity: visible ? 1 : 0,
+            transition: "opacity 1s ease 1s",
+          }}
+        >
+          {[
+            { value: "0.8s", label: "SOS response" },
+            { value: "14d", label: "Battery life" },
+            { value: "IP68", label: "Water proof" },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <div
+                style={{
+                  fontFamily: "'Bebas Neue', 'Impact', sans-serif",
+                  fontSize: 28,
+                  lineHeight: 1,
+                  color: "#ff3344",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {stat.value}
+              </div>
+              <div
+                style={{
+                  fontFamily: "'DM Mono', ui-monospace, monospace",
+                  fontSize: 8,
+                  letterSpacing: "0.22em",
+                  color: "rgba(255,255,255,0.3)",
+                  textTransform: "uppercase",
+                  marginTop: 3,
+                }}
+              >
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Corner accent — bottom right */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 56,
+          right: "5vw",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: 6,
+          opacity: visible ? 0.45 : 0,
+          transition: "opacity 1.2s ease 1.4s",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "'DM Mono', ui-monospace, monospace",
+            fontSize: 8,
+            letterSpacing: "0.24em",
+            color: "rgba(255,255,255,0.55)",
+            textTransform: "uppercase",
+          }}
+        >
+          Scroll to explore
+        </div>
+        <div
+          style={{
+            width: 38,
+            height: 1,
+            background:
+              "linear-gradient(to left, rgba(255,255,255,0.4), transparent)",
+            alignSelf: "stretch",
+          }}
+        />
+      </div>
+
+      {/* Right-side rule line */}
+      <div
+        style={{
+          position: "absolute",
+          right: "5vw",
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: 1,
+          height: "28vh",
+          background:
+            "linear-gradient(to bottom, transparent, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.08) 70%, transparent)",
+          opacity: visible ? 1 : 0,
+          transition: "opacity 1.5s ease 1.6s",
+        }}
+      />
+    </div>
+  )
+}
+
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 
 export default function HeroSection() {
-  // Scroll container — 500vh tall, ScrollTrigger pins inside this
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-
-  // 3D model ref — useHeroScroll drives scroll-based rotation/scale
-  const wristbandRef = useRef<WristbandModelRef>(null)
-
-  // Left-side indicator — useHeroScroll drives number swap, progress fill, dots
-  const sectionIndicatorRef = useRef<SectionIndicatorRefs | null>(null)
-
-  /**
-   * Outer canvas positioning div.
-   * Separate from WristbandModel's internal canvasWrapperRef.
-   * useHeroScroll targets this for scroll-out opacity fade (the whole 3D area).
-   * WristbandModel's internal ref handles its own load-in animation.
-   * The two never compound.
-   */
-  const canvasWrapperRef = useRef<HTMLDivElement>(null)
-
-  /**
-   * activeSectionRef — NOT useState.
-   *
-   * Using useState would trigger a full React reconciliation of the entire
-   * hero subtree (WristbandModel, TextPanels, SectionIndicator, FilmGrain)
-   * on every scroll event. At 60fps during a 500vh scroll that's thousands
-   * of unnecessary re-renders.
-   *
-   * Instead: useHeroScroll calls onSectionChange(index) directly,
-   * TextPanels reads via a stable callback ref.
-   */
-  const activeSectionRef = useRef<number>(0)
-  const textPanelsSetActiveRef = useRef<((index: number) => void) | null>(null)
-
-  const onSectionChange = useCallback((index: number) => {
-    activeSectionRef.current = index
-    // Directly call TextPanels' internal state setter — zero re-renders above
-    textPanelsSetActiveRef.current?.(index)
-  }, [])
-
-  useHeroScroll({
-    scrollContainerRef,
-    wristbandRef,
-    sectionIndicatorRef,
-    canvasWrapperRef,
-    onSectionChange,
-  })
-
   return (
     <section
       id="hero"
       aria-label="Suraksha — The Guardian On Your Wrist"
-      data-hero-section                    // ScrollTrigger hook targeting
       style={{
         position: "relative",
         width: "100%",
+        height: "100vh",
         overflow: "hidden",
         background: "#000000",
+        isolation: "isolate",
       }}
     >
       {/* Skip link target for keyboard navigation */}
       <div id="hero-end" style={{ position: "absolute", bottom: 0 }} />
 
-      {/* ── 500vh scroll container ── */}
+      {/* z:0 — Atmospheric background layers */}
+      <HeroAtmosphere />
+
+      {/* z:1 — 3D wristband canvas — full-bleed background layer */}
       <div
-        ref={scrollContainerRef}
-        data-scroll-container
-        style={{ height: "500vh", background: "#000000" }}
+        data-canvas-outer
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 1,
+          background: "transparent",
+        }}
       >
-        {/* ── Sticky viewport — everything visible lives here ── */}
-        <div
-          data-sticky-wrapper
-          style={{
-            position: "sticky",
-            top: 0,
-            height: "100vh",
-            overflow: "clip",
-            background: "#000000",
-            isolation: "isolate",
-          }}
-        >
-
-          {/* z:0 — Atmospheric background layers */}
-          <HeroAtmosphere />
-
-          {/* z:1 — 3D wristband canvas — full-bleed background layer */}
-          <div
-            ref={canvasWrapperRef}
-            data-canvas-outer                // outer ref for scroll-fade
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 1,
-              background: "transparent",
-            }}
-          >
-            <WristbandModel ref={wristbandRef} />
-          </div>
-
-          {/* z:10 — Text content panels (WELCOME, PROTECTION, etc.) */}
-          <TextPanels
-            setActiveRef={textPanelsSetActiveRef}
-            initialIndex={0}
-          />
-
-          {/* z:15 — Left-side section indicator */}
-          <SectionIndicator ref={sectionIndicatorRef} />
-
-          {/* z:18 — Film grain overlay — above content, below chrome */}
-          <FilmGrain />
-
-          {/* z:20 — Top brand bar */}
-          <TopBar />
-
-          {/* z:25 — Bottom section fade */}
-          <BottomFade />
-
-          {/* Decorative crosshairs — lowest priority, loads async */}
-          <Crosshairs />
-
-        </div>
+        <WristbandModel />
       </div>
+
+      <HeroText />
+
+      {/* z:20 — Top brand bar */}
+      <TopBar />
+
+      {/* z:25 — Bottom section fade */}
+      <BottomFade />
+
+      {/* Decorative crosshairs — lowest priority, loads async */}
+      <Crosshairs />
     </section>
   )
 }
