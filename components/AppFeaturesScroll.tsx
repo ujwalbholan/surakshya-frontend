@@ -1,6 +1,5 @@
 "use client"
 
-import { useRef, useEffect, useState } from "react"
 import { Shield, MapPin, Route, Camera, Bell } from "lucide-react"
 
 const features = [
@@ -47,38 +46,9 @@ const features = [
 ]
 
 export default function AppFeaturesScroll() {
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const [progress, setProgress] = useState(0)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!sectionRef.current) return
-      const rect = sectionRef.current.getBoundingClientRect()
-      const sectionTop = rect.top
-      const sectionHeight = rect.height - window.innerHeight
-      if (sectionHeight <= 0) return
-      const raw = -sectionTop / sectionHeight
-      setProgress(Math.max(0, Math.min(1, raw)))
-    }
-
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    handleScroll()
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-
-  const cardCount = features.length
-  const translatePercent = progress * (cardCount - 1) * -100 / cardCount
-
   return (
-    <div
-      ref={sectionRef}
-      className="relative"
-      style={{ height: `${80 + cardCount * 45}vh` }}
-    >
-      <div
-        className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden transition-opacity duration-500"
-        style={{ opacity: progress > 0.95 ? Math.max(0, 1 - (progress - 0.95) * 20) : 1 }}
-      >
+    <section className="relative py-20 lg:py-24">
+      <div className="flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-6 lg:px-10 mb-6 lg:mb-10">
           <div className="mx-auto max-w-7xl">
@@ -90,65 +60,36 @@ export default function AppFeaturesScroll() {
               <div className="hidden sm:flex items-center gap-3">
                 <div className="h-px w-16 bg-muted-foreground/30" />
                 <span className="text-xs tracking-[0.2em] uppercase text-muted-foreground whitespace-nowrap">
-                  Scroll to explore
+                  Explore features
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="px-6 lg:px-10 mb-5">
-          <div className="mx-auto max-w-7xl">
-            <div className="h-px bg-border relative">
-              <div
-                className="absolute top-0 left-0 h-full bg-primary"
-                style={{
-                  width: `${progress * 100}%`,
-                  transition: "width 0.05s linear",
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Horizontal sliding track */}
-        <div className="relative overflow-hidden px-6 lg:px-10">
+        {/* Horizontal card track */}
+        <div className="app-features-scrollbar relative overflow-x-auto px-6 lg:px-10 pb-3">
           <div
-            className="flex gap-6 lg:gap-8 will-change-transform"
-            style={{
-              transform: `translateX(${translatePercent}%)`,
-              transition: "transform 0.05s linear",
-            }}
+            className="flex gap-6 lg:gap-8"
           >
-            {features.map((feature, index) => {
-              // Calculate per-card visibility (0 to 1) based on which card is "active"
-              const cardProgress = progress * (cardCount - 1)
-              const dist = Math.abs(cardProgress - index)
-              const isActive = dist < 0.6
-
-              return (
+            {features.map((feature, index) => (
+              <div
+                key={feature.title}
+                className="flex-shrink-0 w-[82vw] sm:w-[55vw] lg:w-[380px] xl:w-[420px]"
+              >
                 <div
-                  key={feature.title}
-                  className="flex-shrink-0 w-[82vw] sm:w-[55vw] lg:w-[380px] xl:w-[420px]"
+                  className="h-full border bg-card p-6 lg:p-8 flex flex-col justify-between transition-all duration-300"
+                  style={{
+                    borderColor: "rgba(192, 57, 43, 0.35)",
+                  }}
                 >
-                  <div
-                    className="h-full border bg-card p-6 lg:p-8 flex flex-col justify-between transition-all duration-300"
-                    style={{
-                      borderColor: isActive
-                        ? "rgba(192, 57, 43, 0.4)"
-                        : "var(--border)",
-                      opacity: isActive ? 1 : 0.5,
-                      transform: isActive ? "scale(1)" : "scale(0.97)",
-                    }}
-                  >
                     {/* Top */}
                     <div>
                       <div className="flex items-center justify-between mb-6">
                         <feature.icon
                           className="w-6 h-6 transition-colors duration-300"
                           style={{
-                            color: isActive ? "#C0392B" : "#888888",
+                            color: "#C0392B",
                           }}
                         />
                         <span className="text-xs tracking-[0.2em] uppercase text-muted-foreground">
@@ -178,8 +119,8 @@ export default function AppFeaturesScroll() {
                       <div
                         className="w-8 h-8 border flex items-center justify-center transition-colors duration-300"
                         style={{
-                          borderColor: isActive ? "#C0392B" : "var(--border)",
-                          color: isActive ? "#C0392B" : "#888888",
+                          borderColor: "#C0392B",
+                          color: "#C0392B",
                         }}
                       >
                         <svg
@@ -200,32 +141,36 @@ export default function AppFeaturesScroll() {
                       </div>
                     </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Bottom dot indicators */}
-        <div className="px-6 lg:px-10 mt-6 lg:mt-8">
-          <div className="mx-auto max-w-7xl flex items-center gap-3">
-            {features.map((_, i) => {
-              const cardProgress = progress * (cardCount - 1)
-              const isActive = Math.abs(cardProgress - i) < 0.6
-              return (
-                <div
-                  key={i}
-                  className="h-1 transition-all duration-300"
-                  style={{
-                    width: isActive ? "2rem" : "0.5rem",
-                    backgroundColor: isActive ? "#C0392B" : "var(--border)",
-                  }}
-                />
-              )
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </div>
-    </div>
+
+      <style jsx>{`
+        .app-features-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(192, 57, 43, 0.7) rgba(255, 255, 255, 0.08);
+        }
+
+        .app-features-scrollbar::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .app-features-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 999px;
+        }
+
+        .app-features-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(90deg, rgba(192, 57, 43, 0.9), rgba(255, 80, 80, 0.9));
+          border-radius: 999px;
+        }
+
+        .app-features-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(90deg, rgba(220, 70, 70, 0.95), rgba(255, 110, 110, 0.95));
+        }
+      `}</style>
+    </section>
   )
 }
