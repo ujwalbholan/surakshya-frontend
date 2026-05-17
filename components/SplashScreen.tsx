@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
+import { usePathname } from "next/navigation"
 
 /**
  * Cubic-bezier(0.4, 0, 0.2, 1) easing.
@@ -38,7 +39,10 @@ const HOLD_DURATION_MS = 200
 const BAR_FADE_DURATION_MS = 800
 const OVERLAY_FADE_DURATION_MS = 600
 
+const SKIP_SPLASH_PREFIXES = ["/dashboard", "/login", "/signup"]
+
 export default function SplashScreen() {
+  const pathname = usePathname()
   const [progress, setProgress] = useState(0)
   const [barHidden, setBarHidden] = useState(false)
   const [overlayHidden, setOverlayHidden] = useState(false)
@@ -47,6 +51,13 @@ export default function SplashScreen() {
   const phaseRef = useRef<"progress" | "hold" | "barFade" | "overlayFade">("progress")
 
   useEffect(() => {
+    const skipForRoute = SKIP_SPLASH_PREFIXES.some((p) => pathname?.startsWith(p))
+    if (skipForRoute) {
+      document.body.style.overflow = "auto"
+      setShouldRender(false)
+      return
+    }
+
     // Respect prefers-reduced-motion: skip animation and remove immediately
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     if (prefersReducedMotion) {
@@ -108,7 +119,7 @@ export default function SplashScreen() {
       }
       document.body.style.overflow = "auto"
     }
-  }, [])
+  }, [pathname])
 
   if (!shouldRender) return null
 
