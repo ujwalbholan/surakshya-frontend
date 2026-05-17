@@ -1,8 +1,14 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import Link from "next/link"
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { loginUser } from "@/lib/api/auth"
+import { isApiError } from "@/lib/api/client"
+import { saveAuthSession } from "@/lib/auth/session"
+
+const MIN_PASSWORD_LENGTH = 8
 
 const WristbandModel = dynamic(() => import("@/components/hero/WristbandModel"), {
   ssr: false,
@@ -11,9 +17,12 @@ const WristbandModel = dynamic(() => import("@/components/hero/WristbandModel"),
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [mounted, setMounted] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [emailFocused, setEmailFocused] = useState(false)
   const [passwordFocused, setPasswordFocused] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -32,16 +41,44 @@ export default function LoginPage() {
     return () => clearTimeout(t)
   }, [])
 
+  useEffect(() => {
+    if (searchParams.get("registered") === "1") {
+      setSuccessMessage("Account created. Sign in with your email and password.")
+    }
+  }, [searchParams])
+
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (submitting) return
+
+    setError(null)
+    setSuccessMessage(null)
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
+      return
+    }
+
     setSubmitting(true)
-    await new Promise((resolve) => setTimeout(resolve, 1100))
-    setPanelFadingOut(true)
-    setFlashVisible(true)
-    setTimeout(() => {
-      router.push("/dashboard")
-    }, 520)
+
+    try {
+      const data = await loginUser({ email: email.trim(), password })
+      saveAuthSession(data.email, data.token)
+      setPanelFadingOut(true)
+      setFlashVisible(true)
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 520)
+    } catch (err) {
+      if (isApiError(err)) {
+        setError(err.message)
+      } else if (err instanceof Error && err.message) {
+        setError(err.message)
+      } else {
+        setError("Unable to sign in. Please try again.")
+      }
+      setSubmitting(false)
+    }
   }
 
   const labelStyle = (active: boolean): React.CSSProperties => ({
@@ -274,6 +311,35 @@ export default function LoginPage() {
               Welcome back.
             </p>
 
+            {successMessage ? (
+              <p
+                style={{
+                  margin: "0 0 16px",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "rgba(204,34,51,0.9)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {successMessage}
+              </p>
+            ) : null}
+
+            {error ? (
+              <p
+                role="alert"
+                style={{
+                  margin: "0 0 20px",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "#E74C3C",
+                  lineHeight: 1.5,
+                }}
+              >
+                {error}
+              </p>
+            ) : null}
+
             <form onSubmit={onSubmit} style={{ margin: 0 }}>
               <div style={{ marginBottom: 24 }}>
                 <label htmlFor="login-email" style={labelStyle(emailFocused || email.length > 0)}>
@@ -401,9 +467,9 @@ export default function LoginPage() {
                 }}
               >
                 Don&apos;t have an account?{" "}
-                <a href="/signup" style={{ color: "#CC2233", textDecoration: "none" }}>
+                <Link href="/signup" style={{ color: "#CC2233", textDecoration: "none" }}>
                   Create one
-                </a>
+                </Link>
               </div>
 
               <div

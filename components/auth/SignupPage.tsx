@@ -1,8 +1,13 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { registerUser } from "@/lib/api/auth"
+import { isApiError } from "@/lib/api/client"
+
+const MIN_PASSWORD_LENGTH = 8
 
 const WristbandModel = dynamic(() => import("@/components/hero/WristbandModel"), {
   ssr: false,
@@ -12,9 +17,10 @@ const WristbandModel = dynamic(() => import("@/components/hero/WristbandModel"),
 export default function SignupPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
-  const [fullName, setFullName] = useState("")
+  const [firstName, setFirstName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
   const [nameFocused, setNameFocused] = useState(false)
   const [emailFocused, setEmailFocused] = useState(false)
   const [passwordFocused, setPasswordFocused] = useState(false)
@@ -36,13 +42,33 @@ export default function SignupPage() {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (submitting) return
+
+    setError(null)
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`)
+      return
+    }
+
     setSubmitting(true)
-    await new Promise((resolve) => setTimeout(resolve, 1100))
-    setPanelFadingOut(true)
-    setFlashVisible(true)
-    setTimeout(() => {
-      router.push("/dashboard")
-    }, 520)
+
+    try {
+      await registerUser({ email: email.trim(), password })
+      setPanelFadingOut(true)
+      setFlashVisible(true)
+      setTimeout(() => {
+        router.push("/login?registered=1")
+      }, 520)
+    } catch (err) {
+      if (isApiError(err)) {
+        setError(err.message)
+      } else if (err instanceof Error && err.message) {
+        setError(err.message)
+      } else {
+        setError("Unable to create account. Please try again.")
+      }
+      setSubmitting(false)
+    }
   }
 
   const labelStyle = (active: boolean): React.CSSProperties => ({
@@ -275,20 +301,34 @@ export default function SignupPage() {
               Welcome to Suraksha.
             </p>
 
+            {error ? (
+              <p
+                role="alert"
+                style={{
+                  margin: "0 0 20px",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "#E74C3C",
+                  lineHeight: 1.5,
+                }}
+              >
+                {error}
+              </p>
+            ) : null}
+
             <form onSubmit={onSubmit} style={{ margin: 0 }}>
               <div style={{ marginBottom: 24 }}>
-                <label htmlFor="signup-name" style={labelStyle(nameFocused || fullName.length > 0)}>
-                  Full Name
+                <label htmlFor="signup-name" style={labelStyle(nameFocused || firstName.length > 0)}>
+                  First name <span style={{ textTransform: "none", letterSpacing: 0, opacity: 0.6 }}>(optional)</span>
                 </label>
                 <input
                   id="signup-name"
                   type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
                   onFocus={() => setNameFocused(true)}
                   onBlur={() => setNameFocused(false)}
-                  autoComplete="name"
-                  required
+                  autoComplete="given-name"
                   style={inputBaseStyle(nameFocused)}
                 />
               </div>
@@ -402,9 +442,9 @@ export default function SignupPage() {
                 }}
               >
                 Already have an account?{" "}
-                <a href="/login" style={{ color: "#CC2233", textDecoration: "none" }}>
+                <Link href="/login" style={{ color: "#CC2233", textDecoration: "none" }}>
                   Sign in
-                </a>
+                </Link>
               </div>
 
               <div
