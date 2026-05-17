@@ -6,7 +6,7 @@ import { Panel, SectionHeader, StatCard, StatusPill } from "@/components/dashboa
 import { fieldUnits, type UnitStatus } from "@/lib/dashboard/operations-data"
 import { cn } from "@/lib/utils"
 
-function unitVariant(status: UnitStatus): "critical" | "warning" | "success" | "muted" {
+function unitVariant(status: UnitStatus): "critical" | "warning" | "success" | "muted" | "default" {
   if (status === "dispatched" || status === "on_scene") return "warning"
   if (status === "available") return "success"
   if (status === "offline") return "muted"

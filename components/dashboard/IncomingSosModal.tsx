@@ -16,7 +16,7 @@ export default function IncomingSosModal({
   onDismiss,
 }: IncomingSosModalProps) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 sm:items-center">
+    <div className="fixed inset-0 z-100 flex items-end justify-center p-4 sm:items-center">
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onDismiss}
