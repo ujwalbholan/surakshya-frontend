@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
         source: "/api/ams/:path*",
         destination: `${apiOrigin}/:path*`,
       },
+      {
+        source: "/api/surakshya/:path*",
+        destination: "https://surakshya.onrender.com/:path*",
+      },
     ];
   },
 };
