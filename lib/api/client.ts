@@ -72,4 +72,52 @@ export async function apiRequest<T>(
   return body
 }
 
+export const API_BASE = "/api/surakshya"
+export const API_BASE_URL_EXTERNAL = "https://surakshya.onrender.com"
+
+export interface AdminApiResult<T> {
+  data: T | null
+  error: string | null
+  status: number
+}
+
+export async function adminApiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<AdminApiResult<T>> {
+  const url = `${API_BASE}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`
+
+  let response: Response
+  try {
+    response = await fetch(url, {
+      credentials: "include",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...options.headers,
+      },
+    })
+  } catch {
+    return { data: null, error: "Network error", status: 0 }
+  }
+
+  const body = await parseJson<T & ApiErrorBody>(response)
+
+  if (!response.ok) {
+    const message =
+      (body && typeof body === "object" && "message" in body && body.message) ||
+      (body && typeof body === "object" && "error" in body && body.error) ||
+      response.statusText ||
+      "Request failed"
+    return { data: null, error: String(message), status: response.status }
+  }
+
+  if (response.status === 204) {
+    return { data: null, error: null, status: response.status }
+  }
+
+  return { data: body as T, error: null, status: response.status }
+}
+
 export { isApiError }
