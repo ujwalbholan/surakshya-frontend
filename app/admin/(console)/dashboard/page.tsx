@@ -116,27 +116,25 @@ export default function DashboardPage() {
 
   return (
     <PageTransition>
-      {/* Greeting strip */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-[32px] italic text-white">
+          <h1 className="font-body text-2xl font-medium tracking-tight text-white">
             {getGreeting()}, {session?.full_name ?? "Admin"}
           </h1>
-          <p className="mt-1 font-body text-sm text-white/50">
-            Suraksha Command Centre · Nepal · {getNepalDate()}
+          <p className="mt-1 font-mono-admin text-xs text-white/40">
+            Command Centre · {getNepalDate()}
           </p>
         </div>
-        <div className="font-mono-admin text-lg text-white/70">{clock} NPT</div>
+        <div className="font-mono-admin text-sm text-white/50">{clock} NPT</div>
       </div>
 
-      {/* Stats bar */}
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="Total Users" value={userCount.toLocaleString()} icon={Users} accent="blue" loading={loadingStats} />
-        <StatCard label="Active SOS" value={7} icon={AlertTriangle} accent="crimson" />
-        <StatCard label="Resolved Today" value={23} icon={CheckCircle} accent="green" />
-        <StatCard label="Units Deployed" value={14} icon={MapPin} accent="yellow" />
-        <StatCard label="Avg Response Time" value="4.2 min" icon={Clock} accent="purple" animate={false} />
-        <StatCard label="System Health" value="Operational" icon={Activity} accent="green" animate={false} pulse />
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <StatCard label="Total Users" value={userCount.toLocaleString()} icon={Users} loading={loadingStats} />
+        <StatCard label="Active SOS" value={7} icon={AlertTriangle} />
+        <StatCard label="Resolved Today" value={23} icon={CheckCircle} />
+        <StatCard label="Units Deployed" value={14} icon={MapPin} />
+        <StatCard label="Avg Response Time" value="4.2 min" icon={Clock} animate={false} />
+        <StatCard label="System Health" value="Operational" icon={Activity} animate={false} pulse />
       </div>
 
       {/* Main grid */}
@@ -146,8 +144,8 @@ export default function DashboardPage() {
           {/* SOS table */}
           <div className="admin-card overflow-hidden p-0">
             <div className="flex items-center gap-2 border-b border-white/5 px-5 py-4">
-              <span className="admin-live-dot h-2 w-2 rounded-full bg-[#C0392B]" />
-              <h2 className="font-body text-sm font-semibold text-white">Live SOS Feed</h2>
+              <span className="admin-live-dot h-1.5 w-1.5 rounded-full bg-white/50" />
+              <h2 className="font-body text-sm font-medium text-white/90">Live SOS Feed</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -173,7 +171,7 @@ export default function DashboardPage() {
                       <td className="px-5 py-3"><PriorityBadge priority={row.priority} /></td>
                       <td className="px-5 py-3"><StatusBadge status={row.status} /></td>
                       <td className="px-5 py-3">
-                        <Link href={`/admin/sos/${row.id}`} className="text-xs text-[#C0392B] hover:underline">
+                        <Link href={`/admin/sos/${row.id}`} className="text-xs text-white/50 transition hover:text-white">
                           View
                         </Link>
                       </td>
@@ -189,33 +187,39 @@ export default function DashboardPage() {
 
           {/* Line chart */}
           <div className="admin-card">
-            <h2 className="mb-4 font-body text-sm font-semibold text-white">SOS Incidents — Last 30 Days</h2>
+            <h2 className="mb-4 font-body text-sm font-medium text-white/90">SOS Incidents — Last 30 Days</h2>
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={chartData}>
-                <defs>
-                  <linearGradient id="crimsonGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#C0392B" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#C0392B" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }}
+                  tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 10 }}
+                  axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
+                  tickLine={false}
                   interval={4}
                 />
-                <YAxis tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} />
+                <YAxis
+                  tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
                 <Tooltip
-                  contentStyle={{ background: "#0A0A0A", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
-                  labelStyle={{ color: "#fff" }}
+                  contentStyle={{
+                    background: "#0A0A0A",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "6px",
+                    color: "rgba(255,255,255,0.8)",
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ color: "rgba(255,255,255,0.5)" }}
                 />
                 <Line
                   type="monotone"
                   dataKey="count"
-                  stroke="#C0392B"
-                  strokeWidth={2}
-                  dot={{ fill: "#C0392B", r: 3 }}
-                  fill="url(#crimsonGrad)"
+                  stroke="rgba(255,255,255,0.6)"
+                  strokeWidth={1.5}
+                  dot={false}
+                  activeDot={{ fill: "#ffffff", r: 3, strokeWidth: 0 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -226,7 +230,7 @@ export default function DashboardPage() {
         <div className="space-y-6">
           {/* Donut chart */}
           <div className="admin-card">
-            <h2 className="mb-4 font-body text-sm font-semibold text-white">User Breakdown</h2>
+            <h2 className="mb-4 font-body text-sm font-medium text-white/90">User Breakdown</h2>
             <div className="relative">
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
@@ -264,11 +268,11 @@ export default function DashboardPage() {
 
           {/* Latest users */}
           <div className="admin-card">
-            <h2 className="mb-4 font-body text-sm font-semibold text-white">Latest Registered Users</h2>
+            <h2 className="mb-4 font-body text-sm font-medium text-white/90">Latest Registered Users</h2>
             <ul className="space-y-3">
               {LATEST_REGISTERED_USERS.map((u) => (
                 <li key={u.id} className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#C0392B]/20 text-xs font-medium text-[#C0392B]">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xs font-medium text-white/60">
                     {getInitials(u.full_name)}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -284,7 +288,7 @@ export default function DashboardPage() {
 
           {/* Quick actions */}
           <div className="admin-card">
-            <h2 className="mb-4 font-body text-sm font-semibold text-white">Quick Actions</h2>
+            <h2 className="mb-4 font-body text-sm font-medium text-white/90">Quick Actions</h2>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { label: "Register New User", icon: UserPlus, href: "/admin/users/new" },
@@ -293,7 +297,7 @@ export default function DashboardPage() {
                 { label: "System Settings", icon: Settings, href: "/admin/settings" },
               ].map((action) => {
                 const Icon = action.icon
-                const cls = "flex flex-col items-center gap-2 rounded-lg border border-white/10 p-3 text-xs text-white/70 transition hover:border-[#C0392B] hover:bg-[#C0392B]/10 hover:text-white"
+                const cls = "flex flex-col items-center gap-2 rounded-md border border-white/8 p-3 text-xs text-white/50 transition hover:border-white/15 hover:bg-white/5 hover:text-white/80"
                 if (action.href) {
                   return (
                     <Link key={action.label} href={action.href} className={cls}>
@@ -327,7 +331,7 @@ export default function DashboardPage() {
           />
           <DialogFooter>
             <Button variant="ghost" onClick={() => setBroadcastOpen(false)}>Cancel</Button>
-            <Button onClick={handleBroadcast} className="bg-[#C0392B] hover:bg-[#E74C3C]">Send Broadcast</Button>
+            <Button onClick={handleBroadcast} className="bg-white text-black hover:bg-white/90">Send Broadcast</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,0 +1,18 @@
+%% Suraksha — Citizen SOS sequence (Section 8, Flow A)
+%% Export: https://mermaid.live or `npx @mermaid-js/mermaid-cli -i 02-sos-sequence.mmd -o 02-sos-sequence.png`
+
+sequenceDiagram
+  participant User as Wearer
+  participant Band as Wristband
+  participant App as Flutter App
+  participant AMS as AMS Backend
+  participant Family as Emergency Contacts
+  participant Police as Web Police Dashboard
+
+  User->>Band: Double-tap SOS
+  Band->>App: BLE alert event
+  App->>AMS: SOS plus GPS plus profile
+  AMS->>Family: Push/SMS notifications
+  AMS->>Police: Victim profile and live location
+  App->>App: Start evidence capture AES-256
+  Police->>Police: Dispatch field unit open case

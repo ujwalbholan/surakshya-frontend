@@ -1,5 +1,5 @@
-import UnitTable from "@/components/admin/UnitTable"
+import UnitsDashboard from "@/components/admin/UnitsDashboard"
 
 export default function UnitsPage() {
-  return <UnitTable />
+  return <UnitsDashboard />
 }

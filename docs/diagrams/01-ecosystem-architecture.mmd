@@ -1,0 +1,24 @@
+%% Suraksha — Ecosystem architecture (Section 3)
+%% Export: https://mermaid.live or `npx @mermaid-js/mermaid-cli -i 01-ecosystem-architecture.mmd -o 01-ecosystem-architecture.png`
+
+flowchart TB
+  subgraph citizen [Citizen Layer]
+    Band[Suraksha IoT Wristband]
+    Flutter[Flutter User App]
+    Band -->|BLE 5.0| Flutter
+  end
+
+  subgraph cloud [Cloud Layer]
+    AMS[AMS Backend API]
+  end
+
+  subgraph authority [Authority Layer]
+    WebPublic[Next.js Marketing Site]
+    WebPolice[Next.js Police Dashboard]
+  end
+
+  Flutter -->|REST auth and future SOS APIs| AMS
+  WebPolice -->|REST auth today| AMS
+  Flutter -->|SOS GPS profile evidence| AMS
+  AMS -->|Alerts cases units| WebPolice
+  WebPublic -->|Brand discovery| citizen

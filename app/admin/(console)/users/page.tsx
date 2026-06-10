@@ -1,5 +1,5 @@
-import UserTable from "@/components/admin/UserTable"
+import UsersDashboard from "@/components/admin/UsersDashboard"
 
 export default function UsersPage() {
-  return <UserTable />
+  return <UsersDashboard />
 }

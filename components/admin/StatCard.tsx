@@ -9,25 +9,15 @@ interface StatCardProps {
   label: string
   value: string | number
   icon: LucideIcon
-  accent?: "blue" | "crimson" | "green" | "yellow" | "purple"
   loading?: boolean
   animate?: boolean
   pulse?: boolean
-}
-
-const ACCENT_COLORS = {
-  blue: "text-blue-400",
-  crimson: "text-[#C0392B]",
-  green: "text-emerald-400",
-  yellow: "text-yellow-400",
-  purple: "text-purple-400",
 }
 
 export default function StatCard({
   label,
   value,
   icon: Icon,
-  accent = "blue",
   loading = false,
   animate = true,
   pulse = false,
@@ -77,15 +67,15 @@ export default function StatCard({
   return (
     <div className="admin-card">
       <div className="flex items-center justify-between">
-        <p className="font-body text-xs text-white/50">{label}</p>
+        <p className="font-mono-admin text-[10px] tracking-wider text-white/40 uppercase">{label}</p>
         <div className="relative">
-          <Icon className={cn("h-4 w-4", ACCENT_COLORS[accent])} />
+          <Icon className="h-4 w-4 text-white/30" />
           {pulse && (
-            <span className="admin-pulse-dot absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="admin-pulse-dot absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-white/60" />
           )}
         </div>
       </div>
-      <p className={cn("mt-2 text-2xl font-semibold text-white", ACCENT_COLORS[accent])}>
+      <p className={cn("mt-2 text-2xl font-medium tracking-tight text-white")}>
         {displayValue}
       </p>
     </div>

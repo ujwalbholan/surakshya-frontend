@@ -630,11 +630,11 @@ export function generateSosChartData() {
 }
 
 export const USER_ROLE_BREAKDOWN = [
-  { role: "USER", count: 1180, color: "#C0392B" },
-  { role: "POLICE", count: 42, color: "#3B82F6" },
-  { role: "GUARDIAN", count: 18, color: "#EAB308" },
-  { role: "ADMIN", count: 6, color: "#A855F7" },
-  { role: "SUPER_ADMIN", count: 1, color: "#FFFFFF" },
+  { role: "USER", count: 1180, color: "rgba(255,255,255,0.85)" },
+  { role: "POLICE", count: 42, color: "rgba(255,255,255,0.6)" },
+  { role: "GUARDIAN", count: 18, color: "rgba(255,255,255,0.45)" },
+  { role: "ADMIN", count: 6, color: "rgba(255,255,255,0.3)" },
+  { role: "SUPER_ADMIN", count: 1, color: "rgba(255,255,255,0.15)" },
 ]
 
 export const LATEST_REGISTERED_USERS = MOCK_USERS.slice(-5).reverse().map((u) => ({

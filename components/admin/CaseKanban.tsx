@@ -2,14 +2,13 @@
 
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { LayoutGrid, List, Lock } from "lucide-react"
+import { LayoutGrid, List } from "lucide-react"
 import PageTransition from "@/components/admin/PageTransition"
+import CaseProfilePanel from "@/components/admin/CaseProfilePanel"
 import { PriorityBadge } from "@/components/admin/Badges"
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
 } from "@/components/ui/sheet"
 import {
   Select,
@@ -18,8 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
 import toast from "react-hot-toast"
 import {
   MOCK_CASES,
@@ -42,8 +39,11 @@ export default function CaseKanban() {
   const [statusFilter, setStatusFilter] = useState<string>("All")
   const [provinceFilter, setProvinceFilter] = useState<string>("All")
   const [selectedCase, setSelectedCase] = useState<MockCase | null>(null)
-  const [note, setNote] = useState("")
   const [dragging, setDragging] = useState<string | null>(null)
+
+  const activeCase = selectedCase
+    ? cases.find((c) => c.id === selectedCase.id) ?? selectedCase
+    : null
 
   const filtered = cases.filter((c) => {
     const q = search.toLowerCase()
@@ -53,22 +53,24 @@ export default function CaseKanban() {
     return matchSearch && matchStatus && matchProvince
   })
 
+  const updateCase = (caseId: string, updater: (c: MockCase) => MockCase) => {
+    setCases((prev) => prev.map((c) => (c.id === caseId ? updater(c) : c)))
+    setSelectedCase((prev) => (prev?.id === caseId ? updater(prev) : prev))
+  }
+
   const handleDrop = (caseId: string, newStatus: CaseStatus) => {
-    setCases((prev) => prev.map((c) =>
-      c.id === caseId
-        ? { ...c, status: newStatus, statusHistory: [...c.statusHistory, { status: newStatus, timestamp: new Date().toISOString() }] }
-        : c
-    ))
+    updateCase(caseId, (c) => ({
+      ...c,
+      status: newStatus,
+      statusHistory: [...c.statusHistory, { status: newStatus, timestamp: new Date().toISOString() }],
+    }))
     setDragging(null)
   }
 
-  const saveNote = () => {
-    if (!selectedCase || !note.trim()) return
-    setCases((prev) => prev.map((c) =>
-      c.id === selectedCase.id ? { ...c, notes: [...c.notes, note.trim()] } : c
-    ))
+  const saveNote = (note: string) => {
+    if (!selectedCase) return
+    updateCase(selectedCase.id, (c) => ({ ...c, notes: [...c.notes, note] }))
     toast.success("Note saved")
-    setNote("")
   }
 
   return (
@@ -178,54 +180,14 @@ export default function CaseKanban() {
         </div>
       )}
 
-      <Sheet open={!!selectedCase} onOpenChange={() => setSelectedCase(null)}>
-        <SheetContent className="w-full border-white/10 bg-[#0A0A0A] text-white sm:max-w-[480px] overflow-y-auto">
-          {selectedCase && (
-            <>
-              <SheetHeader><SheetTitle>{selectedCase.id}</SheetTitle></SheetHeader>
-              <div className="mt-4 space-y-4">
-                <Select
-                  value={selectedCase.status}
-                  onValueChange={(v) => {
-                    handleDrop(selectedCase.id, v as CaseStatus)
-                    setSelectedCase({ ...selectedCase, status: v as CaseStatus })
-                  }}
-                >
-                  <SelectTrigger className="admin-input"><SelectValue /></SelectTrigger>
-                  <SelectContent className="border-white/10 bg-[#0A0A0A]">
-                    {COLUMNS.map((c) => <SelectItem key={c.status} value={c.status}>{c.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <div className="text-sm">
-                  <p className="text-white">{selectedCase.victim} · {selectedCase.district}</p>
-                  <p className="text-white/50">Officer: {selectedCase.officer}</p>
-                </div>
-                <div>
-                  <h4 className="mb-2 text-xs font-mono-admin uppercase text-white/40">Evidence Files</h4>
-                  <ul className="space-y-2">
-                    {selectedCase.evidenceFiles.map((f) => (
-                      <li key={f} className="flex items-center gap-2 rounded border border-white/5 p-2 text-xs">
-                        <Lock className="h-3 w-3 text-white/40" />
-                        <span className="font-mono-admin">{f}</span>
-                        <span className="ml-auto text-white/30">AES-256 Encrypted</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="mb-2 text-xs font-mono-admin uppercase text-white/40">Notes</h4>
-                  {selectedCase.notes.map((n, i) => <p key={i} className="mb-1 text-sm text-white/60">{n}</p>)}
-                  <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note..." className="mt-2 border-white/10 bg-black text-white" />
-                  <Button onClick={saveNote} className="mt-2 bg-[#C0392B] hover:bg-[#E74C3C]">Save Note</Button>
-                </div>
-                <div>
-                  <h4 className="mb-2 text-xs font-mono-admin uppercase text-white/40">Status History</h4>
-                  {selectedCase.statusHistory.map((h, i) => (
-                    <p key={i} className="text-xs text-white/50">{h.timestamp.split("T")[0]} — {h.status}</p>
-                  ))}
-                </div>
-              </div>
-            </>
+      <Sheet open={!!activeCase} onOpenChange={() => setSelectedCase(null)}>
+        <SheetContent className="flex h-full w-full flex-col gap-0 border-white/10 bg-[#0A0A0A] p-0 text-white sm:max-w-[480px]">
+          {activeCase && (
+            <CaseProfilePanel
+              caseData={activeCase}
+              onStatusChange={(status) => handleDrop(activeCase.id, status)}
+              onNoteSave={saveNote}
+            />
           )}
         </SheetContent>
       </Sheet>

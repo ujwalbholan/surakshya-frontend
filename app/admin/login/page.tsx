@@ -12,7 +12,7 @@ import { setAdminSession } from "@/lib/auth/admin-session"
 
 export default function AdminLoginPage() {
   const router = useRouter()
-  const leftPanelRef = useRef<HTMLDivElement>(null)
+  const pageRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -24,21 +24,33 @@ export default function AdminLoginPage() {
   const retryRef = useRef(false)
 
   useEffect(() => {
+    const page = pageRef.current
+    const form = formRef.current
+    if (!page) return
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: "power2.out" } })
-      tl.from(".login-logo", { opacity: 0, y: 30, duration: 0.6 })
-        .from(".login-tagline", { opacity: 0, y: 30, duration: 0.6 }, "-=0.52")
-        .from(".login-subtitle", { opacity: 0, y: 30, duration: 0.6 }, "-=0.52")
 
-      gsap.from(".login-field", {
-        opacity: 0,
-        x: 40,
-        duration: 0.3,
-        stagger: 0.06,
-        ease: "power2.out",
-        delay: 0.2,
-      })
-    }, leftPanelRef)
+      const logo = page.querySelector(".login-logo")
+      const tagline = page.querySelector(".login-tagline")
+      const subtitle = page.querySelector(".login-subtitle")
+
+      if (logo) tl.from(logo, { opacity: 0, y: 30, duration: 0.6 })
+      if (tagline) tl.from(tagline, { opacity: 0, y: 30, duration: 0.6 }, logo ? "-=0.52" : 0)
+      if (subtitle) tl.from(subtitle, { opacity: 0, y: 30, duration: 0.6 }, "-=0.52")
+
+      const fields = form?.querySelectorAll(".login-field")
+      if (fields?.length) {
+        gsap.from(fields, {
+          opacity: 0,
+          x: 40,
+          duration: 0.3,
+          stagger: 0.06,
+          ease: "power2.out",
+          delay: 0.2,
+        })
+      }
+    }, page)
 
     return () => ctx.revert()
   }, [])
@@ -111,7 +123,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div ref={pageRef} className="flex min-h-screen">
       <Toaster
         position="top-right"
         toastOptions={{
@@ -121,7 +133,6 @@ export default function AdminLoginPage() {
 
       {/* Left panel */}
       <div
-        ref={leftPanelRef}
         className="relative hidden w-1/2 flex-col items-center justify-center bg-black lg:flex"
       >
         <div className="admin-grain-overlay" />

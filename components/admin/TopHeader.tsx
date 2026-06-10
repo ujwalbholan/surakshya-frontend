@@ -60,7 +60,7 @@ export default function TopHeader() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/dashboard" className="text-white/50 hover:text-white">Admin</Link>
+              <Link href="/admin/dashboard" className="text-white/40 hover:text-white/70">Admin</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           {segments.map((seg, i) => {
@@ -69,13 +69,13 @@ export default function TopHeader() {
             const label = ROUTE_LABELS[seg] ?? seg
             return (
               <span key={seg + i} className="flex items-center gap-1.5">
-                <BreadcrumbSeparator className="text-white/20" />
+                <BreadcrumbSeparator className="text-white/15" />
                 <BreadcrumbItem>
                   {isLast ? (
-                    <BreadcrumbPage className="text-white">{label}</BreadcrumbPage>
+                    <BreadcrumbPage className="text-white/90">{label}</BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink asChild>
-                      <Link href={href} className="text-white/50 hover:text-white">{label}</Link>
+                      <Link href={href} className="text-white/40 hover:text-white/70">{label}</Link>
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
@@ -86,21 +86,21 @@ export default function TopHeader() {
       </Breadcrumb>
 
       <div className="flex items-center gap-3">
-        <button className="text-white/50 transition hover:text-white" aria-label="Search">
+        <button className="text-white/40 transition hover:text-white/70" aria-label="Search">
           <Search className="h-4 w-4" />
         </button>
-        <button className="relative text-white/50 transition hover:text-white" aria-label="Notifications">
+        <button className="relative text-white/40 transition hover:text-white/70" aria-label="Notifications">
           <Bell className="h-4 w-4" />
-          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#C0392B] font-mono-admin text-[8px] text-white">
+          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/10 bg-white/10 font-mono-admin text-[8px] text-white/70">
             3
           </span>
         </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#C0392B]">
+            <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/20">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-[#C0392B]/20 text-xs text-[#C0392B]">
+                <AvatarFallback className="border border-white/10 bg-white/5 text-xs text-white/70">
                   {session ? getInitials(session.full_name) : "SA"}
                 </AvatarFallback>
               </Avatar>
@@ -114,7 +114,7 @@ export default function TopHeader() {
               <Link href="/admin/settings">System Settings</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem onClick={handleSignOut} className="text-[#C0392B] focus:text-[#C0392B]">
+            <DropdownMenuItem onClick={handleSignOut} className="text-white/60 focus:text-white">
               Sign Out
             </DropdownMenuItem>
           </DropdownMenuContent>
