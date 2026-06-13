@@ -39,7 +39,6 @@ const ANIM = {
 
 const MOBILE_BREAKPOINT = 768
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export type WristbandModelRef = {
   group: THREE.Group | null
