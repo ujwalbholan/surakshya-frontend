@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -111,11 +111,9 @@ export default function AdminSessionSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const session = getAdminSession()
-  const [sosCount, setSosCount] = useState<number | null>(null)
-
-  useEffect(() => {
-    setSosCount(MOCK_SOS_ALERTS.filter((a) => a.status === "Active").length)
-  }, [])
+  const [sosCount, setSosCount] = useState(
+    () => MOCK_SOS_ALERTS.filter((a) => a.status === "Active").length
+  )
 
   useInterval(() => {
     setSosCount(MOCK_SOS_ALERTS.filter((a) => a.status === "Active").length)

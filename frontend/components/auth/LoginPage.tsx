@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginUser } from "@/lib/api/auth";
 import { isApiError } from "@/lib/api/client";
@@ -22,11 +22,13 @@ const WristbandModel = dynamic(
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mounted, setMounted] = useState(false);
+  const registered = searchParams.get("registered") === "1";
+  const successMessage = registered
+    ? "Account created. Sign in with your email and password."
+    : null;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -40,25 +42,11 @@ export default function LoginPage() {
   const [googleHovered, setGoogleHovered] = useState(false);
   const [appleHovered, setAppleHovered] = useState(false);
 
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 10);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (searchParams.get("registered") === "1") {
-      setSuccessMessage(
-        "Account created. Sign in with your email and password.",
-      );
-    }
-  }, [searchParams]);
-
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (submitting) return;
 
     setError(null);
-    setSuccessMessage(null);
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
@@ -263,12 +251,8 @@ export default function LoginPage() {
             style={{
               width: "100%",
               maxWidth: 380,
-              opacity: panelFadingOut ? 0 : mounted ? 1 : 0,
-              transform: panelFadingOut
-                ? "translateY(-8px)"
-                : mounted
-                  ? "translateY(0)"
-                  : "translateY(16px)",
+              opacity: panelFadingOut ? 0 : 1,
+              transform: panelFadingOut ? "translateY(-8px)" : "translateY(0)",
               transition:
                 "opacity 0.6s cubic-bezier(.16,1,.3,1), transform 0.6s cubic-bezier(.16,1,.3,1)",
             }}

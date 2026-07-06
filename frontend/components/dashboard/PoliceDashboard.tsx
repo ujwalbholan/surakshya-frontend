@@ -27,24 +27,59 @@ function formatNepalTime(date: Date) {
   })
 }
 
-function formatNepalDate(date: Date) {
-  return date.toLocaleDateString("en-NP", {
-    timeZone: "Asia/Kathmandu",
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })
+function NavButtons({
+  activeView,
+  criticalCount,
+  onNav,
+  onNavigate,
+}: {
+  activeView: DashboardView
+  criticalCount: number
+  onNav: (view: DashboardView) => void
+  onNavigate?: () => void
+}) {
+  return (
+    <>
+      {NAV_ITEMS.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => {
+            onNav(item.id)
+            onNavigate?.()
+          }}
+          className={cn(
+            "mb-1 flex w-full items-center justify-between gap-2 rounded px-3 py-2.5 text-left text-xs uppercase tracking-wider transition-colors",
+            activeView === item.id
+              ? "bg-[#C0392B]/15 text-[#FAFAFA]"
+              : "text-[#666] hover:bg-[#1a1a1a] hover:text-[#FAFAFA]"
+          )}
+        >
+          <span className="flex items-center gap-3">
+            <item.icon className="h-4 w-4 shrink-0" />
+            {item.label}
+          </span>
+          {(item.id === "sos" ? criticalCount : item.badge) !== undefined &&
+            (item.id === "sos" ? criticalCount > 0 : true) && (
+            <span className="font-mono text-[9px] text-[#888]">
+              {item.id === "sos" ? criticalCount : item.badge}
+            </span>
+          )}
+        </button>
+      ))}
+    </>
+  )
 }
 
 export default function PoliceDashboard() {
   const router = useRouter()
-  const [email, setEmail] = useState<string | null>(null)
-  const [nepalTime, setNepalTime] = useState("")
-  const [nepalDate, setNepalDate] = useState("")
+  const [email] = useState(() => getStoredEmail())
+  const [nepalTime, setNepalTime] = useState(() => formatNepalTime(new Date()))
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeView, setActiveView] = useState<DashboardView>("dashboard")
-  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null)
+  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(
+    () => sosAlerts.find((a) => a.status === "critical")?.id ?? null
+  )
   const [showIncomingModal, setShowIncomingModal] = useState(false)
 
   const defaultCritical = sosAlerts.find((a) => a.status === "critical")
@@ -60,26 +95,15 @@ export default function PoliceDashboard() {
   const viewMeta = VIEW_TITLES[activeView]
 
   useEffect(() => {
-    if (!selectedAlertId && defaultCritical) {
-      setSelectedAlertId(defaultCritical.id)
-    }
-  }, [defaultCritical, selectedAlertId])
-
-  useEffect(() => {
     if (!defaultCritical || activeView !== "dashboard") return
     const timer = setTimeout(() => setShowIncomingModal(true), 1200)
     return () => clearTimeout(timer)
   }, [defaultCritical, activeView])
 
   useEffect(() => {
-    setEmail(getStoredEmail())
-    const tick = () => {
-      const now = new Date()
-      setNepalTime(formatNepalTime(now))
-      setNepalDate(formatNepalDate(now))
-    }
-    tick()
-    const id = setInterval(tick, 1000)
+    const id = setInterval(() => {
+      setNepalTime(formatNepalTime(new Date()))
+    }, 1000)
     return () => clearInterval(id)
   }, [])
 
@@ -133,38 +157,6 @@ export default function PoliceDashboard() {
     }
   }
 
-  const NavButtons = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <>
-      {NAV_ITEMS.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => {
-            handleNav(item.id)
-            onNavigate?.()
-          }}
-          className={cn(
-            "mb-1 flex w-full items-center justify-between gap-2 rounded px-3 py-2.5 text-left text-xs uppercase tracking-wider transition-colors",
-            activeView === item.id
-              ? "bg-[#C0392B]/15 text-[#FAFAFA]"
-              : "text-[#666] hover:bg-[#1a1a1a] hover:text-[#FAFAFA]"
-          )}
-        >
-          <span className="flex items-center gap-3">
-            <item.icon className="h-4 w-4 shrink-0" />
-            {item.label}
-          </span>
-          {(item.id === "sos" ? criticalCount : item.badge) !== undefined &&
-            (item.id === "sos" ? criticalCount > 0 : true) && (
-            <span className="font-mono text-[9px] text-[#888]">
-              {item.id === "sos" ? criticalCount : item.badge}
-            </span>
-          )}
-        </button>
-      ))}
-    </>
-  )
-
   return (
     <div className="flex min-h-screen bg-[#080808] text-[#FAFAFA]">
       {showIncomingModal && defaultCritical && activeView === "dashboard" && (
@@ -186,7 +178,11 @@ export default function PoliceDashboard() {
           <p className="mt-0.5 text-[10px] text-[#555]">सुरक्षा नेटवर्क</p>
         </div>
         <nav className="flex-1 overflow-y-auto p-3">
-          <NavButtons />
+          <NavButtons
+            activeView={activeView}
+            criticalCount={criticalCount}
+            onNav={handleNav}
+          />
         </nav>
         <div className="border-t border-[#222] p-4">
           <div className="flex items-center gap-2 text-[10px] text-emerald-500">
@@ -265,7 +261,12 @@ export default function PoliceDashboard() {
                 </p>
               </div>
               <nav className="flex-1 overflow-y-auto p-3">
-                <NavButtons onNavigate={() => setSidebarOpen(false)} />
+                <NavButtons
+                  activeView={activeView}
+                  criticalCount={criticalCount}
+                  onNav={handleNav}
+                  onNavigate={() => setSidebarOpen(false)}
+                />
               </nav>
             </aside>
           </div>

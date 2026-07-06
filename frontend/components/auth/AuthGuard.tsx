@@ -1,21 +1,20 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { getAccessToken } from "@/lib/auth/session"
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const [authorized, setAuthorized] = useState(false)
+  const authorized = Boolean(getAccessToken())
 
   useEffect(() => {
-    if (!getAccessToken()) {
+    if (!authorized) {
       router.replace("/login")
       return
     }
     document.body.style.overflow = "auto"
-    setAuthorized(true)
-  }, [router])
+  }, [router, authorized])
 
   if (!authorized) {
     return (

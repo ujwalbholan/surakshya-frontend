@@ -36,7 +36,12 @@ export interface SectionIndicatorRefs {
 
 const SectionIndicator = forwardRef<SectionIndicatorRefs, object>(
   function SectionIndicator(_, ref) {
-    const sectionRefs = sections.map(() => useRef<HTMLDivElement>(null))
+    const sectionRef0 = useRef<HTMLDivElement>(null)
+    const sectionRef1 = useRef<HTMLDivElement>(null)
+    const sectionRef2 = useRef<HTMLDivElement>(null)
+    const sectionRef3 = useRef<HTMLDivElement>(null)
+    const sectionRef4 = useRef<HTMLDivElement>(null)
+    const sectionRefs = [sectionRef0, sectionRef1, sectionRef2, sectionRef3, sectionRef4]
 
     useImperativeHandle(ref, () => ({
       sectionRefs,

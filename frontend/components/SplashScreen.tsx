@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useSyncExternalStore } from "react"
 import { usePathname } from "next/navigation"
 
 /**
@@ -41,28 +41,36 @@ const OVERLAY_FADE_DURATION_MS = 600
 
 const SKIP_SPLASH_PREFIXES = ["/dashboard", "/login", "/signup", "/admin"]
 
+function subscribeToReducedMotion(callback: () => void) {
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
+  mq.addEventListener("change", callback)
+  return () => mq.removeEventListener("change", callback)
+}
+
+function getReducedMotionSnapshot() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
+
+function usePrefersReducedMotion() {
+  return useSyncExternalStore(subscribeToReducedMotion, getReducedMotionSnapshot, () => false)
+}
+
 export default function SplashScreen() {
   const pathname = usePathname()
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const skipForRoute = SKIP_SPLASH_PREFIXES.some((p) => pathname?.startsWith(p))
+  const shouldSkip = skipForRoute || prefersReducedMotion
+
   const [progress, setProgress] = useState(0)
   const [barHidden, setBarHidden] = useState(false)
   const [overlayHidden, setOverlayHidden] = useState(false)
-  const [shouldRender, setShouldRender] = useState(true)
+  const [animationComplete, setAnimationComplete] = useState(false)
   const rafIdRef = useRef<number | null>(null)
   const phaseRef = useRef<"progress" | "hold" | "barFade" | "overlayFade">("progress")
 
   useEffect(() => {
-    const skipForRoute = SKIP_SPLASH_PREFIXES.some((p) => pathname?.startsWith(p))
-    if (skipForRoute) {
+    if (shouldSkip) {
       document.body.style.overflow = "auto"
-      setShouldRender(false)
-      return
-    }
-
-    // Respect prefers-reduced-motion: skip animation and remove immediately
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (prefersReducedMotion) {
-      document.body.style.overflow = "auto"
-      setShouldRender(false)
       return
     }
 
@@ -106,7 +114,7 @@ export default function SplashScreen() {
           rafIdRef.current = requestAnimationFrame(tick)
         } else {
           document.body.style.overflow = "auto"
-          setShouldRender(false)
+          setAnimationComplete(true)
         }
       }
     }
@@ -119,9 +127,9 @@ export default function SplashScreen() {
       }
       document.body.style.overflow = "auto"
     }
-  }, [pathname])
+  }, [shouldSkip])
 
-  if (!shouldRender) return null
+  if (shouldSkip || animationComplete) return null
 
   return (
     <div

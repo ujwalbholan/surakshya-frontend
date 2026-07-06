@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { LogOut, ChevronDown, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import SurakshaShieldLogo from "@/components/admin/SurakshaShieldLogo"
@@ -23,14 +23,12 @@ function MobileNavContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const session = getAdminSession()
-  const [sosCount, setSosCount] = useState<number | null>(null)
+  const [sosCount, setSosCount] = useState(
+    () => MOCK_SOS_ALERTS.filter((a) => a.status === "Active").length
+  )
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
     Object.fromEntries(ADMIN_NAV_GROUPS.map((g) => [g.title, true]))
   )
-
-  useEffect(() => {
-    setSosCount(MOCK_SOS_ALERTS.filter((a) => a.status === "Active").length)
-  }, [])
 
   useInterval(() => {
     setSosCount(MOCK_SOS_ALERTS.filter((a) => a.status === "Active").length)

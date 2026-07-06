@@ -61,20 +61,22 @@ function TabTooltip({ tab }: { tab: typeof tabs[0] }) {
       >
         {tab.label}
       </button>
-      {isOpen && (
-        <FloatingPortal>
-          <div
-            ref={refs.setFloating}
-            style={floatingStyles}
-            {...getFloatingProps()}
-            className="z-50 max-w-xs px-5 py-4 border border-[#222222] bg-[#111111]/95 backdrop-blur-md shadow-2xl"
-          >
-            <p className="text-sm text-[#FAFAFA]/80 leading-relaxed">
-              {tab.description}
-            </p>
-          </div>
-        </FloatingPortal>
-      )}
+      <FloatingPortal>
+        <div
+          ref={refs.setFloating}
+          style={{
+            ...floatingStyles,
+            visibility: isOpen ? "visible" : "hidden",
+            pointerEvents: isOpen ? "auto" : "none",
+          }}
+          {...getFloatingProps()}
+          className="z-50 max-w-xs px-5 py-4 border border-[#222222] bg-[#111111]/95 backdrop-blur-md shadow-2xl"
+        >
+          <p className="text-sm text-[#FAFAFA]/80 leading-relaxed">
+            {tab.description}
+          </p>
+        </div>
+      </FloatingPortal>
     </>
   )
 }

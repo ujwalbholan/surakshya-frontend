@@ -22,21 +22,15 @@ export default function StatCard({
   animate = true,
   pulse = false,
 }: StatCardProps) {
-  const [displayValue, setDisplayValue] = useState<string | number>(animate ? 0 : value)
+  const canAnimate =
+    animate && !loading && /^([\d.]+)(.*)$/.test(String(value))
+  const [displayValue, setDisplayValue] = useState<string | number>(canAnimate ? 0 : value)
   const animated = useRef(false)
 
   useEffect(() => {
-    if (!animate || animated.current || loading) {
-      setDisplayValue(value)
-      return
-    }
+    if (!canAnimate || animated.current) return
 
-    const numMatch = String(value).match(/^([\d.]+)(.*)$/)
-    if (!numMatch) {
-      setDisplayValue(value)
-      return
-    }
-
+    const numMatch = String(value).match(/^([\d.]+)(.*)$/)!
     const target = parseFloat(numMatch[1])
     const suffix = numMatch[2] || ""
     const isFloat = numMatch[1].includes(".")
@@ -53,7 +47,7 @@ export default function StatCard({
     }
 
     requestAnimationFrame(tick)
-  }, [value, animate, loading])
+  }, [value, canAnimate])
 
   if (loading) {
     return (
@@ -63,6 +57,8 @@ export default function StatCard({
       </div>
     )
   }
+
+  const shown = canAnimate && !animated.current ? displayValue : value
 
   return (
     <div className="admin-card">
@@ -76,7 +72,7 @@ export default function StatCard({
         </div>
       </div>
       <p className={cn("mt-2 text-2xl font-medium tracking-tight text-white")}>
-        {displayValue}
+        {shown}
       </p>
     </div>
   )
