@@ -22,6 +22,9 @@ frontend/out/
 # production
 frontend/build
 
+# separate mobile app repo (not tracked here)
+suraksha-app/
+
 # misc
 .DS_Store
 *.pem

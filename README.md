@@ -1,17 +1,17 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Surakshya
 
-The application lives in [`frontend/`](frontend/).
+Monorepo for the Surakshya platform web console and marketing site.
+
+## Repository layout
+
+| Path | Description |
+|---|---|
+| [`frontend/`](frontend/) | Next.js web app — marketing pages, Nepal Police command centre (`/dashboard`), and platform admin console (`/admin`) |
+| [`suraksha-app/`](suraksha-app/) | Flutter mobile app — **separate git history and remote**; not tracked in this repository (clone/maintain independently) |
 
 ## Getting Started
 
-First, install dependencies and run the development server:
-
-```bash
-cd frontend && npm install
-npm run dev
-```
-
-Or from the repo root:
+Install dependencies from the repo root (npm workspaces):
 
 ```bash
 npm install
@@ -22,21 +22,17 @@ Open [http://localhost:3002](http://localhost:3002) with your browser to see the
 
 You can start editing the page by modifying `frontend/app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Scripts (from repo root)
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | Description |
+|---|---|
+| `npm run dev` | Start Next.js dev server on port 3002 |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
 
 ## Deploy on Vercel
 
-The easiest way to deploy this Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
 Set the **Root Directory** to `frontend` in your Vercel project settings.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
