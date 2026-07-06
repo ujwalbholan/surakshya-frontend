@@ -499,6 +499,16 @@ DB_HOST=127.0.0.1 DB_PORT=5432 DB_USERNAME=postgres DB_PASSWORD=postgres DB_NAME
 
 ---
 
+## API Versioning
+
+The API uses NestJS URI versioning with **version-neutral v1** as the default. All existing routes remain available at their original paths (e.g. `/auth/login`, `/health`) for backward compatibility with the published Flutter app and web clients.
+
+- **Current contract (v1):** unversioned paths and `/v1/...` aliases resolve to the same handlers.
+- **Breaking changes:** must ship as a new version (e.g. `/v2/auth/login`) — never mutate response shapes or auth flows on existing v1 routes.
+- **New clients:** may adopt explicit `/v1/...` prefixes; mobile app currently calls `/auth/login` per `suraksha-app/lib/services/ams_api_service.dart`.
+
+---
+
 ## API Reference
 
 Swagger UI is available at **`/api/docs`** when the server is running.
