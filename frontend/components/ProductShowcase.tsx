@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import * as THREE from "three"
 import { useFloating, offset, flip, shift, useHover, useInteractions, useDismiss, FloatingPortal } from "@floating-ui/react"
 import Crosshairs from "@/components/Crosshairs"
@@ -47,11 +47,23 @@ function TabTooltip({ tab }: { tab: typeof tabs[0] }) {
   const hover = useHover(context, { move: false, delay: { open: 100, close: 100 } })
   const dismiss = useDismiss(context)
   const { getReferenceProps, getFloatingProps } = useInteractions([hover, dismiss])
+  const setReferenceRef = useCallback(
+    (node: HTMLButtonElement | null) => {
+      refs.setReference(node)
+    },
+    [refs]
+  )
+  const setFloatingRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      refs.setFloating(node)
+    },
+    [refs]
+  )
 
   return (
     <>
       <button
-        ref={refs.setReference}
+        ref={setReferenceRef}
         {...getReferenceProps()}
         className={`px-4 py-3 lg:px-6 lg:py-4 text-xs lg:text-sm tracking-[0.15em] uppercase transition-all duration-300 border-b-2 ${
           isOpen
@@ -63,7 +75,7 @@ function TabTooltip({ tab }: { tab: typeof tabs[0] }) {
       </button>
       <FloatingPortal>
         <div
-          ref={refs.setFloating}
+          ref={setFloatingRef}
           style={{
             ...floatingStyles,
             visibility: isOpen ? "visible" : "hidden",

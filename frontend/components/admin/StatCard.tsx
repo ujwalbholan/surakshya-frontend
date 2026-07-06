@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { LucideIcon } from "lucide-react"
@@ -25,10 +25,9 @@ export default function StatCard({
   const canAnimate =
     animate && !loading && /^([\d.]+)(.*)$/.test(String(value))
   const [displayValue, setDisplayValue] = useState<string | number>(canAnimate ? 0 : value)
-  const animated = useRef(false)
 
   useEffect(() => {
-    if (!canAnimate || animated.current) return
+    if (!canAnimate) return
 
     const numMatch = String(value).match(/^([\d.]+)(.*)$/)!
     const target = parseFloat(numMatch[1])
@@ -43,7 +42,6 @@ export default function StatCard({
       const current = target * eased
       setDisplayValue(isFloat ? current.toFixed(1) + suffix : Math.round(current) + suffix)
       if (progress < 1) requestAnimationFrame(tick)
-      else animated.current = true
     }
 
     requestAnimationFrame(tick)
@@ -58,7 +56,7 @@ export default function StatCard({
     )
   }
 
-  const shown = canAnimate && !animated.current ? displayValue : value
+  const shown = canAnimate ? displayValue : value
 
   return (
     <div className="admin-card">

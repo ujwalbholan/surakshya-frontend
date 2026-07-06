@@ -17,7 +17,6 @@
  */
 
 import React, { useRef, useEffect, useState } from "react"
-import { useGSAP } from "@gsap/react"
 import gsap from "gsap"
 import { sections, type Section } from "./SectionIndicator"
 
@@ -87,7 +86,7 @@ interface PanelProps {
   isWelcome: boolean
 }
 
-function Panel({ section, index, isActive, isWelcome }: PanelProps) {
+function Panel({ section, isActive, isWelcome }: PanelProps) {
   const panelRef      = useRef<HTMLDivElement>(null)
   const timelineRef   = useRef<gsap.core.Timeline | null>(null)
   const content       = PANELS[section.label]
