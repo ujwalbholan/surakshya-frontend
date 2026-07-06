@@ -89,7 +89,9 @@ export class LocationAccessAuditInterceptor implements NestInterceptor {
 
     if (metadata.deviceIdParam) {
       const rawDeviceId = request.params[metadata.deviceIdParam];
-      const deviceId = Array.isArray(rawDeviceId) ? rawDeviceId[0] : rawDeviceId;
+      const deviceId = Array.isArray(rawDeviceId)
+        ? rawDeviceId[0]
+        : rawDeviceId;
       const responseBody = body as
         | {
             device?: { id?: string; user?: { id?: string } };

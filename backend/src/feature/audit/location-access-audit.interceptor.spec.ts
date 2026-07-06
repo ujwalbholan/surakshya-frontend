@@ -4,12 +4,13 @@ import { of, lastValueFrom } from 'rxjs';
 import { Repository } from 'typeorm';
 import { LocationAccessAuditInterceptor } from './location-access-audit.interceptor';
 import { LocationAccessLog } from './entities/location-access-log.entity';
-import { LOG_LOCATION_ACCESS_KEY } from './decorators/log-location-access.decorator';
 
 describe('LocationAccessAuditInterceptor', () => {
   let interceptor: LocationAccessAuditInterceptor;
   let reflector: jest.Mocked<Reflector>;
-  let accessLogRepo: jest.Mocked<Pick<Repository<LocationAccessLog>, 'save' | 'create'>>;
+  let accessLogRepo: jest.Mocked<
+    Pick<Repository<LocationAccessLog>, 'save' | 'create'>
+  >;
 
   beforeEach(() => {
     reflector = {

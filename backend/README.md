@@ -371,9 +371,18 @@ User device                Backend                    Guardians / Police
 
 | Variable | Description | Default |
 |---|---|---|
+| `NODE_ENV` | Runtime environment (`development`, `test`, `production`) | `development` |
 | `PORT` | HTTP server port | `3000` |
 | `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:3000` |
-| `NODE_ENV` | Environment mode | — |
+
+### Serial bridge (development hardware)
+
+| Variable | Description | Default |
+|---|---|---|
+| `SERIAL_PORT` | USB serial device path | `/dev/cu.usbserial-0001` |
+| `SERIAL_DEVICE_ID` | Device IMEI/topic id for MQTT publish | `wearable-001` |
+
+Run with `pnpm serial-bridge` (uses `MQTT_BROKER_URL` from the MQTT section above).
 
 ---
 
