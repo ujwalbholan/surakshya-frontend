@@ -23,6 +23,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered") === "1";
+  const nextPath = searchParams.get("next");
   const successMessage = registered
     ? "Account created. Sign in with your email and password."
     : null;
@@ -60,8 +61,10 @@ export default function LoginPage() {
       saveAuthSession(data.email, data.token);
       setPanelFadingOut(true);
       setFlashVisible(true);
+      const destination =
+        nextPath?.startsWith("/dashboard") ? nextPath : "/dashboard";
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(destination);
       }, 520);
     } catch (err) {
       if (isApiError(err)) {

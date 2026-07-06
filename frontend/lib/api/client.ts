@@ -41,6 +41,7 @@ export async function apiRequest<T>(
   let response: Response
   try {
     response = await fetch(url, {
+      credentials: "include",
       ...options,
       headers: {
         "Content-Type": "application/json",

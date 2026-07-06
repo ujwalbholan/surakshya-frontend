@@ -12,6 +12,7 @@ import SettingsView from "@/components/dashboard/views/SettingsView"
 import SosAlertsView from "@/components/dashboard/views/SosAlertsView"
 import UnitsView from "@/components/dashboard/views/UnitsView"
 import { Badge } from "@/components/ui/badge"
+import { logoutUser } from "@/lib/api/auth"
 import { clearAuthSession, getStoredEmail } from "@/lib/auth/session"
 import { NAV_ITEMS, VIEW_TITLES, type DashboardView } from "@/lib/dashboard/nav"
 import { sosAlerts } from "@/lib/dashboard/mock-data"
@@ -121,7 +122,8 @@ export default function PoliceDashboard() {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutUser()
     clearAuthSession()
     router.push("/login")
   }
