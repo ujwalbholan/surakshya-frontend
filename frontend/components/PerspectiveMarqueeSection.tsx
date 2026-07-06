@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Player } from "@remotion/player"
-import { PerspectiveMarquee } from "@/components/ui/remocn-perspective-marquee"
+import { PerspectiveMarquee } from "@/components/ui/remotion-perspective-marquee"
 
 function usePrefersDark() {
   const [isDark, setIsDark] = React.useState(false)
