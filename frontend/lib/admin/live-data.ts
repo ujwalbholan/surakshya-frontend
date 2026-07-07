@@ -1,4 +1,4 @@
-import type { MockSosAlert, SosPriority } from "@/lib/admin/mock-data"
+import type { AdminSosAlert, SosPriority } from "@/lib/admin/sos-types"
 
 export const NEPAL_MAP_CENTER = {
   lat: 28.3949,
@@ -12,11 +12,11 @@ export const DARK_MAP_TILES =
 export const DARK_MAP_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
-export function getLiveMapAlerts(alerts: MockSosAlert[]) {
+export function getLiveMapAlerts(alerts: AdminSosAlert[]) {
   return alerts.filter((alert) => alert.status !== "Resolved")
 }
 
-export function getActiveFeedAlerts(alerts: MockSosAlert[]) {
+export function getActiveFeedAlerts(alerts: AdminSosAlert[]) {
   return alerts.filter((alert) => alert.status === "Active")
 }
 
@@ -33,7 +33,7 @@ export function priorityMarkerColor(priority: SosPriority) {
   }
 }
 
-export function getLiveSummary(alerts: MockSosAlert[]) {
+export function getLiveSummary(alerts: AdminSosAlert[]) {
   const live = getLiveMapAlerts(alerts)
   return {
     active: alerts.filter((a) => a.status === "Active").length,

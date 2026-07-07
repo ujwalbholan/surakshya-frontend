@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -26,7 +26,8 @@ import { Separator } from "@/components/ui/separator"
 import SurakshaShieldLogo from "@/components/admin/SurakshaShieldLogo"
 import { getAdminSession, clearAdminSession } from "@/lib/auth/admin-session"
 import { adminLogout } from "@/lib/api/admin-auth"
-import { MOCK_SOS_ALERTS, getInitials } from "@/lib/admin/mock-data"
+import { getInitials } from "@/lib/admin/mock-data"
+import { fetchActiveSosCount } from "@/lib/api/admin-live"
 import { ADMIN_NAV_GROUPS, isAdminNavActive } from "@/lib/admin/nav-config"
 import { useInterval } from "@/hooks/use-interval"
 
@@ -111,13 +112,15 @@ export default function AdminSessionSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const session = getAdminSession()
-  const [sosCount, setSosCount] = useState(
-    () => MOCK_SOS_ALERTS.filter((a) => a.status === "Active").length
-  )
+  const [sosCount, setSosCount] = useState(0)
 
   useInterval(() => {
-    setSosCount(MOCK_SOS_ALERTS.filter((a) => a.status === "Active").length)
+    void fetchActiveSosCount().then(({ count }) => setSosCount(count))
   }, 30000)
+
+  useEffect(() => {
+    void fetchActiveSosCount().then(({ count }) => setSosCount(count))
+  }, [])
 
   const handleLogout = async () => {
     await adminLogout()

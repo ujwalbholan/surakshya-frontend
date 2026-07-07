@@ -1,7 +1,7 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
-import { CheckCircle2, Navigation, RefreshCw, Search, Siren } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { AlertTriangle, CheckCircle2, Loader2, Navigation, RefreshCw, Search, Siren } from "lucide-react"
 import toast from "react-hot-toast"
 import PageTransition from "@/components/admin/PageTransition"
 import StatCard from "@/components/admin/StatCard"
@@ -15,7 +15,9 @@ import {
   sortSosAlerts,
   type SosStatusFilter,
 } from "@/lib/admin/sos-data"
-import { MOCK_SOS_ALERTS, type MockSosAlert } from "@/lib/admin/mock-data"
+import { loadAdminSosAlerts } from "@/lib/admin/sos-mappers"
+import { resolveAdminSosEvent } from "@/lib/api/admin-sos"
+import type { AdminSosAlert } from "@/lib/admin/sos-types"
 
 const STATUS_FILTERS: { value: SosStatusFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -25,30 +27,48 @@ const STATUS_FILTERS: { value: SosStatusFilter; label: string }[] = [
 ]
 
 export default function SosAlertCentre() {
-  const [alerts, setAlerts] = useState<MockSosAlert[]>(MOCK_SOS_ALERTS)
-  const [selectedId, setSelectedId] = useState<string | null>(MOCK_SOS_ALERTS[0]?.id ?? null)
+  const [alerts, setAlerts] = useState<AdminSosAlert[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<SosStatusFilter>("all")
   const [lastRefresh, setLastRefresh] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [flashIds, setFlashIds] = useState<Set<string>>(new Set())
   const [visibleCount, setVisibleCount] = useState(7)
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setLoading(true)
     setIsRefreshing(true)
-    setAlerts([...MOCK_SOS_ALERTS])
-    setLastRefresh(0)
-    setFlashIds(new Set([MOCK_SOS_ALERTS[0]?.id].filter(Boolean) as string[]))
-    window.setTimeout(() => {
+    try {
+      const nextAlerts = await loadAdminSosAlerts()
+      setAlerts(nextAlerts)
+      setError(null)
+      setLastRefresh(0)
+      setSelectedId((current) => {
+        if (current && nextAlerts.some((alert) => alert.id === current)) return current
+        return nextAlerts[0]?.id ?? null
+      })
+      setFlashIds(new Set(nextAlerts[0]?.id ? [nextAlerts[0].id] : []))
+      window.setTimeout(() => setFlashIds(new Set()), 800)
+    } catch {
+      setError("Failed to load SOS alerts")
+      setAlerts([])
+    } finally {
+      setLoading(false)
       setIsRefreshing(false)
-      setFlashIds(new Set())
-    }, 800)
+    }
   }, [])
+
+  useEffect(() => {
+    void refresh(true)
+  }, [refresh])
 
   useInterval(() => {
     setLastRefresh((seconds) => {
       const next = seconds + 1
-      if (next > 0 && next % 30 === 0) refresh()
+      if (next > 0 && next % 30 === 0) void refresh()
       return next
     })
   }, 1000)
@@ -67,7 +87,13 @@ export default function SosAlertCentre() {
     [alerts, selectedId, filtered]
   )
 
-  const handleResolve = (id: string) => {
+  const handleResolve = async (id: string) => {
+    const result = await resolveAdminSosEvent(id)
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+
     setAlerts((prev) =>
       prev.map((a) =>
         a.id === id
@@ -76,7 +102,14 @@ export default function SosAlertCentre() {
               status: "Resolved" as const,
               timeline: [
                 ...a.timeline,
-                { time: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }), description: "Marked resolved by operator" },
+                {
+                  time: new Date().toLocaleTimeString("en-GB", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  }),
+                  description: "Marked resolved by operator",
+                },
               ],
             }
           : a
@@ -94,7 +127,14 @@ export default function SosAlertCentre() {
               priority: "CRITICAL" as const,
               timeline: [
                 ...a.timeline,
-                { time: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }), description: "Escalated to Nepal Police priority" },
+                {
+                  time: new Date().toLocaleTimeString("en-GB", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  }),
+                  description: "Escalated to Nepal Police priority",
+                },
               ],
             }
           : a
@@ -125,7 +165,7 @@ export default function SosAlertCentre() {
           <span className="font-mono-admin text-xs">Last refreshed: {lastRefresh}s ago</span>
           <button
             type="button"
-            onClick={refresh}
+            onClick={() => void refresh()}
             className="admin-btn-ghost inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
           >
             <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
@@ -134,11 +174,18 @@ export default function SosAlertCentre() {
         </div>
       </div>
 
+      {error && (
+        <div className="mb-6 flex items-center gap-2 rounded-lg border border-[#C0392B]/30 bg-[#C0392B]/10 px-4 py-3 text-sm text-[#E74C3C]">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
       <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Active Alerts" value={summary.active} icon={Siren} animate={false} pulse={summary.active > 0} />
-        <StatCard label="Dispatched" value={summary.dispatched} icon={Navigation} animate={false} />
-        <StatCard label="Resolved Today" value={summary.resolved} icon={CheckCircle2} animate={false} />
-        <StatCard label="Critical Open" value={summary.critical} icon={Siren} animate={false} pulse={summary.critical > 0} />
+        <StatCard label="Active Alerts" value={summary.active} icon={Siren} animate={false} pulse={summary.active > 0} loading={loading} />
+        <StatCard label="Dispatched" value={summary.dispatched} icon={Navigation} animate={false} loading={loading} />
+        <StatCard label="Resolved Today" value={summary.resolved} icon={CheckCircle2} animate={false} loading={loading} />
+        <StatCard label="Critical Open" value={summary.critical} icon={Siren} animate={false} pulse={summary.critical > 0} loading={loading} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(300px,38%)_1fr]">
@@ -182,14 +229,20 @@ export default function SosAlertCentre() {
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-            <SosAlertQueue
-              alerts={visibleAlerts}
-              selectedId={selected?.id ?? null}
-              onSelect={(alert) => setSelectedId(alert.id)}
-              onLoadMore={() => setVisibleCount((count) => count + 5)}
-              hasMore={hasMore}
-              flashIds={flashIds}
-            />
+            {loading ? (
+              <div className="flex min-h-[280px] items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#0A0A0A]">
+                <Loader2 className="h-6 w-6 animate-spin text-white/20" />
+              </div>
+            ) : (
+              <SosAlertQueue
+                alerts={visibleAlerts}
+                selectedId={selected?.id ?? null}
+                onSelect={(alert) => setSelectedId(alert.id)}
+                onLoadMore={() => setVisibleCount((count) => count + 5)}
+                hasMore={hasMore}
+                flashIds={flashIds}
+              />
+            )}
           </div>
         </aside>
 

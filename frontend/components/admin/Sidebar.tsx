@@ -2,14 +2,14 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { LogOut, ChevronDown, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import SurakshaShieldLogo from "@/components/admin/SurakshaShieldLogo"
 import AdminSessionSidebar from "@/components/admin/AdminSessionSidebar"
 import { getAdminSession, clearAdminSession } from "@/lib/auth/admin-session"
 import { adminLogout } from "@/lib/api/admin-auth"
-import { MOCK_SOS_ALERTS } from "@/lib/admin/mock-data"
+import { fetchActiveSosCount } from "@/lib/api/admin-live"
 import { ADMIN_NAV_GROUPS, isAdminNavActive } from "@/lib/admin/nav-config"
 import { useInterval } from "@/hooks/use-interval"
 import {
@@ -23,15 +23,17 @@ function MobileNavContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const session = getAdminSession()
-  const [sosCount, setSosCount] = useState(
-    () => MOCK_SOS_ALERTS.filter((a) => a.status === "Active").length
-  )
+  const [sosCount, setSosCount] = useState(0)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
     Object.fromEntries(ADMIN_NAV_GROUPS.map((g) => [g.title, true]))
   )
 
+  useEffect(() => {
+    void fetchActiveSosCount().then(({ count }) => setSosCount(count))
+  }, [])
+
   useInterval(() => {
-    setSosCount(MOCK_SOS_ALERTS.filter((a) => a.status === "Active").length)
+    void fetchActiveSosCount().then(({ count }) => setSosCount(count))
   }, 30000)
 
   const handleLogout = async () => {

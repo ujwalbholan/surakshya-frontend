@@ -1,4 +1,4 @@
-import type { MockSosAlert, SosPriority, SosStatus } from "@/lib/admin/mock-data"
+import type { AdminSosAlert, SosPriority, SosStatus } from "@/lib/admin/sos-types"
 
 const PRIORITY_ORDER: Record<SosPriority, number> = {
   CRITICAL: 0,
@@ -15,7 +15,7 @@ const STATUS_ORDER: Record<SosStatus, number> = {
 
 export type SosStatusFilter = SosStatus | "all"
 
-export function sortSosAlerts(alerts: MockSosAlert[]): MockSosAlert[] {
+export function sortSosAlerts(alerts: AdminSosAlert[]): AdminSosAlert[] {
   return [...alerts].sort((a, b) => {
     const statusDiff = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
     if (statusDiff !== 0) return statusDiff
@@ -24,10 +24,10 @@ export function sortSosAlerts(alerts: MockSosAlert[]): MockSosAlert[] {
 }
 
 export function filterSosAlerts(
-  alerts: MockSosAlert[],
+  alerts: AdminSosAlert[],
   search: string,
   status: SosStatusFilter
-): MockSosAlert[] {
+): AdminSosAlert[] {
   const q = search.toLowerCase().trim()
   return alerts.filter((alert) => {
     const matchSearch =
@@ -41,7 +41,7 @@ export function filterSosAlerts(
   })
 }
 
-export function getSosSummary(alerts: MockSosAlert[]) {
+export function getSosSummary(alerts: AdminSosAlert[]) {
   return {
     active: alerts.filter((a) => a.status === "Active").length,
     dispatched: alerts.filter((a) => a.status === "Dispatched").length,

@@ -16,7 +16,8 @@ import {
 import { PriorityBadge, StatusBadge } from "@/components/admin/Badges"
 import { cn } from "@/lib/utils"
 import { mapsUrl } from "@/lib/admin/sos-data"
-import { getInitials, MOCK_CASES, type MockSosAlert } from "@/lib/admin/mock-data"
+import { getInitials, MOCK_CASES } from "@/lib/admin/mock-data"
+import type { AdminSosAlert } from "@/lib/admin/sos-types"
 
 function SectionHeading({ children }: { children: ReactNode }) {
   return (
@@ -27,7 +28,7 @@ function SectionHeading({ children }: { children: ReactNode }) {
 }
 
 interface SosDetailPanelProps {
-  alert: MockSosAlert | null
+  alert: AdminSosAlert | null
   onResolve?: (id: string) => void
   onEscalate?: (id: string) => void
 }

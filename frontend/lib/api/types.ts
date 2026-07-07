@@ -212,3 +212,67 @@ export interface PoliceDeviceLocationResponse {
     recordedAt: string
   } | null
 }
+
+export interface LiveEmergencyUser {
+  id: string
+  fullName: string
+  phone: string
+}
+
+export interface LiveEmergencyLastLocation {
+  latitude: number
+  longitude: number
+  recordedAt: string
+}
+
+export interface LiveEmergencyEvent {
+  id: string
+  deviceId: string
+  userId: string | null
+  imei: string
+  label: string | null
+  eventType: string | null
+  status: string
+  latitude: number | null
+  longitude: number | null
+  altitudeM: number | null
+  triggerNotes: string | null
+  assignedStationId: string | null
+  assignedStationName: string | null
+  startedAt: string
+  resolvedAt: string | null
+  user: LiveEmergencyUser | null
+  lastLocation: LiveEmergencyLastLocation | null
+}
+
+export interface EmergencyLiveResponse {
+  data: LiveEmergencyEvent[]
+  total: number
+}
+
+export interface AdminSosEventDevice {
+  id: string
+  imei: string
+  label: string | null
+}
+
+export interface AdminSosEventRecord {
+  id: string
+  status: "active" | "resolved"
+  eventType?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  triggerNotes?: string | null
+  notes?: string | null
+  startedAt: string
+  resolvedAt?: string | null
+  device: AdminSosEventDevice
+}
+
+export interface AdminSosEventsResponse {
+  data: AdminSosEventRecord[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}

@@ -23,15 +23,15 @@ import {
   NEPAL_MAP_CENTER,
   priorityMarkerColor,
 } from "@/lib/admin/live-data"
-import type { MockSosAlert } from "@/lib/admin/mock-data"
+import type { AdminSosAlert } from "@/lib/admin/sos-types"
 
 interface LiveCommandMapProps {
-  alerts: MockSosAlert[]
+  alerts: AdminSosAlert[]
   selectedId: string | null
   onSelect: (id: string) => void
 }
 
-function FitBounds({ alerts }: { alerts: MockSosAlert[] }) {
+function FitBounds({ alerts }: { alerts: AdminSosAlert[] }) {
   const map = useMap()
 
   useEffect(() => {
@@ -54,7 +54,7 @@ function FlyToSelected({
   alerts,
   selectedId,
 }: {
-  alerts: MockSosAlert[]
+  alerts: AdminSosAlert[]
   selectedId: string | null
 }) {
   const map = useMap()

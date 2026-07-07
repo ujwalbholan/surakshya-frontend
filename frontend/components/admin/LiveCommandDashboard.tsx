@@ -1,9 +1,9 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
-import { Clock, ExternalLink, MapPin, Radio, Siren } from "lucide-react"
+import { AlertTriangle, Clock, ExternalLink, Loader2, MapPin, Radio, Siren } from "lucide-react"
 import PageTransition from "@/components/admin/PageTransition"
 import StatCard from "@/components/admin/StatCard"
 import { PriorityBadge, StatusBadge } from "@/components/admin/Badges"
@@ -14,7 +14,10 @@ import {
   getLiveMapAlerts,
   getLiveSummary,
 } from "@/lib/admin/live-data"
-import { MOCK_SOS_ALERTS } from "@/lib/admin/mock-data"
+import { mapLiveEmergenciesToAlerts } from "@/lib/admin/sos-mappers"
+import { fetchLiveEmergencies } from "@/lib/api/admin-live"
+import type { AdminSosAlert } from "@/lib/admin/sos-types"
+import { useInterval } from "@/hooks/use-interval"
 
 const LiveCommandMap = dynamic(() => import("@/components/admin/LiveCommandMap"), {
   ssr: false,
@@ -29,14 +32,48 @@ const LiveCommandMap = dynamic(() => import("@/components/admin/LiveCommandMap")
 })
 
 export default function LiveCommandDashboard() {
-  const [selectedId, setSelectedId] = useState<string | null>(
-    MOCK_SOS_ALERTS.find((a) => a.status === "Active")?.id ?? null
-  )
+  const [alerts, setAlerts] = useState<AdminSosAlert[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [lastRefresh, setLastRefresh] = useState(0)
 
-  const mapAlerts = useMemo(() => getLiveMapAlerts(MOCK_SOS_ALERTS), [])
-  const feedAlerts = useMemo(() => getActiveFeedAlerts(MOCK_SOS_ALERTS), [])
-  const summary = useMemo(() => getLiveSummary(MOCK_SOS_ALERTS), [])
+  const loadAlerts = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setLoading(true)
+    const result = await fetchLiveEmergencies()
+    if (result.error || !result.data) {
+      setError(result.error ?? "Failed to load live emergencies")
+      setAlerts([])
+      setLoading(false)
+      return
+    }
 
+    const mapped = mapLiveEmergenciesToAlerts(result.data.data)
+    setAlerts(mapped)
+    setError(null)
+    setLoading(false)
+    setLastRefresh(0)
+    setSelectedId((current) => {
+      if (current && mapped.some((alert) => alert.id === current)) return current
+      return mapped.find((alert) => alert.status === "Active")?.id ?? mapped[0]?.id ?? null
+    })
+  }, [])
+
+  useEffect(() => {
+    void loadAlerts(true)
+  }, [loadAlerts])
+
+  useInterval(() => {
+    setLastRefresh((seconds) => {
+      const next = seconds + 1
+      if (next > 0 && next % 30 === 0) void loadAlerts()
+      return next
+    })
+  }, 1000)
+
+  const mapAlerts = useMemo(() => getLiveMapAlerts(alerts), [alerts])
+  const feedAlerts = useMemo(() => getActiveFeedAlerts(alerts), [alerts])
+  const summary = useMemo(() => getLiveSummary(alerts), [alerts])
   const selected = mapAlerts.find((a) => a.id === selectedId) ?? feedAlerts.find((a) => a.id === selectedId)
 
   return (
@@ -56,15 +93,22 @@ export default function LiveCommandDashboard() {
           </p>
         </div>
         <p className="self-start font-mono-admin text-xs text-white/35">
-          {summary.onMap} incidents tracked · {summary.critical} critical
+          {summary.onMap} incidents tracked · {summary.critical} critical · refreshed {lastRefresh}s ago
         </p>
       </div>
 
+      {error && (
+        <div className="mb-6 flex items-center gap-2 rounded-lg border border-[#C0392B]/30 bg-[#C0392B]/10 px-4 py-3 text-sm text-[#E74C3C]">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
       <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Active SOS" value={summary.active} icon={Siren} animate={false} pulse={summary.active > 0} />
-        <StatCard label="Dispatched" value={summary.dispatched} icon={Radio} animate={false} />
-        <StatCard label="On Map" value={summary.onMap} icon={MapPin} animate={false} />
-        <StatCard label="Critical" value={summary.critical} icon={Siren} animate={false} pulse={summary.critical > 0} />
+        <StatCard label="Active SOS" value={summary.active} icon={Siren} animate={false} pulse={summary.active > 0} loading={loading} />
+        <StatCard label="Dispatched" value={summary.dispatched} icon={Radio} animate={false} loading={loading} />
+        <StatCard label="On Map" value={summary.onMap} icon={MapPin} animate={false} loading={loading} />
+        <StatCard label="Critical" value={summary.critical} icon={Siren} animate={false} pulse={summary.critical > 0} loading={loading} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
@@ -89,11 +133,17 @@ export default function LiveCommandDashboard() {
             )}
           </div>
           <div className="min-h-[420px] flex-1 p-3 lg:min-h-[520px]">
-            <LiveCommandMap
-              alerts={mapAlerts}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-            />
+            {loading ? (
+              <div className="flex h-full min-h-[420px] items-center justify-center rounded-lg border border-white/5 bg-black/40">
+                <Loader2 className="h-8 w-8 animate-spin text-white/20" />
+              </div>
+            ) : (
+              <LiveCommandMap
+                alerts={mapAlerts}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            )}
           </div>
         </div>
 
@@ -109,7 +159,11 @@ export default function LiveCommandDashboard() {
           </div>
 
           <ul className="flex-1 space-y-2 overflow-y-auto p-3">
-            {feedAlerts.length === 0 ? (
+            {loading ? (
+              <li className="flex min-h-[200px] items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-white/20" />
+              </li>
+            ) : feedAlerts.length === 0 ? (
               <li className="flex min-h-[200px] flex-col items-center justify-center rounded-lg border border-dashed border-white/10 px-4 text-center">
                 <Siren className="h-8 w-8 text-white/10" />
                 <p className="mt-3 font-display text-lg italic text-white/35">No active alerts</p>
@@ -154,7 +208,7 @@ export default function LiveCommandDashboard() {
                           onClick={(e) => e.stopPropagation()}
                           className="shrink-0 font-mono-admin text-[10px] text-[#C0392B] transition hover:text-[#E74C3C]"
                         >
-                          {alert.id}
+                          {alert.id.slice(0, 8)}
                         </Link>
                       </div>
                       {alert.assignedUnit && (

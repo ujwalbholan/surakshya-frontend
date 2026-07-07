@@ -1,10 +1,18 @@
 export type UserRole = "SUPER_ADMIN" | "ADMIN" | "POLICE" | "GUARDIAN" | "USER"
 export type UserStatus = "active" | "inactive"
-export type SosPriority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
-export type SosStatus = "Active" | "Dispatched" | "Resolved"
+export type {
+  SosPriority,
+  SosStatus,
+  EmergencyContact,
+  SosTimelineEvent,
+  AdminSosAlert,
+} from "@/lib/admin/sos-types"
+export type { AdminSosAlert as MockSosAlert } from "@/lib/admin/sos-types"
 export type CaseStatus = "OPEN" | "INVESTIGATING" | "CLOSED" | "ESCALATED"
 export type UnitStatus = "available" | "dispatched" | "on_scene" | "offline"
 export type AuditAction = "LOGIN" | "CREATE_USER" | "UPDATE_CASE" | "DELETE_USER" | "LOGOUT" | "UPDATE_USER"
+
+import type { AdminSosAlert, SosPriority } from "@/lib/admin/sos-types"
 
 export interface MockUser {
   id: string
@@ -14,44 +22,6 @@ export interface MockUser {
   role: UserRole
   createdAt: string
   status: UserStatus
-}
-
-export interface EmergencyContact {
-  relation: string
-  name: string
-  phone: string
-  notified: boolean
-}
-
-export interface SosTimelineEvent {
-  time: string
-  description: string
-}
-
-export interface MockSosAlert {
-  id: string
-  victim: string
-  age: number
-  bloodType: string
-  phone: string
-  location: string
-  district: string
-  ward: string
-  address: string
-  lat: number
-  lng: number
-  priority: SosPriority
-  status: SosStatus
-  triggeredAt: string
-  timeAgo: string
-  timeline: SosTimelineEvent[]
-  emergencyContacts: EmergencyContact[]
-  assignedUnit?: {
-    name: string
-    officer: string
-    vehicle: string
-    status: string
-  }
 }
 
 export interface MockCase {
@@ -202,7 +172,7 @@ export const MOCK_USERS: MockUser[] = [
   },
 ]
 
-export const MOCK_SOS_ALERTS: MockSosAlert[] = [
+export const MOCK_SOS_ALERTS: AdminSosAlert[] = [
   {
     id: "SOS-2847",
     victim: "Priya Sharma",

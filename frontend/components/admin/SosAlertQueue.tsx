@@ -3,18 +3,18 @@
 import { cn } from "@/lib/utils"
 import { Car, Clock } from "lucide-react"
 import { PriorityBadge, StatusBadge } from "@/components/admin/Badges"
-import type { MockSosAlert } from "@/lib/admin/mock-data"
+import type { AdminSosAlert } from "@/lib/admin/sos-types"
 
 interface SosAlertQueueProps {
-  alerts: MockSosAlert[]
+  alerts: AdminSosAlert[]
   selectedId: string | null
-  onSelect: (alert: MockSosAlert) => void
+  onSelect: (alert: AdminSosAlert) => void
   onLoadMore?: () => void
   hasMore?: boolean
   flashIds?: Set<string>
 }
 
-const PRIORITY_ACCENT: Record<MockSosAlert["priority"], string> = {
+const PRIORITY_ACCENT: Record<AdminSosAlert["priority"], string> = {
   CRITICAL: "border-l-[#C0392B]",
   HIGH: "border-l-orange-500/80",
   MEDIUM: "border-l-white/25",
