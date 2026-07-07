@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { safeUser } from 'src/utils/safe-user';
@@ -7,8 +12,10 @@ import { Device } from 'src/feature/device/entities/device.entity';
 import { LocationPing } from 'src/feature/device/entities/location-ping.entity';
 import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
 import { GuardianLink } from 'src/feature/guardian/entities/guardian-link.entity';
+import { Role } from 'src/feature/auth/dto/auth.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { CreateAdminDeviceDto } from './dto/create-admin-device.dto';
 
 @Injectable()
 export class AdminService {
@@ -177,13 +184,98 @@ export class AdminService {
 
   async getDevices(page: number, limit: number) {
     const skip = (page - 1) * limit;
-    const [data, total] = await this.deviceRepo.findAndCount({
+    const [devices, total] = await this.deviceRepo.findAndCount({
       skip,
       take: limit,
       order: { id: 'DESC' },
+      relations: ['user'],
     });
 
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      data: devices.map((device) => this.formatDevice(device)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async createDevice(dto: CreateAdminDeviceDto) {
+    const imei = dto.imei.trim();
+    const existing = await this.deviceRepo.findOne({ where: { imei } });
+    if (existing) {
+      throw new ConflictException(`Device with band ID "${imei}" already exists`);
+    }
+
+    const device = this.deviceRepo.create({
+      imei,
+      label: dto.label?.trim() || imei,
+    });
+    const saved = await this.deviceRepo.save(device);
+    return this.formatDevice(saved);
+  }
+
+  async assignDevice(deviceId: string, userId: string) {
+    const device = await this.deviceRepo.findOne({
+      where: { id: deviceId },
+      relations: ['user'],
+    });
+    if (!device) {
+      throw new NotFoundException('Device not found');
+    }
+
+    const user = await this.userRepo.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.role !== Role.USER) {
+      throw new BadRequestException(
+        'Only citizen accounts (USER role) can be assigned a band',
+      );
+    }
+
+    if (device.user && device.user.id !== userId) {
+      throw new ConflictException(
+        `Device is already assigned to ${device.user.full_name}. Unassign first or choose another band.`,
+      );
+    }
+
+    device.user = user;
+    const saved = await this.deviceRepo.save(device);
+    return this.formatDevice(saved);
+  }
+
+  async unassignDevice(deviceId: string) {
+    const device = await this.deviceRepo.findOne({
+      where: { id: deviceId },
+      relations: ['user'],
+    });
+    if (!device) {
+      throw new NotFoundException('Device not found');
+    }
+
+    device.user = null;
+    const saved = await this.deviceRepo.save(device);
+    return this.formatDevice(saved);
+  }
+
+  private formatDevice(device: Device) {
+    return {
+      id: device.id,
+      imei: device.imei,
+      label: device.label,
+      isOnline: device.isOnline,
+      lastSeenAt: device.lastSeenAt,
+      user: device.user
+        ? {
+            id: device.user.id,
+            full_name: device.user.full_name,
+            email: device.user.email,
+            phone: device.user.phone,
+            role: device.user.role,
+          }
+        : null,
+    };
   }
 
   async getSosEvents(options: {

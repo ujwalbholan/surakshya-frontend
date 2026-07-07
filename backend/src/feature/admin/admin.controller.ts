@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Body,
   Query,
   ParseUUIDPipe,
@@ -22,6 +23,8 @@ import {
 import { AdminService } from './admin.service';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { CreateAdminDeviceDto } from './dto/create-admin-device.dto';
+import { AssignDeviceDto } from './dto/assign-device.dto';
 import { JwtAuthGuard } from 'src/utils/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/utils/guard/roles.guard';
 import { Roles } from 'src/decorators/roles.decorators';
@@ -104,6 +107,29 @@ export class AdminController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
   ) {
     return this.adminService.getDevices(page ?? 1, limit ?? 20);
+  }
+
+  @ApiOperation({ summary: 'Register a wearable band (admin)' })
+  @Post('devices')
+  createDevice(@Body() dto: CreateAdminDeviceDto) {
+    return this.adminService.createDevice(dto);
+  }
+
+  @ApiOperation({ summary: 'Assign band to a citizen (USER role)' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @Patch('devices/:id/assign')
+  assignDevice(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignDeviceDto,
+  ) {
+    return this.adminService.assignDevice(id, dto.userId);
+  }
+
+  @ApiOperation({ summary: 'Remove citizen assignment from band' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @Patch('devices/:id/unassign')
+  unassignDevice(@Param('id', ParseUUIDPipe) id: string) {
+    return this.adminService.unassignDevice(id);
   }
 
   @ApiOperation({ summary: 'List SOS events (paginated, filterable)' })

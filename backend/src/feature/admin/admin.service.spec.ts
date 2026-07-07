@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from 'src/feature/user/entities/user.entity';
@@ -50,7 +54,13 @@ describe('AdminService', () => {
         },
         {
           provide: getRepositoryToken(Device),
-          useValue: { count: jest.fn(), findAndCount: jest.fn() },
+          useValue: {
+            count: jest.fn(),
+            findAndCount: jest.fn(),
+            findOne: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(LocationPing),
@@ -200,23 +210,150 @@ describe('AdminService', () => {
   });
 
   describe('getDevices', () => {
-    it('should return paginated devices', async () => {
+    it('should return paginated devices with owner info', async () => {
+      const user = mockUser();
       const devices = [
         {
           id: 'dev-1',
-          imei: '123456',
-          label: 'Device',
+          imei: 'wearable-001',
+          label: 'Band',
           isOnline: true,
           lastSeenAt: null,
-          user: null,
+          user,
         },
       ];
-      deviceRepo.findAndCount.mockResolvedValue([devices, 1]);
+      deviceRepo.findAndCount.mockResolvedValue([devices as Device[], 1]);
 
       const result = await service.getDevices(1, 20);
 
+      expect(deviceRepo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ relations: ['user'] }),
+      );
       expect(result.data).toHaveLength(1);
+      expect(result.data[0]).toEqual({
+        id: 'dev-1',
+        imei: 'wearable-001',
+        label: 'Band',
+        isOnline: true,
+        lastSeenAt: null,
+        user: {
+          id: user.id,
+          full_name: user.full_name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+        },
+      });
       expect(result.total).toBe(1);
+    });
+  });
+
+  describe('createDevice', () => {
+    it('should create a new device', async () => {
+      deviceRepo.findOne.mockResolvedValue(null);
+      const created = {
+        id: 'dev-1',
+        imei: 'wearable-001',
+        label: 'wearable-001',
+        isOnline: false,
+        lastSeenAt: null,
+        user: null,
+      };
+      deviceRepo.create.mockReturnValue(created as Device);
+      deviceRepo.save.mockResolvedValue(created as Device);
+
+      const result = await service.createDevice({ imei: 'wearable-001' });
+
+      expect(result.imei).toBe('wearable-001');
+      expect(result.user).toBeNull();
+    });
+
+    it('should reject duplicate imei', async () => {
+      deviceRepo.findOne.mockResolvedValue({
+        id: 'dev-1',
+        imei: 'wearable-001',
+      } as Device);
+
+      await expect(
+        service.createDevice({ imei: 'wearable-001' }),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('assignDevice', () => {
+    const device = {
+      id: 'dev-1',
+      imei: 'wearable-001',
+      label: 'Band',
+      isOnline: true,
+      lastSeenAt: null,
+      user: null,
+    } as Device;
+
+    it('should assign device to USER', async () => {
+      const user = mockUser();
+      deviceRepo.findOne.mockResolvedValue({ ...device });
+      userRepo.findOneBy.mockResolvedValue(user);
+      deviceRepo.save.mockImplementation(async (d) => ({
+        ...d,
+        user,
+      }));
+
+      const result = await service.assignDevice('dev-1', 'user-1');
+
+      expect(result.user?.id).toBe('user-1');
+    });
+
+    it('should reject non-USER role', async () => {
+      deviceRepo.findOne.mockResolvedValue(device);
+      userRepo.findOneBy.mockResolvedValue(
+        mockUser({ role: Role.GUARDIAN }),
+      );
+
+      await expect(
+        service.assignDevice('dev-1', 'user-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject if already assigned to another user', async () => {
+      const other = mockUser({ id: 'user-2', full_name: 'Other' });
+      deviceRepo.findOne.mockResolvedValue({ ...device, user: other });
+      userRepo.findOneBy.mockResolvedValue(mockUser());
+
+      await expect(
+        service.assignDevice('dev-1', 'user-1'),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('unassignDevice', () => {
+    it('should clear device owner', async () => {
+      const user = mockUser();
+      const device = {
+        id: 'dev-1',
+        imei: 'wearable-001',
+        label: 'Band',
+        isOnline: true,
+        lastSeenAt: null,
+        user,
+      } as Device;
+      deviceRepo.findOne.mockResolvedValue(device);
+      deviceRepo.save.mockImplementation(async (d) => ({
+        ...d,
+        user: null,
+      }));
+
+      const result = await service.unassignDevice('dev-1');
+
+      expect(result.user).toBeNull();
+    });
+
+    it('should throw if device not found', async () => {
+      deviceRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.unassignDevice('bad-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

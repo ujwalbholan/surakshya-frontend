@@ -16,6 +16,9 @@ describe('AdminController', () => {
     updateUserStatus: jest.fn(),
     updateUserRole: jest.fn(),
     getDevices: jest.fn(),
+    createDevice: jest.fn(),
+    assignDevice: jest.fn(),
+    unassignDevice: jest.fn(),
     getSosEvents: jest.fn(),
     getSosEventDetails: jest.fn(),
     resolveSosEvent: jest.fn(),
@@ -134,6 +137,59 @@ describe('AdminController', () => {
     const result = await controller.getDevices(1, 20);
 
     expect(result).toEqual(expected);
+  });
+
+  it('should create device', async () => {
+    const dto = { imei: 'wearable-001', label: 'Test Band' };
+    const expected = {
+      id: 'dev-1',
+      imei: 'wearable-001',
+      label: 'Test Band',
+      isOnline: false,
+      lastSeenAt: null,
+      user: null,
+    };
+    service.createDevice.mockResolvedValue(expected);
+
+    const result = await controller.createDevice(dto);
+
+    expect(result).toEqual(expected);
+    expect(service.createDevice).toHaveBeenCalledWith(dto);
+  });
+
+  it('should assign device to user', async () => {
+    const dto = { userId: 'user-1' };
+    const expected = {
+      id: 'dev-1',
+      imei: 'wearable-001',
+      label: 'Band',
+      isOnline: true,
+      lastSeenAt: null,
+      user: { id: 'user-1', full_name: 'Test', email: 't@t.com', phone: '123', role: 'USER' },
+    };
+    service.assignDevice.mockResolvedValue(expected);
+
+    const result = await controller.assignDevice('dev-1', dto);
+
+    expect(result).toEqual(expected);
+    expect(service.assignDevice).toHaveBeenCalledWith('dev-1', 'user-1');
+  });
+
+  it('should unassign device', async () => {
+    const expected = {
+      id: 'dev-1',
+      imei: 'wearable-001',
+      label: 'Band',
+      isOnline: true,
+      lastSeenAt: null,
+      user: null,
+    };
+    service.unassignDevice.mockResolvedValue(expected);
+
+    const result = await controller.unassignDevice('dev-1');
+
+    expect(result).toEqual(expected);
+    expect(service.unassignDevice).toHaveBeenCalledWith('dev-1');
   });
 
   it('should get SOS events', async () => {
