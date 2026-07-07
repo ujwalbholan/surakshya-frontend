@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from 'src/feature/user/entities/user.entity';
@@ -7,6 +7,7 @@ import { Device } from 'src/feature/device/entities/device.entity';
 import { LocationPing } from 'src/feature/device/entities/location-ping.entity';
 import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
 import { GuardianLink } from 'src/feature/guardian/entities/guardian-link.entity';
+import { TrackingGateway } from 'src/feature/tracking/tracking.gateway';
 import { PoliceService } from './police.service';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 
@@ -17,6 +18,7 @@ describe('PoliceService', () => {
   let deviceRepo: jest.Mocked<Repository<Device>>;
   let userRepo: jest.Mocked<Repository<User>>;
   let linkRepo: jest.Mocked<Repository<GuardianLink>>;
+  let gateway: jest.Mocked<TrackingGateway>;
 
   const mockDevice: Device = {
     id: 'dev-1',
@@ -83,6 +85,7 @@ describe('PoliceService', () => {
             findOne: jest.fn(),
             findOneBy: jest.fn(),
             save: jest.fn(),
+            update: jest.fn(),
             count: jest.fn(),
           },
         },
@@ -102,6 +105,10 @@ describe('PoliceService', () => {
           provide: getRepositoryToken(GuardianLink),
           useValue: { find: jest.fn() },
         },
+        {
+          provide: TrackingGateway,
+          useValue: { emitSosEvent: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -111,6 +118,7 @@ describe('PoliceService', () => {
     deviceRepo = module.get(getRepositoryToken(Device));
     userRepo = module.get(getRepositoryToken(User));
     linkRepo = module.get(getRepositoryToken(GuardianLink));
+    gateway = module.get(TrackingGateway);
   });
 
   describe('getDashboard', () => {
@@ -176,21 +184,49 @@ describe('PoliceService', () => {
 
   describe('resolveSosEvent', () => {
     it('should throw if event not found', async () => {
-      sosRepo.findOneBy.mockResolvedValue(null);
+      sosRepo.findOne.mockResolvedValue(null);
       await expect(service.resolveSosEvent('bad-id')).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should resolve the event', async () => {
+    it('should resolve the event with conditional update', async () => {
       const event = mockSosEvent();
-      sosRepo.findOneBy.mockResolvedValue(event);
-      sosRepo.save.mockResolvedValue({ ...event, status: 'resolved' });
+      const resolved = { ...event, status: 'resolved' as const, resolvedAt: new Date() };
+      sosRepo.findOne
+        .mockResolvedValueOnce(event)
+        .mockResolvedValueOnce(resolved);
+      sosRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
 
-      const result = await service.resolveSosEvent('sos-1');
+      const result = await service.resolveSosEvent('sos-1', 'Resolved on scene');
 
+      expect(sosRepo.update).toHaveBeenCalledWith(
+        { id: 'sos-1', status: 'active' },
+        expect.objectContaining({
+          status: 'resolved',
+          notes: 'Resolved on scene',
+        }),
+      );
+      expect(gateway.emitSosEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'sos_resolved',
+          status: 'resolved',
+        }),
+      );
       expect(result.status).toBe('resolved');
-      expect(result.resolvedAt).toBeDefined();
+    });
+
+    it('should throw ConflictException when event already resolved', async () => {
+      const event = mockSosEvent({ status: 'resolved', resolvedAt: new Date() });
+      sosRepo.findOne
+        .mockResolvedValueOnce(event)
+        .mockResolvedValueOnce(event);
+      sosRepo.update.mockResolvedValue({ affected: 0, raw: [], generatedMaps: [] });
+
+      await expect(service.resolveSosEvent('sos-1')).rejects.toThrow(
+        ConflictException,
+      );
+      expect(gateway.emitSosEvent).not.toHaveBeenCalled();
     });
   });
 

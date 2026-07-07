@@ -11,6 +11,7 @@ export interface DeviceTelemetry {
   satellites?: number;
   hdop?: number;
   gpsUtc?: string;
+  recordedAt?: Date;
   nmeaSentences: string[];
 }
 
@@ -140,7 +141,7 @@ export function extractDeviceIdFromTopic(topic: string): string | undefined {
   }
 
   const last = parts.at(-1);
-  if (last === 'telemetry' || last === 'status') {
+  if (last === 'telemetry' || last === 'status' || last === 'events') {
     return parts.at(-2);
   }
 

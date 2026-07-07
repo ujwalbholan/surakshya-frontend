@@ -24,7 +24,7 @@ export class EmergencyService {
   async getLiveEmergencies() {
     const events = await this.sosRepo.find({
       where: { status: 'active' },
-      relations: ['device', 'device.user'],
+      relations: ['device', 'device.user', 'assignedStation'],
       order: { startedAt: 'DESC' },
     });
 
@@ -38,6 +38,7 @@ export class EmergencyService {
         return {
           id: event.id,
           deviceId: event.device.id,
+          userId: event.device.user?.id ?? null,
           imei: event.device.imei,
           label: event.device.label,
           eventType: event.eventType,
@@ -45,6 +46,9 @@ export class EmergencyService {
           latitude: event.latitude,
           longitude: event.longitude,
           altitudeM: event.altitudeM,
+          triggerNotes: event.triggerNotes ?? null,
+          assignedStationId: event.assignedStation?.id ?? null,
+          assignedStationName: event.assignedStation?.name ?? null,
           startedAt: event.startedAt,
           resolvedAt: event.resolvedAt,
           user: event.device.user

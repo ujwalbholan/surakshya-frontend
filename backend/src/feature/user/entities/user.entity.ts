@@ -3,10 +3,13 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Role } from 'src/feature/auth/dto/auth.dto';
+import { PoliceStation } from 'src/feature/police-stations/entities/police-station.entity';
 
 @Entity('users')
 @Index('idx_users_phone', ['phone'])
@@ -40,6 +43,13 @@ export class User {
 
   @Column({ default: false })
   phone_verified: boolean;
+
+  @Column({ type: 'uuid', nullable: true })
+  station_id?: string | null;
+
+  @ManyToOne(() => PoliceStation, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'station_id' })
+  station?: PoliceStation | null;
 
   @CreateDateColumn()
   created_at: Date;

@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/feature/user/entities/user.entity';
+import { Device } from 'src/feature/device/entities/device.entity';
+import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
+import { LocationPing } from 'src/feature/device/entities/location-ping.entity';
 import { GuardianLink } from './entities/guardian-link.entity';
 import { GuardianRequest } from './entities/guardian-request.entity';
 import { GuardianService } from './guardian.service';
@@ -13,7 +16,14 @@ import { RedisService } from 'src/config/redis/redis.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, GuardianLink, GuardianRequest]),
+    TypeOrmModule.forFeature([
+      User,
+      GuardianLink,
+      GuardianRequest,
+      Device,
+      SosEvent,
+      LocationPing,
+    ]),
     NotificationModule,
   ],
   controllers: [

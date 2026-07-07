@@ -23,6 +23,9 @@ export interface SosEventPayload {
   satellites?: number;
   startedAt: string;
   resolvedAt?: string;
+  triggerNotes?: string;
+  assignedStationId?: string;
+  assignedStationName?: string;
   latestPing?: {
     latitude: number;
     longitude: number;

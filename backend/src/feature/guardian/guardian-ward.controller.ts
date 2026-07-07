@@ -72,6 +72,14 @@ export class GuardianWardController {
     return this.guardianService.acceptRequest(id, user.userId);
   }
 
+  @ApiOperation({ summary: 'Get active SOS events for a linked ward' })
+  @Roles('GUARDIAN')
+  @Get('wards/:wardId/sos')
+  getWardSos(@Req() req: Request, @Param('wardId') wardId: string) {
+    const user = req.user as { userId: string };
+    return this.guardianService.getWardSosEvents(user.userId, wardId);
+  }
+
   @ApiOperation({ summary: 'Reject a guardian request' })
   @Roles('GUARDIAN')
   @Post('requests/:id/reject')

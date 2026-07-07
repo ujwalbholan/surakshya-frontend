@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Patch,
+  Body,
   ParseUUIDPipe,
   UseGuards,
   UseInterceptors,
@@ -14,6 +15,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { PoliceService } from './police.service';
+import { ResolveSosEventDto } from './dto/resolve-sos-event.dto';
 import { JwtAuthGuard } from 'src/utils/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/utils/guard/roles.guard';
 import { Roles } from 'src/decorators/roles.decorators';
@@ -50,8 +52,11 @@ export class PoliceController {
   @ApiOperation({ summary: 'Resolve an SOS event' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @Patch('sos-events/:id/resolve')
-  resolveSosEvent(@Param('id', ParseUUIDPipe) id: string) {
-    return this.policeService.resolveSosEvent(id);
+  resolveSosEvent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ResolveSosEventDto,
+  ) {
+    return this.policeService.resolveSosEvent(id, dto.notes);
   }
 
   @ApiOperation({ summary: 'Get device latest location' })

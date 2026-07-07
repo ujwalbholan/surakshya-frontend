@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { safeUser } from 'src/utils/safe-user';
@@ -7,6 +11,7 @@ import { Device } from 'src/feature/device/entities/device.entity';
 import { LocationPing } from 'src/feature/device/entities/location-ping.entity';
 import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
 import { GuardianLink } from 'src/feature/guardian/entities/guardian-link.entity';
+import { TrackingGateway } from 'src/feature/tracking/tracking.gateway';
 
 @Injectable()
 export class PoliceService {
@@ -21,6 +26,7 @@ export class PoliceService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(GuardianLink)
     private readonly guardianLinkRepo: Repository<GuardianLink>,
+    private readonly trackingGateway: TrackingGateway,
   ) {}
 
   async getDashboard() {
@@ -66,7 +72,7 @@ export class PoliceService {
   async getActiveSosEvents() {
     const events = await this.sosRepo.find({
       where: { status: 'active' },
-      relations: ['device'],
+      relations: ['device', 'device.user', 'assignedStation'],
       order: { startedAt: 'DESC' },
     });
 
@@ -80,9 +86,16 @@ export class PoliceService {
         return {
           id: event.id,
           deviceId: event.device.id,
+          userId: event.device.user?.id ?? null,
           imei: event.device.imei,
           label: event.device.label,
           status: event.status,
+          eventType: event.eventType,
+          latitude: event.latitude,
+          longitude: event.longitude,
+          triggerNotes: event.triggerNotes ?? null,
+          assignedStationId: event.assignedStation?.id ?? null,
+          assignedStationName: event.assignedStation?.name ?? null,
           startedAt: event.startedAt,
           resolvedAt: event.resolvedAt,
           lastLocation: latestPing
@@ -102,7 +115,7 @@ export class PoliceService {
   async getSosEventDetails(id: string) {
     const event = await this.sosRepo.findOne({
       where: { id },
-      relations: ['device'],
+      relations: ['device', 'device.user'],
     });
 
     if (!event) throw new NotFoundException('SOS event not found');
@@ -116,13 +129,59 @@ export class PoliceService {
     return { ...event, locationPings };
   }
 
-  async resolveSosEvent(id: string) {
-    const event = await this.sosRepo.findOneBy({ id });
-    if (!event) throw new NotFoundException('SOS event not found');
+  async resolveSosEvent(id: string, notes?: string) {
+    const existing = await this.sosRepo.findOne({
+      where: { id },
+      relations: ['device', 'assignedStation'],
+    });
+    if (!existing) throw new NotFoundException('SOS event not found');
 
-    event.status = 'resolved';
-    event.resolvedAt = new Date();
-    return this.sosRepo.save(event);
+    const resolvedAt = new Date();
+    const updatePayload: Partial<SosEvent> = {
+      status: 'resolved',
+      resolvedAt,
+    };
+    if (notes !== undefined) {
+      updatePayload.notes = notes.trim() || null;
+    }
+
+    const result = await this.sosRepo.update(
+      { id, status: 'active' },
+      updatePayload,
+    );
+
+    if (!result.affected) {
+      const current = await this.sosRepo.findOne({ where: { id } });
+      if (!current) throw new NotFoundException('SOS event not found');
+      throw new ConflictException('SOS event already resolved');
+    }
+
+    const saved = await this.sosRepo.findOne({
+      where: { id },
+      relations: ['device', 'assignedStation'],
+    });
+    if (!saved) throw new NotFoundException('SOS event not found');
+
+    this.trackingGateway.emitSosEvent({
+      id: saved.id,
+      deviceId: saved.device.imei,
+      deviceImei: saved.device.imei,
+      eventType: 'sos_resolved',
+      status: 'resolved',
+      latitude: saved.latitude ?? undefined,
+      longitude: saved.longitude ?? undefined,
+      altitudeM: saved.altitudeM ?? undefined,
+      speedKmph: saved.speedKmph ?? undefined,
+      satellites: saved.satellites ?? undefined,
+      triggerNotes: saved.triggerNotes ?? undefined,
+      assignedStationId: saved.assignedStation?.id,
+      assignedStationName: saved.assignedStation?.name,
+      startedAt: saved.startedAt.toISOString(),
+      resolvedAt: saved.resolvedAt?.toISOString(),
+      latestPing: null,
+    });
+
+    return saved;
   }
 
   async getDeviceLatestLocation(deviceId: string) {

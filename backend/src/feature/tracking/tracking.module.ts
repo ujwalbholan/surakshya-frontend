@@ -4,13 +4,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Device } from '../device/entities/device.entity';
 import { LocationPing } from '../device/entities/location-ping.entity';
 import { SosEvent } from '../device/entities/sos-event.entity';
+import { PoliceStation } from '../police-stations/entities/police-station.entity';
 import { TrackingIngestService } from './tracking-ingest.interface';
 import { TrackingGateway } from './tracking.gateway';
 import { TrackingService } from './tracking.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Device, LocationPing, SosEvent]),
+    TypeOrmModule.forFeature([Device, LocationPing, SosEvent, PoliceStation]),
     JwtModule.register({}),
   ],
   providers: [

@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Device } from './device.entity';
 import { User } from 'src/feature/user/entities/user.entity';
+import { PoliceStation } from 'src/feature/police-stations/entities/police-station.entity';
 
 @Entity('sos_events')
 export class SosEvent {
@@ -45,6 +46,13 @@ export class SosEvent {
 
   @Column({ type: 'text', nullable: true })
   notes?: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  triggerNotes?: string | null;
+
+  @ManyToOne(() => PoliceStation, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'assigned_station_id' })
+  assignedStation?: PoliceStation | null;
 
   @CreateDateColumn()
   startedAt!: Date;

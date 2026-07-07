@@ -63,6 +63,7 @@ describe('AdminService', () => {
             findOne: jest.fn(),
             findOneBy: jest.fn(),
             save: jest.fn(),
+            update: jest.fn(),
             createQueryBuilder: jest.fn(),
           },
         },
@@ -279,16 +280,22 @@ describe('AdminService', () => {
         startedAt: new Date(),
         resolvedAt: null,
       };
-      sosRepo.findOneBy.mockResolvedValue(event as any);
-      sosRepo.save.mockResolvedValue({
-        ...event,
-        status: 'resolved',
-        resolvedAt: new Date(),
-      });
+      sosRepo.findOneBy
+        .mockResolvedValueOnce(event as any)
+        .mockResolvedValueOnce({
+          ...event,
+          status: 'resolved',
+          resolvedAt: new Date(),
+        });
+      sosRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
 
       const result = await service.resolveSosEvent('sos-1');
 
-      expect(result.status).toBe('resolved');
+      expect(sosRepo.update).toHaveBeenCalledWith(
+        { id: 'sos-1', status: 'active' },
+        expect.objectContaining({ status: 'resolved' }),
+      );
+      expect(result?.status).toBe('resolved');
     });
   });
 });

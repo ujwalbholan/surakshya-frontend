@@ -9,11 +9,13 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiOkResponse,
   ApiOperation,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { EmergencyService } from './emergency.service';
+import { LiveEmergenciesResponseDto } from './dto/live-emergency.dto';
 import { JwtAuthGuard } from 'src/utils/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/utils/guard/roles.guard';
 import { Roles } from 'src/decorators/roles.decorators';
@@ -34,7 +36,12 @@ export class EmergencyController {
     return this.emergencyService.getDashboardSummary();
   }
 
-  @ApiOperation({ summary: 'Live emergencies – active SOS events' })
+  @ApiOperation({
+    summary: 'Live emergencies – active SOS events',
+    description:
+      'Returns active SOS events with device, ward user, coordinates, assigned station, and latest GPS ping. Restricted to POLICE, ADMIN, and SUPER_ADMIN roles because it exposes victim PII.',
+  })
+  @ApiOkResponse({ type: LiveEmergenciesResponseDto })
   @Get('live')
   getLiveEmergencies() {
     return this.emergencyService.getLiveEmergencies();

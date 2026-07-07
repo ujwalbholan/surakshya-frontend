@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { safeUser } from 'src/utils/safe-user';
@@ -236,8 +236,15 @@ export class AdminService {
     const sos = await this.sosRepo.findOneBy({ id });
     if (!sos) throw new NotFoundException('SOS event not found');
 
-    sos.status = 'resolved';
-    sos.resolvedAt = new Date();
-    return this.sosRepo.save(sos);
+    const result = await this.sosRepo.update(
+      { id, status: 'active' },
+      { status: 'resolved', resolvedAt: new Date() },
+    );
+
+    if (!result.affected) {
+      throw new ConflictException('SOS event already resolved');
+    }
+
+    return this.sosRepo.findOneBy({ id });
   }
 }

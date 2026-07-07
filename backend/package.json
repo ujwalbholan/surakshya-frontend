@@ -19,9 +19,10 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prepare": "husky || true",
-    "migration:generate": "npx typeorm-ts-node-commonjs migration:generate -d src/config/database/data-source.ts",
-    "migration:run": "npx typeorm-ts-node-commonjs migration:run -d src/config/database/data-source.ts",
-    "migration:revert": "npx typeorm-ts-node-commonjs migration:revert -d src/config/database/data-source.ts",
+    "migration:generate": "node -r tsconfig-paths/register -r ts-node/register ./node_modules/typeorm/cli.js migration:generate -d src/config/database/data-source.ts",
+    "migration:run": "node -r tsconfig-paths/register -r ts-node/register ./node_modules/typeorm/cli.js migration:run -d src/config/database/data-source.ts",
+    "migration:revert": "node -r tsconfig-paths/register -r ts-node/register ./node_modules/typeorm/cli.js migration:revert -d src/config/database/data-source.ts",
+    "seed:super-admin": "node -r tsconfig-paths/register -r ts-node/register src/config/database/seed-super-admin.ts",
     "serial-bridge": "node serial-bridge.mjs"
   },
   "dependencies": {

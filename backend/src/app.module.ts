@@ -17,6 +17,9 @@ import { NotificationModule } from './feature/notification/notification.module';
 import { GuardianModule } from './feature/guardian/guardian.module';
 import { AdminModule } from './feature/admin/admin.module';
 import { PoliceModule } from './feature/police/police.module';
+import { PoliceStationsModule } from './feature/police-stations/police-stations.module';
+import { PoliceInvitesModule } from './feature/police-invites/police-invites.module';
+import { PoliceSetupModule } from './feature/police-setup/police-setup.module';
 import { MqttModule } from './feature/mqtt/mqtt.module';
 import { EmergencyModule } from './feature/emergency/emergency.module';
 import { HealthModule } from './feature/health/health.module';
@@ -78,6 +81,9 @@ const isProduction = process.env.NODE_ENV === 'production';
     NotificationModule,
     AdminModule,
     PoliceModule,
+    PoliceStationsModule,
+    PoliceInvitesModule,
+    PoliceSetupModule,
     GuardianModule,
     MqttModule,
     EmergencyModule,

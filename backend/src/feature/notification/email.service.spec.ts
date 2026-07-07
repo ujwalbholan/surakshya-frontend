@@ -88,6 +88,36 @@ describe('EmailService', () => {
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 
+  it('should fall back to console log in non-production when no provider is configured', async () => {
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    delete process.env.RESEND_API_KEY;
+    delete process.env.RESEND_MAIL_FROM;
+    delete process.env.MAIL_HOST;
+    delete process.env.MAIL_PORT;
+    delete process.env.MAIL_USER;
+    delete process.env.MAIL_PASSWORD;
+    delete process.env.MAIL_FROM;
+    process.env.NODE_ENV = 'development';
+    const service = new EmailService();
+
+    await expect(
+      service.send({
+        to: 'user@example.com',
+        subject: 'Welcome',
+        text: 'Welcome',
+        html: '<p>Welcome</p>',
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('logged to console'),
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[Email stub]'),
+    );
+  });
+
   it('should fall back to console log in non-production when Resend fails', async () => {
     const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();

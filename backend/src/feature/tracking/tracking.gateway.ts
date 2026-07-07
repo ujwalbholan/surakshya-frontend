@@ -10,7 +10,10 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { TokenPayloadType } from 'src/types/TokenRelTypes';
 import { LocationUpdatePayload, SosEventPayload } from './tracking.types';
+
+const POLICE_OPS_ROLES = new Set(['POLICE', 'ADMIN', 'SUPER_ADMIN']);
 
 @WebSocketGateway({
   namespace: '/tracking',
@@ -44,12 +47,22 @@ export class TrackingGateway
       if (!secret)
         throw new UnauthorizedException('JWT_ACCESS_SECRET is missing');
 
-      const payload = await this.jwtService.verifyAsync<{ type?: string }>(
+      const payload = await this.jwtService.verifyAsync<TokenPayloadType>(
         token,
         { secret },
       );
       if (payload.type !== 'access') {
         throw new UnauthorizedException('Invalid token type');
+      }
+
+      client.data.userId = payload.sub;
+      client.data.role = payload.role;
+
+      if (POLICE_OPS_ROLES.has(payload.role)) {
+        await client.join('police-ops');
+        this.logger.log(
+          `Client ${client.id} joined police-ops as ${payload.role}`,
+        );
       }
     } catch {
       client.disconnect();
@@ -67,7 +80,8 @@ export class TrackingGateway
   }
 
   emitSosEvent(payload: SosEventPayload) {
-    this.server.emit('sos_event', payload);
+    this.server.to('police-ops').emit('sos_event', payload);
+    this.server.to('sos_all').emit('sos_event', payload);
     if (payload.deviceId) {
       this.server.to(`device:${payload.deviceId}`).emit('sos_event', payload);
     }
@@ -75,6 +89,11 @@ export class TrackingGateway
 
   @SubscribeMessage('subscribe_all_sos')
   handleSubscribeAllSos(@ConnectedSocket() client: Socket) {
+    const role = client.data.role as string | undefined;
+    if (!role || !POLICE_OPS_ROLES.has(role)) {
+      return { ok: false, error: 'Unauthorized role for SOS subscription' };
+    }
+
     void client.join('sos_all');
     return { ok: true };
   }

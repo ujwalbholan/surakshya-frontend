@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from 'src/feature/user/entities/user.entity';
 import { GuardianLink } from './entities/guardian-link.entity';
 import { GuardianRequest } from './entities/guardian-request.entity';
+import { Device } from 'src/feature/device/entities/device.entity';
+import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
+import { LocationPing } from 'src/feature/device/entities/location-ping.entity';
 import { GuardianService } from './guardian.service';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { NotificationService } from '../notification/notification.service';
@@ -21,6 +28,9 @@ describe('GuardianService', () => {
   let userRepo: jest.Mocked<Repository<User>>;
   let linkRepo: jest.Mocked<Repository<GuardianLink>>;
   let requestRepo: jest.Mocked<Repository<GuardianRequest>>;
+  let deviceRepo: jest.Mocked<Repository<Device>>;
+  let sosRepo: jest.Mocked<Repository<SosEvent>>;
+  let pingRepo: jest.Mocked<Repository<LocationPing>>;
 
   const userId = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -105,6 +115,24 @@ describe('GuardianService', () => {
           },
         },
         {
+          provide: getRepositoryToken(Device),
+          useValue: {
+            find: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(SosEvent),
+          useValue: {
+            find: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(LocationPing),
+          useValue: {
+            findOne: jest.fn(),
+          },
+        },
+        {
           provide: NotificationService,
           useValue: {
             sendSms: jest.fn(),
@@ -129,6 +157,9 @@ describe('GuardianService', () => {
     userRepo = module.get(getRepositoryToken(User));
     linkRepo = module.get(getRepositoryToken(GuardianLink));
     requestRepo = module.get(getRepositoryToken(GuardianRequest));
+    deviceRepo = module.get(getRepositoryToken(Device));
+    sosRepo = module.get(getRepositoryToken(SosEvent));
+    pingRepo = module.get(getRepositoryToken(LocationPing));
   });
 
   describe('addGuardian', () => {
@@ -209,6 +240,67 @@ describe('GuardianService', () => {
       expect(result.wards).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(result.wards[0].full_name).toBe('Test User');
+    });
+  });
+
+  describe('getWardSosEvents', () => {
+    const guardianId = 'guardian-id';
+    const wardId = userId;
+
+    it('should throw if guardian is not linked to ward', async () => {
+      linkRepo.findOne.mockResolvedValue(null);
+      await expect(
+        service.getWardSosEvents(guardianId, wardId),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should return empty list when ward has no devices', async () => {
+      linkRepo.findOne.mockResolvedValue(mockGuardianLink());
+      deviceRepo.find.mockResolvedValue([]);
+
+      const result = await service.getWardSosEvents(guardianId, wardId);
+
+      expect(result.data).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(result.wardId).toBe(wardId);
+    });
+
+    it('should return active SOS events for ward devices', async () => {
+      linkRepo.findOne.mockResolvedValue(mockGuardianLink());
+      const device = {
+        id: 'device-id',
+        imei: '860000000000001',
+        label: 'Ward device',
+      } as Device;
+      deviceRepo.find.mockResolvedValue([device]);
+
+      const startedAt = new Date('2026-01-01T10:00:00Z');
+      const sosEvent = {
+        id: 'sos-id',
+        device,
+        status: 'active',
+        eventType: 'sos_started',
+        latitude: 27.7,
+        longitude: 85.3,
+        triggerNotes: 'Help',
+        assignedStation: { id: 'station-id', name: 'Kathmandu' },
+        startedAt,
+        resolvedAt: null,
+      } as SosEvent;
+      sosRepo.find.mockResolvedValue([sosEvent]);
+      pingRepo.findOne.mockResolvedValue({
+        latitude: 27.71,
+        longitude: 85.31,
+        recordedAt: new Date('2026-01-01T10:01:00Z'),
+      } as LocationPing);
+
+      const result = await service.getWardSosEvents(guardianId, wardId);
+
+      expect(result.total).toBe(1);
+      expect(result.data[0].id).toBe('sos-id');
+      expect(result.data[0].triggerNotes).toBe('Help');
+      expect(result.data[0].assignedStationName).toBe('Kathmandu');
+      expect(result.data[0].lastLocation?.latitude).toBe(27.71);
     });
   });
 

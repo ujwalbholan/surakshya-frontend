@@ -70,6 +70,12 @@ export class UserService {
       throw new UnauthorizedException('Invalid Password');
     }
 
+    if (!user.is_active) {
+      throw new UnauthorizedException(
+        'Account is not active. Please complete setup or contact an administrator.',
+      );
+    }
+
     const token = await this.tokenService.generateToken({
       id: user.id,
       email: user.email,

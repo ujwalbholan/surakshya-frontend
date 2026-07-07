@@ -44,7 +44,7 @@ export class EmailService {
       !process.env.MAIL_FROM
     ) {
       this.logger.warn(
-        'Mail is disabled because one or more MAIL_* variables are missing',
+        'Mail is not configured — emails will be logged to console in development',
       );
       return;
     }
@@ -65,6 +65,11 @@ export class EmailService {
 
   async send(message: EmailMessage): Promise<void> {
     if (!this.from) {
+      if (process.env.NODE_ENV !== 'production') {
+        this.logDevStub(message);
+        return;
+      }
+
       this.logger.error('Email delivery failed: sender is not configured');
       throw new ServiceUnavailableException('Email service is unavailable');
     }
@@ -76,6 +81,11 @@ export class EmailService {
       }
 
       if (!this.transporter) {
+        if (process.env.NODE_ENV !== 'production') {
+          this.logDevStub(message);
+          return;
+        }
+
         throw new ServiceUnavailableException(
           'No email provider is configured',
         );
@@ -93,6 +103,15 @@ export class EmailService {
       this.logger.error(`Email delivery failed: ${reason}`);
       throw new ServiceUnavailableException('Email service is unavailable');
     }
+  }
+
+  private logDevStub(message: EmailMessage): void {
+    this.logger.warn(
+      'Email provider is not configured — logging message to console (development only)',
+    );
+    this.logger.log(
+      `[Email stub] To: ${message.to} — Subject: ${message.subject}\n${message.text}`,
+    );
   }
 
   private async sendWithResend(message: EmailMessage): Promise<void> {

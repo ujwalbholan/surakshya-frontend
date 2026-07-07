@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { Device } from '../device/entities/device.entity';
 import { LocationPing } from '../device/entities/location-ping.entity';
 import { SosEvent } from '../device/entities/sos-event.entity';
+import { PoliceStation } from '../police-stations/entities/police-station.entity';
 import { TrackingService } from './tracking.service';
 import { TrackingGateway } from './tracking.gateway';
 
@@ -13,12 +14,14 @@ describe('TrackingService', () => {
   let service: TrackingService;
   let deviceRepo: jest.Mocked<Repository<Device>>;
   let pingRepo: jest.Mocked<Repository<LocationPing>>;
+  let sosRepo: jest.Mocked<Repository<SosEvent>>;
+  let stationRepo: jest.Mocked<Repository<PoliceStation>>;
   let gateway: jest.Mocked<TrackingGateway>;
 
   const mockDevice: Device = {
     id: 'dev-1',
-    imei: 'IMEI123',
-    label: 'IMEI123',
+    imei: 'wearable-001',
+    label: 'wearable-001',
     isOnline: true,
     lastSeenAt: new Date(),
     user: undefined,
@@ -29,13 +32,32 @@ describe('TrackingService', () => {
     id: 'ping-1',
     device: mockDevice,
     sosEvent: null,
-    latitude: 27.7,
-    longitude: 85.33,
-    altitudeM: undefined,
+    latitude: 27.7172,
+    longitude: 85.324,
+    altitudeM: 1400,
     speedKmph: undefined,
     satellites: undefined,
     hdop: undefined,
     recordedAt: now,
+    ...overrides,
+  });
+
+  const makeSos = (overrides: Partial<SosEvent> = {}): SosEvent => ({
+    id: 'sos-1',
+    device: mockDevice,
+    status: 'active',
+    eventType: 'sos_started',
+    latitude: null,
+    longitude: null,
+    altitudeM: null,
+    speedKmph: null,
+    satellites: null,
+    resolvedBy: null,
+    notes: null,
+    triggerNotes: null,
+    assignedStation: null,
+    startedAt: now,
+    resolvedAt: null,
     ...overrides,
   });
 
@@ -58,7 +80,11 @@ describe('TrackingService', () => {
         },
         {
           provide: getRepositoryToken(SosEvent),
-          useValue: { findOne: jest.fn(), create: jest.fn(), save: jest.fn() },
+          useValue: { findOne: jest.fn(), create: jest.fn(), save: jest.fn(), update: jest.fn() },
+        },
+        {
+          provide: getRepositoryToken(PoliceStation),
+          useValue: { find: jest.fn() },
         },
         {
           provide: TrackingGateway,
@@ -70,13 +96,15 @@ describe('TrackingService', () => {
     service = module.get<TrackingService>(TrackingService);
     deviceRepo = module.get(getRepositoryToken(Device));
     pingRepo = module.get(getRepositoryToken(LocationPing));
+    sosRepo = module.get(getRepositoryToken(SosEvent));
+    stationRepo = module.get(getRepositoryToken(PoliceStation));
     gateway = module.get(TrackingGateway);
   });
 
   describe('ingestTelemetry', () => {
     it('should skip if coordinates are missing', async () => {
       const result = await service.ingestTelemetry({
-        deviceId: 'IMEI123',
+        deviceId: 'wearable-001',
         latitude: undefined,
         longitude: undefined,
       } as any);
@@ -89,44 +117,46 @@ describe('TrackingService', () => {
       deviceRepo.findOne.mockResolvedValue(null);
       deviceRepo.create.mockReturnValue(mockDevice);
       deviceRepo.save.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(null);
 
       const ping = makePing();
       pingRepo.create.mockReturnValue(ping);
       pingRepo.save.mockResolvedValue(ping);
 
       const result = await service.ingestTelemetry({
-        deviceId: 'IMEI123',
-        latitude: 27.7,
-        longitude: 85.33,
+        deviceId: 'wearable-001',
+        latitude: 27.7172,
+        longitude: 85.324,
         nmeaSentences: [],
       });
 
       expect(deviceRepo.findOne).toHaveBeenCalledWith({
-        where: { imei: 'IMEI123' },
+        where: { imei: 'wearable-001' },
       });
       expect(deviceRepo.create).toHaveBeenCalled();
       expect(pingRepo.save).toHaveBeenCalled();
       expect(gateway.emitLocationUpdate).toHaveBeenCalled();
-      expect(result?.deviceId).toBe('IMEI123');
+      expect(result?.deviceId).toBe('wearable-001');
     });
 
     it('should use existing device and save ping with altitude', async () => {
       deviceRepo.findOne.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(null);
 
       const ping = makePing({ altitudeM: 1400, speedKmph: 30 });
       pingRepo.create.mockReturnValue(ping);
       pingRepo.save.mockResolvedValue(ping);
 
       const result = await service.ingestTelemetry({
-        deviceId: 'IMEI123',
-        latitude: 27.7,
-        longitude: 85.33,
+        deviceId: 'wearable-001',
+        latitude: 27.7172,
+        longitude: 85.324,
         altitudeM: 1400,
         speedKmph: 30,
         nmeaSentences: [],
       });
 
-      expect(result?.latitude).toBe(27.7);
+      expect(result?.latitude).toBe(27.7172);
       expect(result?.altitudeM).toBe(1400);
       expect(deviceRepo.create).not.toHaveBeenCalled();
     });
@@ -135,13 +165,14 @@ describe('TrackingService', () => {
   describe('ingestMqttMessage', () => {
     it('should parse JSON payload', async () => {
       deviceRepo.findOne.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(null);
       const ping = makePing();
       pingRepo.create.mockReturnValue(ping);
       pingRepo.save.mockResolvedValue(ping);
 
       await service.ingestMqttMessage(
-        'device/IMEI123/telemetry',
-        JSON.stringify({ latitude: 27.7, longitude: 85.33 }),
+        'device/wearable-001/telemetry',
+        JSON.stringify({ deviceId: 'wearable-001', latitude: 27.7172, longitude: 85.324 }),
       );
 
       expect(pingRepo.save).toHaveBeenCalled();
@@ -149,13 +180,14 @@ describe('TrackingService', () => {
 
     it('should handle plain text telemetry format', async () => {
       deviceRepo.findOne.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(null);
       const ping = makePing();
       pingRepo.create.mockReturnValue(ping);
       pingRepo.save.mockResolvedValue(ping);
 
       await service.ingestMqttMessage(
-        'device/IMEI123/telemetry',
-        'Device: IMEI123\nLatitude: 27.7\nLongitude: 85.33',
+        'device/wearable-001/telemetry',
+        'Device: wearable-001\nLatitude: 27.7172\nLongitude: 85.324',
       );
 
       expect(pingRepo.save).toHaveBeenCalled();
@@ -165,6 +197,316 @@ describe('TrackingService', () => {
       await expect(
         service.ingestMqttMessage('device/bad/telemetry', 'not-parseable'),
       ).resolves.toBeUndefined();
+    });
+
+    it('should ingest IoT sos_started event', async () => {
+      deviceRepo.findOne.mockResolvedValue(null);
+      deviceRepo.create.mockReturnValue(mockDevice);
+      deviceRepo.save.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(null);
+      stationRepo.find.mockResolvedValue([]);
+
+      const sos = makeSos();
+      sosRepo.create.mockReturnValue(sos);
+      sosRepo.save.mockResolvedValue(sos);
+
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify({
+          deviceId: 'wearable-001',
+          eventType: 'sos_started',
+          timestamp: '2026-07-06T15:00:00+05:45',
+          sosActive: true,
+          connectionType: 'sim',
+        }),
+      );
+
+      expect(sosRepo.save).toHaveBeenCalled();
+      expect(gateway.emitSosEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deviceId: 'wearable-001',
+          eventType: 'sos_started',
+          status: 'active',
+        }),
+      );
+    });
+
+    it('should parse trigger notes from message field on sos_started', async () => {
+      deviceRepo.findOne.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(null);
+      stationRepo.find.mockResolvedValue([]);
+
+      const sos = makeSos({ triggerNotes: 'Need help now' });
+      sosRepo.create.mockImplementation((data) => data as SosEvent);
+      sosRepo.save.mockResolvedValue(sos);
+
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify({
+          deviceId: 'wearable-001',
+          eventType: 'sos_started',
+          message: 'Need help now',
+        }),
+      );
+
+      expect(sosRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ triggerNotes: 'Need help now' }),
+      );
+      expect(gateway.emitSosEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ triggerNotes: 'Need help now' }),
+      );
+    });
+
+    it('should assign nearest station when coordinates and stations exist', async () => {
+      deviceRepo.findOne.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(null);
+
+      const nearStation: PoliceStation = {
+        id: 'station-near',
+        name: 'Kathmandu Central',
+        address: 'Durbar Marg',
+        contact_number: '100',
+        latitude: 27.7172,
+        longitude: 85.324,
+        created_at: now,
+        updated_at: now,
+      };
+      const farStation: PoliceStation = {
+        id: 'station-far',
+        name: 'Remote Station',
+        address: 'Far away',
+        contact_number: '101',
+        latitude: 28.0,
+        longitude: 86.0,
+        created_at: now,
+        updated_at: now,
+      };
+      stationRepo.find.mockResolvedValue([nearStation, farStation]);
+
+      const sos = makeSos({
+        triggerNotes: null,
+        assignedStation: nearStation,
+      });
+      sosRepo.create.mockImplementation((data) => data as SosEvent);
+      sosRepo.save.mockResolvedValue(sos);
+
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify({
+          deviceId: 'wearable-001',
+          eventType: 'sos_started',
+          latitude: 27.7173,
+          longitude: 85.3241,
+        }),
+      );
+
+      expect(sosRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          assignedStation: nearStation,
+        }),
+      );
+      expect(gateway.emitSosEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          assignedStationId: 'station-near',
+          assignedStationName: 'Kathmandu Central',
+        }),
+      );
+    });
+
+    it('should leave assigned station null when no stations have coordinates', async () => {
+      deviceRepo.findOne.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(null);
+      stationRepo.find.mockResolvedValue([]);
+
+      const sos = makeSos();
+      sosRepo.create.mockImplementation((data) => data as SosEvent);
+      sosRepo.save.mockResolvedValue(sos);
+
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify({
+          deviceId: 'wearable-001',
+          eventType: 'sos_started',
+          latitude: 27.7172,
+          longitude: 85.324,
+        }),
+      );
+
+      expect(sosRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ assignedStation: undefined }),
+      );
+      expect(gateway.emitSosEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          assignedStationId: undefined,
+          assignedStationName: undefined,
+        }),
+      );
+    });
+
+    it('should ingest IoT sos_location and refresh active SOS websocket', async () => {
+      const activeSos = makeSos();
+      deviceRepo.findOne.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(activeSos);
+
+      const ping = makePing();
+      pingRepo.create.mockReturnValue(ping);
+      pingRepo.save.mockResolvedValue(ping);
+
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify({
+          deviceId: 'wearable-001',
+          eventType: 'sos_location',
+          timestamp: '2026-07-06T15:00:08+05:45',
+          sosActive: true,
+          latitude: 27.7172,
+          longitude: 85.324,
+          altitude: 1400,
+          gpsValid: true,
+          connectionType: 'sim',
+        }),
+      );
+
+      expect(pingRepo.save).toHaveBeenCalled();
+      expect(gateway.emitLocationUpdate).toHaveBeenCalled();
+      expect(gateway.emitSosEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deviceId: 'wearable-001',
+          eventType: 'sos_location',
+          status: 'active',
+          latestPing: expect.objectContaining({
+            latitude: 27.7172,
+            longitude: 85.324,
+          }),
+        }),
+      );
+    });
+
+    it('should throttle rapid sos_location websocket emits', async () => {
+      const activeSos = makeSos();
+      deviceRepo.findOne.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(activeSos);
+
+      const ping = makePing();
+      pingRepo.create.mockReturnValue(ping);
+      pingRepo.save.mockResolvedValue(ping);
+
+      const payload = {
+        deviceId: 'wearable-001',
+        eventType: 'sos_location',
+        latitude: 27.7172,
+        longitude: 85.324,
+      };
+
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify(payload),
+      );
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify(payload),
+      );
+
+      expect(gateway.emitSosEvent).toHaveBeenCalledTimes(1);
+      expect(pingRepo.save).toHaveBeenCalledTimes(2);
+    });
+
+    it('should ingest IoT sos_stopped event', async () => {
+      const activeSos = makeSos();
+      deviceRepo.findOne.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(activeSos);
+      sosRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify({
+          deviceId: 'wearable-001',
+          eventType: 'sos_stopped',
+          sosActive: false,
+        }),
+      );
+
+      expect(sosRepo.update).toHaveBeenCalledWith(
+        { id: 'sos-1', status: 'active' },
+        expect.objectContaining({
+          status: 'resolved',
+          eventType: 'sos_stopped',
+        }),
+      );
+      expect(gateway.emitSosEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deviceId: 'wearable-001',
+          eventType: 'sos_stopped',
+          status: 'resolved',
+        }),
+      );
+    });
+
+    it('should no-op sos_stopped when event already resolved', async () => {
+      const activeSos = makeSos();
+      deviceRepo.findOne.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(activeSos);
+      sosRepo.update.mockResolvedValue({ affected: 0, raw: [], generatedMaps: [] });
+
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify({
+          deviceId: 'wearable-001',
+          eventType: 'sos_stopped',
+          sosActive: false,
+        }),
+      );
+
+      expect(gateway.emitSosEvent).not.toHaveBeenCalled();
+    });
+
+    it('should ingest IoT emergency_call without coordinates', async () => {
+      deviceRepo.findOne.mockResolvedValue(mockDevice);
+
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify({
+          deviceId: 'wearable-001',
+          eventType: 'emergency_call',
+          phoneNumber: '+9779828755846',
+          timestamp: '2026-07-06T15:00:00+05:45',
+          connectionType: 'sim',
+        }),
+      );
+
+      expect(deviceRepo.update).toHaveBeenCalled();
+      expect(pingRepo.save).not.toHaveBeenCalled();
+      expect(gateway.emitSosEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deviceId: 'wearable-001',
+          eventType: 'emergency_call',
+          status: 'active',
+        }),
+      );
+    });
+
+    it('should resolve device id from topic when JSON omits deviceId', async () => {
+      deviceRepo.findOne.mockResolvedValue(null);
+      deviceRepo.create.mockReturnValue(mockDevice);
+      deviceRepo.save.mockResolvedValue(mockDevice);
+      sosRepo.findOne.mockResolvedValue(null);
+
+      const ping = makePing();
+      pingRepo.create.mockReturnValue(ping);
+      pingRepo.save.mockResolvedValue(ping);
+
+      await service.ingestMqttMessage(
+        'surakshawatch/wearable-001/events',
+        JSON.stringify({
+          latitude: 27.7172,
+          longitude: 85.324,
+        }),
+      );
+
+      expect(deviceRepo.findOne).toHaveBeenCalledWith({
+        where: { imei: 'wearable-001' },
+      });
+      expect(pingRepo.save).toHaveBeenCalled();
     });
   });
 });

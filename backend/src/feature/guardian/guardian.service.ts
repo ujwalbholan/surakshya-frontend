@@ -1,17 +1,21 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, randomInt } from 'node:crypto';
 import { User } from 'src/feature/user/entities/user.entity';
 import { GuardianLink } from './entities/guardian-link.entity';
 import { GuardianRequest } from './entities/guardian-request.entity';
+import { Device } from 'src/feature/device/entities/device.entity';
+import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
+import { LocationPing } from 'src/feature/device/entities/location-ping.entity';
 
 import { CreateGuardianDto } from './dto/create-guardian.dto';
 import { AddWardDto } from './dto/add-ward.dto';
@@ -30,6 +34,12 @@ export class GuardianService {
     private readonly guardianLinkRepository: Repository<GuardianLink>,
     @InjectRepository(GuardianRequest)
     private readonly guardianRequestRepository: Repository<GuardianRequest>,
+    @InjectRepository(Device)
+    private readonly deviceRepository: Repository<Device>,
+    @InjectRepository(SosEvent)
+    private readonly sosEventRepository: Repository<SosEvent>,
+    @InjectRepository(LocationPing)
+    private readonly locationPingRepository: Repository<LocationPing>,
     private readonly notificationService: NotificationService,
     private readonly redisService: RedisService,
   ) {}
@@ -487,6 +497,81 @@ export class GuardianService {
       page: options.page,
       limit: options.limit,
       totalPages: Math.ceil(total / options.limit),
+    };
+  }
+
+  async getWardSosEvents(guardianUserId: string, wardId: string) {
+    const link = await this.guardianLinkRepository.findOne({
+      where: {
+        guardian_user_id: guardianUserId,
+        child_user_id: wardId,
+      },
+    });
+
+    if (!link) {
+      throw new ForbiddenException('You are not linked to this ward');
+    }
+
+    const devices = await this.deviceRepository.find({
+      where: { user: { id: wardId } },
+    });
+
+    if (devices.length === 0) {
+      return {
+        message: 'SOS events retrieved successfully',
+        wardId,
+        data: [],
+        total: 0,
+      };
+    }
+
+    const deviceIds = devices.map((device) => device.id);
+    const events = await this.sosEventRepository.find({
+      where: {
+        device: { id: In(deviceIds) },
+        status: 'active',
+      },
+      relations: ['device', 'assignedStation'],
+      order: { startedAt: 'DESC' },
+    });
+
+    const enriched = await Promise.all(
+      events.map(async (event) => {
+        const latestPing = await this.locationPingRepository.findOne({
+          where: { device: { id: event.device.id } },
+          order: { recordedAt: 'DESC' },
+        });
+
+        return {
+          id: event.id,
+          deviceId: event.device.id,
+          imei: event.device.imei,
+          label: event.device.label,
+          status: event.status,
+          eventType: event.eventType ?? null,
+          latitude: event.latitude ?? null,
+          longitude: event.longitude ?? null,
+          triggerNotes: event.triggerNotes ?? null,
+          assignedStationId: event.assignedStation?.id ?? null,
+          assignedStationName: event.assignedStation?.name ?? null,
+          startedAt: event.startedAt,
+          resolvedAt: event.resolvedAt ?? null,
+          lastLocation: latestPing
+            ? {
+                latitude: latestPing.latitude,
+                longitude: latestPing.longitude,
+                recordedAt: latestPing.recordedAt,
+              }
+            : null,
+        };
+      }),
+    );
+
+    return {
+      message: 'SOS events retrieved successfully',
+      wardId,
+      data: enriched,
+      total: enriched.length,
     };
   }
 
