@@ -5,6 +5,10 @@ const apiOrigin =
   process.env.API_URL?.replace(/\/$/, "") ??
   "https://ams-omwj.onrender.com";
 
+const surakshyaOrigin =
+  process.env.SURAKSHYA_API_URL?.replace(/\/$/, "") ??
+  "http://localhost:3000";
+
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, ".."),
   turbopack: {
@@ -25,7 +29,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/api/surakshya/:path*",
-        destination: "https://surakshya.onrender.com/:path*",
+        destination: `${surakshyaOrigin}/:path*`,
       },
     ];
   },
