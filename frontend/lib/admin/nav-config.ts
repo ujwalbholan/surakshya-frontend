@@ -14,6 +14,7 @@ import {
   Settings,
   ScrollText,
   Key,
+  Watch,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
@@ -48,6 +49,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     title: "User Management",
     items: [
       { label: "All Users", href: "/admin/users", icon: Users },
+      { label: "Devices", href: "/admin/devices", icon: Watch },
       { label: "Roles & Permissions", href: "/admin/roles", icon: ShieldCheck },
       { label: "Add User", href: "/admin/users/new", icon: UserPlus },
     ],
