@@ -409,7 +409,7 @@ describe('GuardianService', () => {
         id: guardianId,
         email: 'guardian@test.com',
         role: Role.GUARDIAN,
-        phone_verified: true,
+        phone_verified: false,
       });
 
       requestRepo.findOneBy.mockResolvedValue(request);

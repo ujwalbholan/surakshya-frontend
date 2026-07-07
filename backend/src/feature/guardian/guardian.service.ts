@@ -104,11 +104,9 @@ export class GuardianService {
       child.full_name,
     );
 
-    await this.sendOtpSms(phone, dto.full_name.trim());
-
     return {
       message:
-        'Guardian request sent. An email with login credentials and an SMS OTP have been sent to the guardian.',
+        'Guardian request sent. An email with login credentials has been sent to the guardian.',
       request_id: request.id,
       guardian: this.toPublicUser(guardian),
     };
@@ -258,12 +256,6 @@ export class GuardianService {
 
       if (guardian.email !== request.target_email) {
         throw new BadRequestException('This request is not addressed to you');
-      }
-
-      if (!guardian.phone_verified) {
-        throw new BadRequestException(
-          'Please verify your phone number first via OTP before accepting requests',
-        );
       }
 
       const existingLink = await this.guardianLinkRepository.findOne({
@@ -587,7 +579,7 @@ export class GuardianService {
       await this.notificationService.sendEmail({
         to: email,
         subject: 'You have been added as a Guardian on Surakshya',
-        text: `Hello ${name},\n\n${childName} has added you as their guardian on Surakshya.\n\nYour login credentials:\nEmail: ${email}\nPassword: ${password}\n\nPlease log in and verify your phone via OTP to complete the setup.\n\nThank you,\nSurakshya Team`,
+        text: `Hello ${name},\n\n${childName} has added you as their guardian on Surakshya.\n\nYour login credentials:\nEmail: ${email}\nPassword: ${password}\n\nLog in to the Suraksha app with these credentials and accept the link request.\n\nThank you,\nSurakshya Team`,
         html: `
           <div style="font-family: Arial, sans-serif;">
             <h2>Guardian Invitation</h2>
@@ -596,7 +588,7 @@ export class GuardianService {
             <h3>Your Login Credentials</h3>
             <p><strong>Email:</strong> ${email}</p>
             <p><strong>Password:</strong> ${password}</p>
-            <p>An OTP has been sent to your phone. Please use it to verify your account and set a new password.</p>
+            <p>Open the Suraksha mobile app, sign in with the credentials above, and tap <strong>Accept</strong> on the link request.</p>
             <p>Thank you,<br/>Surakshya Team</p>
           </div>
         `,
