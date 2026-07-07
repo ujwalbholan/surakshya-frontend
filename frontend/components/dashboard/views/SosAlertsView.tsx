@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 import VictimProfilePanel from "@/components/dashboard/VictimProfilePanel"
 import { Panel, SectionHeader, StatCard, StatusPill } from "@/components/dashboard/shared"
-import { sosAlerts, type AlertStatus, type SosAlert } from "@/lib/dashboard/mock-data"
+import { type AlertStatus, type SosAlert } from "@/lib/dashboard/mock-data"
 import { cn } from "@/lib/utils"
 
 const FILTERS: { id: AlertStatus | "all"; label: string }[] = [
@@ -33,11 +33,18 @@ const TIMELINE = [
 ]
 
 interface SosAlertsViewProps {
+  sosAlerts: SosAlert[]
   selectedAlert: SosAlert | undefined
   onSelectAlert: (id: string) => void
+  onResolve?: (id: string, notes?: string) => Promise<void>
 }
 
-export default function SosAlertsView({ selectedAlert, onSelectAlert }: SosAlertsViewProps) {
+export default function SosAlertsView({
+  sosAlerts,
+  selectedAlert,
+  onSelectAlert,
+  onResolve,
+}: SosAlertsViewProps) {
   const [filter, setFilter] = useState<AlertStatus | "all">("all")
   const [search, setSearch] = useState("")
 
@@ -52,7 +59,7 @@ export default function SosAlertsView({ selectedAlert, onSelectAlert }: SosAlert
         a.district.toLowerCase().includes(q)
       return matchFilter && matchSearch
     })
-  }, [filter, search])
+  }, [filter, search, sosAlerts])
 
   const counts = {
     all: sosAlerts.length,
@@ -181,7 +188,7 @@ export default function SosAlertsView({ selectedAlert, onSelectAlert }: SosAlert
         <div className="xl:col-span-2">
           {selectedAlert ? (
             <div className="sticky top-20 space-y-4">
-              <VictimProfilePanel alert={selectedAlert} />
+              <VictimProfilePanel alert={selectedAlert} onResolve={onResolve} />
               <Panel title="Dispatch protocol" icon={Radio}>
                 <ol className="list-decimal space-y-2 pl-4 text-xs text-[#aaa]">
                   <li>Acknowledge alert within 30 seconds</li>

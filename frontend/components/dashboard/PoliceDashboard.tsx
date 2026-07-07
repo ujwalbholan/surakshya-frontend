@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Bell, LayoutDashboard, LogOut } from "lucide-react"
+import { Bell, LayoutDashboard, Loader2, LogOut } from "lucide-react"
 import IncomingSosModal from "@/components/dashboard/IncomingSosModal"
 import CasesView from "@/components/dashboard/views/CasesView"
 import DashboardOverviewView from "@/components/dashboard/views/DashboardOverviewView"
@@ -13,9 +13,16 @@ import SosAlertsView from "@/components/dashboard/views/SosAlertsView"
 import UnitsView from "@/components/dashboard/views/UnitsView"
 import { Badge } from "@/components/ui/badge"
 import { logoutUser } from "@/lib/api/auth"
+import {
+  fetchActiveSosEvents,
+  fetchPoliceDashboard,
+  resolveSosEvent,
+} from "@/lib/api/police"
 import { clearAuthSession, getStoredEmail } from "@/lib/auth/session"
+import type { DashboardStat } from "@/lib/dashboard/mock-data"
+import type { SosAlert } from "@/lib/dashboard/mock-data"
+import { mapSosEventToAlert } from "@/lib/dashboard/sos-mappers"
 import { NAV_ITEMS, VIEW_TITLES, type DashboardView } from "@/lib/dashboard/nav"
-import { sosAlerts } from "@/lib/dashboard/mock-data"
 import { cn } from "@/lib/utils"
 
 function formatNepalTime(date: Date) {
@@ -78,10 +85,64 @@ export default function PoliceDashboard() {
   const [nepalTime, setNepalTime] = useState(() => formatNepalTime(new Date()))
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeView, setActiveView] = useState<DashboardView>("dashboard")
-  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(
-    () => sosAlerts.find((a) => a.status === "critical")?.id ?? null
-  )
+  const [sosAlerts, setSosAlerts] = useState<SosAlert[]>([])
+  const [dashboardStats, setDashboardStats] = useState<DashboardStat[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null)
   const [showIncomingModal, setShowIncomingModal] = useState(false)
+
+  const loadData = useCallback(async () => {
+    setError(null)
+    try {
+      const [dashboard, events] = await Promise.all([
+        fetchPoliceDashboard(),
+        fetchActiveSosEvents(),
+      ])
+      const alerts = events.data.map((event) => mapSosEventToAlert(event))
+      setSosAlerts(alerts)
+      setDashboardStats([
+        {
+          label: "Active SOS",
+          value: String(dashboard.activeSosEvents),
+          change: `${dashboard.sosEventsToday} today`,
+          trend: "up",
+        },
+        {
+          label: "Resolved Today",
+          value: String(dashboard.resolvedToday.length),
+          change: "From live feed",
+          trend: "neutral",
+        },
+        {
+          label: "Devices",
+          value: String(dashboard.totalDevices),
+          change: `${dashboard.pingsToday} pings today`,
+          trend: "neutral",
+        },
+        {
+          label: "Registered Users",
+          value: String(dashboard.totalUsers),
+          change: "Platform total",
+          trend: "neutral",
+        },
+      ])
+      setSelectedAlertId((prev) => {
+        if (prev && alerts.some((a) => a.id === prev)) return prev
+        return alerts.find((a) => a.status === "critical")?.id ?? alerts[0]?.id ?? null
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load dashboard data")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadData()
+    const interval = setInterval(() => void loadData(), 30000)
+    return () => clearInterval(interval)
+  }, [loadData])
 
   const defaultCritical = sosAlerts.find((a) => a.status === "critical")
   const selectedAlert = useMemo(
@@ -89,17 +150,17 @@ export default function PoliceDashboard() {
       sosAlerts.find((a) => a.id === selectedAlertId) ??
       defaultCritical ??
       sosAlerts[0],
-    [selectedAlertId, defaultCritical]
+    [selectedAlertId, defaultCritical, sosAlerts]
   )
 
   const criticalCount = sosAlerts.filter((a) => a.status === "critical").length
   const viewMeta = VIEW_TITLES[activeView]
 
   useEffect(() => {
-    if (!defaultCritical || activeView !== "dashboard") return
+    if (!defaultCritical || activeView !== "dashboard" || loading) return
     const timer = setTimeout(() => setShowIncomingModal(true), 1200)
     return () => clearTimeout(timer)
-  }, [defaultCritical, activeView])
+  }, [defaultCritical, activeView, loading])
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -113,6 +174,14 @@ export default function PoliceDashboard() {
     setShowIncomingModal(false)
     setActiveView("sos")
   }, [])
+
+  const handleResolve = useCallback(
+    async (id: string, notes?: string) => {
+      await resolveSosEvent(id, notes)
+      await loadData()
+    },
+    [loadData]
+  )
 
   const handleNav = (view: DashboardView) => {
     setActiveView(view)
@@ -129,21 +198,52 @@ export default function PoliceDashboard() {
   }
 
   const renderView = () => {
+    if (loading) {
+      return (
+        <div className="flex min-h-[40vh] items-center justify-center gap-2 text-[#888]">
+          <Loader2 className="h-5 w-5 animate-spin text-[#C0392B]" />
+          Loading live data…
+        </div>
+      )
+    }
+    if (error) {
+      return (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-8 text-center">
+          <p className="text-sm text-red-300">{error}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setLoading(true)
+              void loadData()
+            }}
+            className="mt-3 text-xs uppercase tracking-wider text-[#FAFAFA] underline"
+          >
+            Retry
+          </button>
+        </div>
+      )
+    }
+
     switch (activeView) {
       case "dashboard":
         return (
           <DashboardOverviewView
+            sosAlerts={sosAlerts}
+            dashboardStats={dashboardStats}
             selectedAlert={selectedAlert}
             onSelectAlert={handleSelectAlert}
             criticalCount={criticalCount}
             defaultCritical={defaultCritical}
+            onResolve={handleResolve}
           />
         )
       case "sos":
         return (
           <SosAlertsView
+            sosAlerts={sosAlerts}
             selectedAlert={selectedAlert}
             onSelectAlert={(id) => setSelectedAlertId(id)}
+            onResolve={handleResolve}
           />
         )
       case "cases":
@@ -161,7 +261,7 @@ export default function PoliceDashboard() {
 
   return (
     <div className="flex min-h-screen bg-[#080808] text-[#FAFAFA]">
-      {showIncomingModal && defaultCritical && activeView === "dashboard" && (
+      {showIncomingModal && defaultCritical && activeView === "dashboard" && !loading && (
         <IncomingSosModal
           alert={defaultCritical}
           onView={() => handleSelectAlert(defaultCritical.id)}

@@ -40,6 +40,8 @@ export interface SosAlert {
   triggerType: "double_tap"
   victim: VictimProfile
   liveLocation: LiveLocation
+  deviceId?: string
+  userId?: string
 }
 
 export interface DashboardStat {

@@ -9,6 +9,7 @@ import {
   User,
 } from "lucide-react"
 import { Panel, SectionHeader, StatCard, StatusPill } from "@/components/dashboard/shared"
+// TODO: no backend endpoint yet
 import { policeCases, type CaseStatus } from "@/lib/dashboard/operations-data"
 import { cn } from "@/lib/utils"
 

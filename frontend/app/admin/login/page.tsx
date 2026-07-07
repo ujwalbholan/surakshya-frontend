@@ -101,8 +101,8 @@ export default function AdminLoginPage() {
     }
 
     const user = data.user
-    if (!user || user.role !== "SUPER_ADMIN") {
-      toast.error("Access denied. Super Admin credentials required.")
+    if (!user || (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN")) {
+      toast.error("Access denied. Admin credentials required.")
       setSubmitting(false)
       return
     }

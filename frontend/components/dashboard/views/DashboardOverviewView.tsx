@@ -5,10 +5,9 @@ import { AlertTriangle, ChevronRight, Clock, MapPin, Shield, Watch } from "lucid
 import VictimProfilePanel from "@/components/dashboard/VictimProfilePanel"
 import { Panel, StatCard } from "@/components/dashboard/shared"
 import {
-  dashboardStats,
   provinceCoverage,
   recentActivity,
-  sosAlerts,
+  type DashboardStat,
   type SosAlert,
 } from "@/lib/dashboard/mock-data"
 import { cn } from "@/lib/utils"
@@ -62,17 +61,23 @@ function AlertRow({
 }
 
 interface DashboardOverviewViewProps {
+  sosAlerts: SosAlert[]
+  dashboardStats: DashboardStat[]
   selectedAlert: SosAlert | undefined
   onSelectAlert: (id: string) => void
   criticalCount: number
   defaultCritical: SosAlert | undefined
+  onResolve?: (id: string, notes?: string) => Promise<void>
 }
 
 export default function DashboardOverviewView({
+  sosAlerts,
+  dashboardStats,
   selectedAlert,
   onSelectAlert,
   criticalCount,
   defaultCritical,
+  onResolve,
 }: DashboardOverviewViewProps) {
   return (
     <>
@@ -136,14 +141,14 @@ export default function DashboardOverviewView({
           </Panel>
           {selectedAlert && (
             <div className="mt-6 xl:hidden">
-              <VictimProfilePanel alert={selectedAlert} />
+              <VictimProfilePanel alert={selectedAlert} onResolve={onResolve} />
             </div>
           )}
         </div>
         <div className="hidden xl:col-span-2 xl:block">
           {selectedAlert && (
             <div className="sticky top-20">
-              <VictimProfilePanel alert={selectedAlert} />
+              <VictimProfilePanel alert={selectedAlert} onResolve={onResolve} />
             </div>
           )}
         </div>

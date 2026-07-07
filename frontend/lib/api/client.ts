@@ -76,6 +76,47 @@ export async function apiRequest<T>(
 export const API_BASE = "/api/surakshya"
 export const API_BASE_URL_EXTERNAL = "https://surakshya.onrender.com"
 
+export async function surakshyaPublicRequest<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`
+
+  let response: Response
+  try {
+    response = await fetch(url, {
+      credentials: "include",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...options.headers,
+      },
+    })
+  } catch {
+    throw new ApiError(
+      "Could not reach the server. Check your connection and try again.",
+      0
+    )
+  }
+
+  const body = await parseJson<T & ApiErrorBody>(response)
+
+  if (!response.ok) {
+    const message =
+      (body && typeof body === "object" && "message" in body && body.message) ||
+      response.statusText ||
+      "Request failed"
+    throw new ApiError(String(message), response.status, body ?? {})
+  }
+
+  if (body === null) {
+    throw new ApiError("Invalid response from server.", response.status)
+  }
+
+  return body
+}
+
 export interface AdminApiResult<T> {
   data: T | null
   error: string | null

@@ -38,6 +38,13 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     ],
   },
   {
+    title: "Police Operations",
+    items: [
+      { label: "Police Stations", href: "/admin/police-stations", icon: MapPin },
+      { label: "Invite Officer", href: "/admin/police/invite", icon: UserPlus },
+    ],
+  },
+  {
     title: "User Management",
     items: [
       { label: "All Users", href: "/admin/users", icon: Users },

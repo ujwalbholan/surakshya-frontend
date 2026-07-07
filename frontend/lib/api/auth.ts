@@ -1,5 +1,4 @@
-import { apiRequest } from "./client"
-import { API_BASE_URL } from "./config"
+import { surakshyaPublicRequest, API_BASE, apiRequest } from "./client"
 import { getAccessToken } from "@/lib/auth/session"
 import type {
   LoginRequest,
@@ -16,7 +15,7 @@ export function registerUser(payload: RegisterRequest) {
 }
 
 export function loginUser(payload: LoginRequest) {
-  return apiRequest<LoginResponse>("/auth/login", {
+  return surakshyaPublicRequest<LoginResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -25,7 +24,7 @@ export function loginUser(payload: LoginRequest) {
 export async function logoutUser(): Promise<void> {
   const token = getAccessToken()
   try {
-    await fetch(`${API_BASE_URL}/auth/logout`, {
+    await fetch(`${API_BASE}/auth/logout`, {
       method: "POST",
       credentials: "include",
       headers: {

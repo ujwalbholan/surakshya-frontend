@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginUser } from "@/lib/api/auth";
 import { isApiError } from "@/lib/api/client";
-import { saveAuthSession } from "@/lib/auth/session";
+import { saveAuthSession, getRedirectForRole } from "@/lib/auth/session";
 import { labelStyle, inputBaseStyle } from "@/lib/customCss/customCss";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -23,8 +23,11 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered") === "1";
+  const activated = searchParams.get("activated") === "1";
   const nextPath = searchParams.get("next");
-  const successMessage = registered
+  const successMessage = activated
+    ? "Account activated. Sign in with your new password."
+    : registered
     ? "Account created. Sign in with your email and password."
     : null;
   const [email, setEmail] = useState("");
@@ -58,11 +61,14 @@ export default function LoginPage() {
 
     try {
       const data = await loginUser({ email: email.trim(), password });
-      saveAuthSession(data.email, data.token);
+      saveAuthSession(
+        data.user.email,
+        { accessToken: data.accessToken, refreshToken: data.refreshToken },
+        data.user.role
+      );
       setPanelFadingOut(true);
       setFlashVisible(true);
-      const destination =
-        nextPath?.startsWith("/dashboard") ? nextPath : "/dashboard";
+      const destination = getRedirectForRole(data.user.role, nextPath);
       setTimeout(() => {
         router.push(destination);
       }, 520);
