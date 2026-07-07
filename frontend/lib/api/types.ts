@@ -178,6 +178,79 @@ export interface GuardianWardSosResponse {
   total: number
 }
 
+export type GuardianRequestDirection = "CHILD_TO_GUARDIAN" | "GUARDIAN_TO_CHILD"
+
+export type GuardianRequestStatus = "PENDING" | "ACCEPTED" | "REJECTED"
+
+export interface GuardianLinkUser {
+  id: string
+  full_name: string
+  email: string
+  phone: string
+  role: string
+}
+
+export interface InviteGuardianPayload {
+  full_name: string
+  email: string
+  phone: string
+}
+
+export interface InviteGuardianResponse {
+  message: string
+  request_id: string
+  guardian: GuardianLinkUser
+}
+
+export interface MyGuardiansResponse {
+  message: string
+  guardians: GuardianLinkUser[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface ChildPendingRequest {
+  id: string
+  target_name: string
+  target_email: string
+  direction: GuardianRequestDirection
+  status: GuardianRequestStatus
+  created_at: string
+}
+
+export interface ChildPendingRequestsResponse {
+  message: string
+  requests: ChildPendingRequest[]
+}
+
+export interface GuardianPendingRequest {
+  id: string
+  requester_name: string
+  requester_id: string
+  direction: GuardianRequestDirection
+  status: GuardianRequestStatus
+  created_at: string
+}
+
+export interface GuardianPendingRequestsResponse {
+  message: string
+  requests: GuardianPendingRequest[]
+}
+
+export interface GuardianLinkMessageResponse {
+  message: string
+}
+
+export interface InviteWardPayload {
+  child_email: string
+}
+
+export interface GuardianSetupMessageResponse {
+  message: string
+}
+
 export interface PoliceSosEventsResponse {
   data: PoliceSosEventSummary[]
   total: number
