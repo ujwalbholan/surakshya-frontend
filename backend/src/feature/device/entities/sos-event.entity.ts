@@ -47,7 +47,7 @@ export class SosEvent {
   @Column({ type: 'text', nullable: true })
   notes?: string | null;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'trigger_notes', type: 'text', nullable: true })
   triggerNotes?: string | null;
 
   @ManyToOne(() => PoliceStation, { nullable: true, onDelete: 'SET NULL' })
