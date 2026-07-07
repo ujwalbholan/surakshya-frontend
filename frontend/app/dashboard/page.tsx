@@ -1,10 +1,10 @@
-import AuthGuard from "@/components/auth/AuthGuard"
+import PoliceAuthGuard from "@/components/auth/PoliceAuthGuard"
 import PoliceDashboard from "@/components/dashboard/PoliceDashboard"
 
 export default function DashboardPage() {
   return (
-    <AuthGuard>
+    <PoliceAuthGuard>
       <PoliceDashboard />
-    </AuthGuard>
+    </PoliceAuthGuard>
   )
 }

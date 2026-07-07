@@ -46,11 +46,7 @@ export function isAuthenticated(): boolean {
   return Boolean(getAccessToken())
 }
 
-export function getRedirectForRole(
-  role: string,
-  nextPath?: string | null
-): string {
-  if (nextPath?.startsWith("/dashboard") && role === "POLICE") return nextPath
+function defaultRedirectForRole(role: string): string {
   switch (role) {
     case "POLICE":
       return "/dashboard"
@@ -60,6 +56,30 @@ export function getRedirectForRole(
     case "GUARDIAN":
       return "/guardian"
     default:
-      return "/app"
+      return "/"
   }
+}
+
+export function getRedirectForRole(
+  role: string,
+  nextPath?: string | null
+): string {
+  if (!nextPath || nextPath === "/app" || nextPath.startsWith("/app/")) {
+    return defaultRedirectForRole(role)
+  }
+
+  if (role === "POLICE" && nextPath.startsWith("/dashboard")) {
+    return nextPath
+  }
+  if (
+    (role === "ADMIN" || role === "SUPER_ADMIN") &&
+    nextPath.startsWith("/admin")
+  ) {
+    return nextPath
+  }
+  if (role === "GUARDIAN" && nextPath.startsWith("/guardian")) {
+    return nextPath
+  }
+
+  return defaultRedirectForRole(role)
 }
