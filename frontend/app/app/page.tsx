@@ -1,7 +1,6 @@
 "use client"
 
-import Link from "next/link"
-import { Shield, Users } from "lucide-react"
+import { Shield, Smartphone } from "lucide-react"
 import { getStoredEmail } from "@/lib/auth/session"
 
 export default function AppHomePage() {
@@ -18,28 +17,21 @@ export default function AppHomePage() {
           </div>
         </div>
         <p className="mt-4 text-sm text-[#aaa]">
-          Welcome to your citizen portal. Guardian linking is available now;
-          additional features (device pairing, profile settings) are coming
-          soon.
+          Welcome to your citizen portal. Use the Suraksha mobile app to manage
+          guardians, SOS, and your safety profile.
         </p>
       </header>
 
-      <nav className="space-y-3">
-        <Link
-          href="/app/guardians"
-          className="flex items-center gap-4 rounded-lg border border-[#222] bg-[#111] px-4 py-4 transition-colors hover:border-[#2563eb]/50"
-        >
-          <Users className="h-5 w-5 shrink-0 text-[#2563eb]" />
-          <div>
-            <p className="font-medium">Guardians</p>
-            <p className="text-xs text-[#666]">
-              Invite guardians and manage link requests
-            </p>
-          </div>
-        </Link>
-      </nav>
-
-      {/* TODO: additional citizen features — device pairing, profile settings */}
+      <div className="flex items-start gap-4 rounded-lg border border-[#222] bg-[#111] px-4 py-4">
+        <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-[#2563eb]" />
+        <div>
+          <p className="font-medium">Mobile app</p>
+          <p className="mt-1 text-xs text-[#666]">
+            Guardian linking, SOS, and account settings are available in the
+            Suraksha app on your phone.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

@@ -4,7 +4,7 @@ import UserAuthGuard from "@/components/auth/UserAuthGuard"
 
 export const metadata: Metadata = {
   title: "App | Suraksha",
-  description: "Manage your Suraksha account, guardians, and safety settings.",
+  description: "Your Suraksha citizen portal.",
 }
 
 export default function AppLayout({
