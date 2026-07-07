@@ -48,6 +48,32 @@ export interface UserCountResponse {
   count: number
 }
 
+export interface AdminUserRecord {
+  id: string
+  full_name: string
+  email: string
+  phone: string
+  role: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface AdminUsersListResponse {
+  data: AdminUserRecord[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface AdminStatsResponse {
+  totalUsers: number
+  totalDevices: number
+  totalPings: number
+  activeSosEvents: number
+  newUsersToday: number
+}
+
 export function adminLogin(email: string, password: string) {
   return adminApiRequest<AdminLoginResponse>("/auth/login", {
     method: "POST",
@@ -95,12 +121,27 @@ export function refreshSession() {
   return adminApiRequest<null>("/auth/refresh", { method: "POST" })
 }
 
-export function fetchUserCount() {
-  return adminApiRequest<UserCountResponse>("/users/count")
+export async function fetchUserCount() {
+  const result = await adminApiRequest<AdminStatsResponse>("/admin/stats")
+  return {
+    ...result,
+    data: result.data ? { count: result.data.totalUsers } : null,
+  }
 }
 
-export function fetchUsers() {
-  return adminApiRequest<AdminUser[]>("/users")
+export function fetchUsers(params?: {
+  page?: number
+  limit?: number
+  role?: string
+  search?: string
+}) {
+  const query = new URLSearchParams()
+  if (params?.page) query.set("page", String(params.page))
+  query.set("limit", String(params?.limit ?? 100))
+  if (params?.role) query.set("role", params.role)
+  if (params?.search) query.set("search", params.search)
+  const qs = query.toString()
+  return adminApiRequest<AdminUsersListResponse>(`/admin/users?${qs}`)
 }
 
 export function checkHealth() {

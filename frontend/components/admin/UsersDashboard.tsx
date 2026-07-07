@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { fetchUsers } from "@/lib/api/admin-auth"
+import { clearAdminSession } from "@/lib/auth/admin-session"
 import {
   filterUsers,
   formatJoinDate,
@@ -54,7 +55,6 @@ import {
   type UserStatusFilter,
 } from "@/lib/admin/users-data"
 import {
-  MOCK_USERS,
   getInitials,
   type MockUser,
   type UserRole,
@@ -67,6 +67,7 @@ const EDITABLE_ROLES: UserRole[] = ["USER", "GUARDIAN", "POLICE", "ADMIN", "SUPE
 export default function UsersDashboard() {
   const [users, setUsers] = useState<MockUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<UserRoleFilter>("ALL")
   const [statusFilter, setStatusFilter] = useState<UserStatusFilter>("all")
@@ -76,21 +77,32 @@ export default function UsersDashboard() {
   const [deleteUser, setDeleteUser] = useState<MockUser | null>(null)
 
   useEffect(() => {
-    fetchUsers().then(({ data }) => {
-      if (data && Array.isArray(data) && data.length > 0) {
+    fetchUsers({ limit: 100 }).then(({ data, error, status }) => {
+      if (status === 401) {
+        clearAdminSession()
+        setLoadError("Your session expired. Please log in again.")
+        toast.error("Session expired — please log in again")
+        setUsers([])
+      } else if (error) {
+        setLoadError(error)
+        toast.error(error)
+        setUsers([])
+      } else if (data?.data) {
         setUsers(
-          data.map((u) => ({
+          data.data.map((u) => ({
             id: u.id,
             full_name: u.full_name,
             email: u.email,
             phone: u.phone,
             role: u.role as UserRole,
-            createdAt: new Date().toISOString().split("T")[0],
-            status: "active" as UserStatus,
+            createdAt: u.created_at?.split("T")[0] ?? "",
+            status: (u.is_active ? "active" : "inactive") as UserStatus,
           }))
         )
+        setLoadError(null)
       } else {
-        setUsers(MOCK_USERS)
+        setUsers([])
+        setLoadError(null)
       }
       setLoading(false)
     })
@@ -239,10 +251,18 @@ export default function UsersDashboard() {
                   <tr>
                     <td colSpan={8} className="px-5 py-16 text-center">
                       <Users className="mx-auto h-8 w-8 text-white/10" />
-                      <p className="mt-3 font-display text-lg italic text-white/35">No users found</p>
-                      <Link href="/admin/users/new" className="mt-2 inline-block text-sm text-white/50 hover:text-white">
-                        Add a user →
-                      </Link>
+                      <p className="mt-3 font-display text-lg italic text-white/35">
+                        {loadError ?? "No users found"}
+                      </p>
+                      {loadError ? (
+                        <Link href="/admin/login" className="mt-2 inline-block text-sm text-white/50 hover:text-white">
+                          Log in again →
+                        </Link>
+                      ) : (
+                        <Link href="/admin/users/new" className="mt-2 inline-block text-sm text-white/50 hover:text-white">
+                          Add a user →
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ) : (

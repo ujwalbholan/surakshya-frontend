@@ -53,5 +53,10 @@ export function clearAdminSession(): void {
 }
 
 export function isAuthenticated(): boolean {
-  return getAdminSession() !== null
+  return getAdminSession() !== null && getAdminAccessToken() !== null
+}
+
+/** Clears session when profile exists but API token is missing (stale login). */
+export function hasStaleAdminSession(): boolean {
+  return getAdminSession() !== null && getAdminAccessToken() === null
 }

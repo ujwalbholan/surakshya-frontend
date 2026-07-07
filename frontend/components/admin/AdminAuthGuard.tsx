@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { isAuthenticated } from "@/lib/auth/admin-session"
+import { isAuthenticated, hasStaleAdminSession, clearAdminSession } from "@/lib/auth/admin-session"
 
 interface AdminAuthGuardProps {
   children: React.ReactNode
@@ -22,6 +22,11 @@ export default function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   const [authed, setAuthed] = useState(false)
 
   useEffect(() => {
+    if (hasStaleAdminSession()) {
+      clearAdminSession()
+      router.push("/admin/login")
+      return
+    }
     const authenticated = isAuthenticated()
     setAuthed(authenticated)
     setChecked(true)

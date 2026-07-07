@@ -47,6 +47,13 @@ export default function NewUserPage() {
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<FieldErrors>({})
 
+  const isPoliceRole = role === "POLICE"
+  const pageTitle = isPoliceRole ? "Register New Police" : "Register New User"
+  const submitLabel = isPoliceRole ? "Register Police" : "Register User"
+  const successMessage = isPoliceRole
+    ? "Police officer registered successfully"
+    : "User registered successfully"
+
   const validate = (): boolean => {
     const e: FieldErrors = {}
     if (!fullName.trim()) e.full_name = "Full name is required"
@@ -95,14 +102,14 @@ export default function NewUserPage() {
       return
     }
 
-    toast.success("User registered successfully")
+    toast.success(successMessage)
     router.push("/admin/users")
   }
 
   return (
     <PageTransition>
       <div className="mx-auto max-w-2xl">
-        <h1 className="mb-6 font-display text-[28px] italic text-white">Register New User</h1>
+        <h1 className="mb-6 font-display text-[28px] italic text-white">{pageTitle}</h1>
         <div className="admin-card">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -146,7 +153,7 @@ export default function NewUserPage() {
             </div>
             <div className="flex gap-3 pt-2">
               <button type="submit" disabled={submitting} className="admin-btn-primary flex-1">
-                {submitting ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : "Register User"}
+                {submitting ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : submitLabel}
               </button>
               <Link href="/admin/users" className="admin-btn-ghost flex items-center justify-center px-6">Cancel</Link>
             </div>
