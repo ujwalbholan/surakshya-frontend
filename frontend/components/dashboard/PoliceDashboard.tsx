@@ -18,7 +18,12 @@ import {
   fetchPoliceDashboard,
   resolveSosEvent,
 } from "@/lib/api/police"
+import type { SosSocketEvent } from "@/lib/api/types"
 import { clearAuthSession, getStoredEmail } from "@/lib/auth/session"
+import {
+  applySosSocketEvent,
+  usePoliceSosSocket,
+} from "@/hooks/usePoliceSosSocket"
 import type { DashboardStat } from "@/lib/dashboard/mock-data"
 import type { SosAlert } from "@/lib/dashboard/mock-data"
 import { mapSosEventToAlert } from "@/lib/dashboard/sos-mappers"
@@ -33,6 +38,52 @@ function formatNepalTime(date: Date) {
     second: "2-digit",
     hour12: false,
   })
+}
+
+function ConnectionStatus({
+  status,
+  pollFallback,
+}: {
+  status: "connecting" | "connected" | "disconnected" | "error"
+  pollFallback: boolean
+}) {
+  const color =
+    status === "connected"
+      ? "text-emerald-500"
+      : status === "connecting"
+        ? "text-amber-500"
+        : "text-[#666]"
+  const dotColor =
+    status === "connected"
+      ? "bg-emerald-500"
+      : status === "connecting"
+        ? "bg-amber-500"
+        : "bg-[#555]"
+  const label =
+    status === "connected"
+      ? "Live socket"
+      : status === "connecting"
+        ? "Connecting…"
+        : status === "error"
+          ? "Socket error"
+          : "Socket offline"
+
+  return (
+    <div className="space-y-1">
+      <div className={cn("flex items-center gap-2 text-[10px]", color)}>
+        <span className="relative flex h-2 w-2">
+          {status === "connected" && (
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          )}
+          <span className={cn("relative inline-flex h-2 w-2 rounded-full", dotColor)} />
+        </span>
+        {label}
+      </div>
+      {pollFallback && (
+        <p className="font-mono text-[9px] text-[#555]">30s poll fallback</p>
+      )}
+    </div>
+  )
 }
 
 function NavButtons({
@@ -91,6 +142,20 @@ export default function PoliceDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null)
   const [showIncomingModal, setShowIncomingModal] = useState(false)
+  const [socketLive, setSocketLive] = useState(false)
+
+  const handleSocketEvent = useCallback((payload: SosSocketEvent) => {
+    setSocketLive(true)
+    setSosAlerts((prev) => applySosSocketEvent(prev, payload))
+    if (payload.eventType === "sos_started") {
+      setShowIncomingModal(true)
+    }
+  }, [])
+
+  const { connectionStatus } = usePoliceSosSocket(
+    !loading && !error,
+    handleSocketEvent
+  )
 
   const loadData = useCallback(async () => {
     setError(null)
@@ -287,13 +352,10 @@ export default function PoliceDashboard() {
           />
         </nav>
         <div className="border-t border-[#222] p-4">
-          <div className="flex items-center gap-2 text-[10px] text-emerald-500">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-            </span>
-            System online
-          </div>
+          <ConnectionStatus
+            status={connectionStatus}
+            pollFallback={!socketLive || connectionStatus !== "connected"}
+          />
         </div>
       </aside>
 
@@ -314,6 +376,9 @@ export default function PoliceDashboard() {
               </h1>
               <p className="truncate font-mono text-[10px] text-[#666]">
                 {viewMeta.subtitle} · <span className="text-[#C0392B]">{nepalTime} NPT</span>
+                {connectionStatus === "connected" && (
+                  <span className="ml-2 text-emerald-600">● live</span>
+                )}
               </p>
             </div>
           </div>

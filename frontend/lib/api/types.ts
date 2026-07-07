@@ -98,6 +98,9 @@ export interface PoliceSosEventSummary {
   eventType?: string | null
   latitude?: number | null
   longitude?: number | null
+  triggerNotes?: string | null
+  assignedStationId?: string | null
+  assignedStationName?: string | null
   startedAt: string
   resolvedAt?: string | null
   lastLocation: {
@@ -105,6 +108,74 @@ export interface PoliceSosEventSummary {
     longitude: number
     recordedAt: string
   } | null
+}
+
+export interface SosSocketEvent {
+  id: string
+  deviceId: string
+  deviceImei?: string
+  eventType: string
+  status: string
+  latitude?: number
+  longitude?: number
+  altitudeM?: number
+  speedKmph?: number
+  satellites?: number
+  startedAt: string
+  resolvedAt?: string
+  triggerNotes?: string
+  assignedStationId?: string
+  assignedStationName?: string
+  latestPing?: {
+    latitude: number
+    longitude: number
+    recordedAt: string
+  } | null
+}
+
+export interface GuardianWard {
+  id: string
+  full_name: string
+  email: string
+  phone: string
+  role: string
+}
+
+export interface GuardianWardsResponse {
+  message: string
+  wards: GuardianWard[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface GuardianWardSosEvent {
+  id: string
+  deviceId: string
+  imei: string
+  label: string | null
+  status: string
+  eventType: string | null
+  latitude: number | null
+  longitude: number | null
+  triggerNotes: string | null
+  assignedStationId: string | null
+  assignedStationName: string | null
+  startedAt: string
+  resolvedAt: string | null
+  lastLocation: {
+    latitude: number
+    longitude: number
+    recordedAt: string
+  } | null
+}
+
+export interface GuardianWardSosResponse {
+  message: string
+  wardId: string
+  data: GuardianWardSosEvent[]
+  total: number
 }
 
 export interface PoliceSosEventsResponse {

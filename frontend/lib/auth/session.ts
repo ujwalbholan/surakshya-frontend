@@ -57,6 +57,8 @@ export function getRedirectForRole(
     case "ADMIN":
     case "SUPER_ADMIN":
       return "/admin"
+    case "GUARDIAN":
+      return "/guardian"
     default:
       return "/app"
   }
