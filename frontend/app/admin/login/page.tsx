@@ -107,13 +107,19 @@ export default function AdminLoginPage() {
       return
     }
 
-    setAdminSession({
-      id: user.id,
-      full_name: user.full_name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-    })
+    setAdminSession(
+      {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+      {
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+      }
+    )
 
     if (rememberMe) {
       localStorage.setItem("suraksha_admin_remember", email.trim())

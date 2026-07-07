@@ -71,7 +71,9 @@ export default function InviteOfficerPage() {
 
     if (inviteError || !data) {
       setError(
-        status === 409
+        status === 401
+          ? "Session expired. Please sign out and log in again."
+          : status === 409
           ? inviteError ?? "An active invite or user already exists for this email."
           : inviteError ?? "Failed to send invite."
       )

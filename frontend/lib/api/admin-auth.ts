@@ -1,9 +1,12 @@
 import { adminApiRequest } from "./client"
 import type { AdminUser } from "@/lib/auth/admin-session"
+import { getAdminAccessToken } from "@/lib/auth/admin-session"
 
 export interface AdminLoginResponse {
   user: AdminUser
   message?: string
+  accessToken: string
+  refreshToken: string
 }
 
 export interface RegisterAdminUserRequest {
@@ -53,7 +56,11 @@ export function adminLogin(email: string, password: string) {
 }
 
 export function adminLogout() {
-  return adminApiRequest<null>("/auth/logout", { method: "POST" })
+  const token = getAdminAccessToken()
+  return adminApiRequest<null>("/auth/logout", {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
 }
 
 export function registerAdminUser(payload: RegisterAdminUserRequest) {

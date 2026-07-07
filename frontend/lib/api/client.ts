@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "./config"
 import type { ApiErrorBody } from "./types"
+import { getAdminAccessToken } from "@/lib/auth/admin-session"
 
 export class ApiError extends Error {
   readonly status: number
@@ -128,6 +129,7 @@ export async function adminApiRequest<T>(
   options: RequestInit = {}
 ): Promise<AdminApiResult<T>> {
   const url = `${API_BASE}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`
+  const token = getAdminAccessToken()
 
   let response: Response
   try {
@@ -137,6 +139,7 @@ export async function adminApiRequest<T>(
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
     })
