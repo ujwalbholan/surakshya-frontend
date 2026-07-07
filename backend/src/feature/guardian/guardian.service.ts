@@ -187,7 +187,7 @@ export class GuardianService {
 
       const requests = await this.guardianRequestRepository.find({
         where: {
-          target_email: user.email,
+          target_email: this.normalizeEmail(user.email),
           direction: 'CHILD_TO_GUARDIAN',
           status: 'PENDING',
         },
@@ -208,10 +208,13 @@ export class GuardianService {
     }
 
     if (role === Role.USER) {
+      const child = await this.userRepository.findOneBy({ id: userId });
+      if (!child) throw new NotFoundException('User not found');
+
       const requests = await this.guardianRequestRepository.find({
         where: {
-          requester_id: userId,
           direction: 'GUARDIAN_TO_CHILD',
+          target_email: this.normalizeEmail(child.email),
           status: 'PENDING',
         },
         order: { created_at: 'DESC' },
@@ -290,23 +293,22 @@ export class GuardianService {
     }
 
     if (request.direction === 'GUARDIAN_TO_CHILD') {
-      if (request.requester_id !== userId) {
-        throw new BadRequestException(
-          'You can only respond to requests made by you',
-        );
+      const actingUser = await this.userRepository.findOneBy({ id: userId });
+
+      if (!actingUser || actingUser.role !== Role.USER) {
+        throw new BadRequestException('Only users can accept this request');
       }
 
-      const child = await this.userRepository.findOneBy({
-        email: request.target_email,
-      });
-
-      if (!child) {
-        throw new NotFoundException('Target child user not found');
+      if (
+        this.normalizeEmail(actingUser.email) !==
+        this.normalizeEmail(request.target_email)
+      ) {
+        throw new BadRequestException('This request is not addressed to you');
       }
 
       const existingLink = await this.guardianLinkRepository.findOne({
         where: {
-          child_user_id: child.id,
+          child_user_id: userId,
           guardian_user_id: request.requester_id,
         },
       });
@@ -319,7 +321,7 @@ export class GuardianService {
 
       await this.guardianLinkRepository.save(
         this.guardianLinkRepository.create({
-          child_user_id: child.id,
+          child_user_id: userId,
           guardian_user_id: request.requester_id,
         }),
       );
@@ -634,6 +636,10 @@ export class GuardianService {
 
   private generatePassword(): string {
     return randomBytes(8).toString('hex');
+  }
+
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
   }
 
   private normalizePhone(phone: string): string {

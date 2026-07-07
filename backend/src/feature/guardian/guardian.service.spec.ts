@@ -304,6 +304,82 @@ describe('GuardianService', () => {
     });
   });
 
+  describe('getMyRequests', () => {
+    it('USER: returns GUARDIAN_TO_CHILD requests where target_email matches child', async () => {
+      const child = mockUser({ email: 'Child@Test.com' });
+      const pendingRequest = mockGuardianRequest({
+        direction: 'GUARDIAN_TO_CHILD',
+        target_email: 'child@test.com',
+        target_name: 'Child Name',
+        requester_id: 'guardian-id',
+      });
+
+      userRepo.findOneBy.mockResolvedValue(child);
+      requestRepo.find.mockResolvedValue([pendingRequest]);
+
+      const result = await service.getMyRequests(userId, Role.USER);
+
+      expect(userRepo.findOneBy).toHaveBeenCalledWith({ id: userId });
+      expect(requestRepo.find).toHaveBeenCalledWith({
+        where: {
+          direction: 'GUARDIAN_TO_CHILD',
+          target_email: 'child@test.com',
+          status: 'PENDING',
+        },
+        order: { created_at: 'DESC' },
+      });
+      expect(result.requests).toHaveLength(1);
+      expect(result.requests[0]).toMatchObject({
+        id: pendingRequest.id,
+        target_name: 'Child Name',
+        target_email: 'child@test.com',
+        direction: 'GUARDIAN_TO_CHILD',
+        status: 'PENDING',
+      });
+    });
+
+    it('USER: throws if child user not found', async () => {
+      userRepo.findOneBy.mockResolvedValue(null);
+
+      await expect(service.getMyRequests(userId, Role.USER)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('GUARDIAN: queries CHILD_TO_GUARDIAN by normalized target_email', async () => {
+      const guardian = mockUser({
+        id: 'guardian-id',
+        email: 'Guardian@Test.com',
+        role: Role.GUARDIAN,
+      });
+      const pendingRequest = mockGuardianRequest({
+        direction: 'CHILD_TO_GUARDIAN',
+        target_email: 'guardian@test.com',
+      });
+
+      userRepo.findOneBy.mockResolvedValue(guardian);
+      requestRepo.find.mockResolvedValue([pendingRequest]);
+
+      const result = await service.getMyRequests('guardian-id', Role.GUARDIAN);
+
+      expect(requestRepo.find).toHaveBeenCalledWith({
+        where: {
+          target_email: 'guardian@test.com',
+          direction: 'CHILD_TO_GUARDIAN',
+          status: 'PENDING',
+        },
+        order: { created_at: 'DESC' },
+      });
+      expect(result.requests).toHaveLength(1);
+      expect(result.requests[0]).toMatchObject({
+        id: pendingRequest.id,
+        requester_name: pendingRequest.requester_name,
+        requester_id: pendingRequest.requester_id,
+        direction: 'CHILD_TO_GUARDIAN',
+      });
+    });
+  });
+
   describe('acceptRequest', () => {
     it('should throw if request not found', async () => {
       requestRepo.findOneBy.mockResolvedValue(null);
@@ -318,6 +394,162 @@ describe('GuardianService', () => {
       );
       await expect(
         service.acceptRequest('request-id', 'guardian-id'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('CHILD_TO_GUARDIAN: guardian accepts and creates link with correct ids', async () => {
+      const guardianId = 'guardian-id';
+      const request = mockGuardianRequest({
+        direction: 'CHILD_TO_GUARDIAN',
+        requester_id: userId,
+        target_email: 'guardian@test.com',
+        status: 'PENDING',
+      });
+      const guardian = mockUser({
+        id: guardianId,
+        email: 'guardian@test.com',
+        role: Role.GUARDIAN,
+        phone_verified: true,
+      });
+
+      requestRepo.findOneBy.mockResolvedValue(request);
+      userRepo.findOneBy.mockResolvedValue(guardian);
+      linkRepo.findOne.mockResolvedValue(null);
+      linkRepo.create.mockImplementation((data) => data as GuardianLink);
+      linkRepo.save.mockImplementation(async (data) => data as GuardianLink);
+      requestRepo.save.mockImplementation(async (data) => data as GuardianRequest);
+
+      const result = await service.acceptRequest('request-id', guardianId);
+
+      expect(result.message).toBe('Guardian request accepted successfully');
+      expect(linkRepo.create).toHaveBeenCalledWith({
+        child_user_id: userId,
+        guardian_user_id: guardianId,
+      });
+      expect(linkRepo.save).toHaveBeenCalled();
+      expect(requestRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'ACCEPTED' }),
+      );
+    });
+
+    it('GUARDIAN_TO_CHILD: child accepts and creates link with correct ids', async () => {
+      const guardianId = 'guardian-id';
+      const request = mockGuardianRequest({
+        direction: 'GUARDIAN_TO_CHILD',
+        requester_id: guardianId,
+        target_email: 'user@test.com',
+        status: 'PENDING',
+      });
+      const child = mockUser({
+        id: userId,
+        email: 'user@test.com',
+        role: Role.USER,
+      });
+
+      requestRepo.findOneBy.mockResolvedValue(request);
+      userRepo.findOneBy.mockResolvedValue(child);
+      linkRepo.findOne.mockResolvedValue(null);
+      linkRepo.create.mockImplementation((data) => data as GuardianLink);
+      linkRepo.save.mockImplementation(async (data) => data as GuardianLink);
+      requestRepo.save.mockImplementation(async (data) => data as GuardianRequest);
+
+      const result = await service.acceptRequest('request-id', userId);
+
+      expect(result.message).toBe('Child linked successfully as your ward');
+      expect(linkRepo.create).toHaveBeenCalledWith({
+        child_user_id: userId,
+        guardian_user_id: guardianId,
+      });
+      expect(linkRepo.save).toHaveBeenCalled();
+    });
+
+    it('GUARDIAN_TO_CHILD: guardian (requester) cannot accept via child endpoint', async () => {
+      const guardianId = 'guardian-id';
+      const request = mockGuardianRequest({
+        direction: 'GUARDIAN_TO_CHILD',
+        requester_id: guardianId,
+        target_email: 'user@test.com',
+        status: 'PENDING',
+      });
+      const guardian = mockUser({
+        id: guardianId,
+        email: 'guardian@test.com',
+        role: Role.GUARDIAN,
+      });
+
+      requestRepo.findOneBy.mockResolvedValue(request);
+      userRepo.findOneBy.mockResolvedValue(guardian);
+
+      await expect(
+        service.acceptRequest('request-id', guardianId),
+      ).rejects.toThrow(BadRequestException);
+      expect(linkRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('GUARDIAN_TO_CHILD: child with mismatched email cannot accept', async () => {
+      const guardianId = 'guardian-id';
+      const request = mockGuardianRequest({
+        direction: 'GUARDIAN_TO_CHILD',
+        requester_id: guardianId,
+        target_email: 'other@test.com',
+        status: 'PENDING',
+      });
+      const child = mockUser({
+        id: userId,
+        email: 'user@test.com',
+        role: Role.USER,
+      });
+
+      requestRepo.findOneBy.mockResolvedValue(request);
+      userRepo.findOneBy.mockResolvedValue(child);
+
+      await expect(
+        service.acceptRequest('request-id', userId),
+      ).rejects.toThrow(BadRequestException);
+      expect(linkRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('rejectRequest', () => {
+    it('GUARDIAN_TO_CHILD: child can reject request addressed to them', async () => {
+      const guardianId = 'guardian-id';
+      const request = mockGuardianRequest({
+        direction: 'GUARDIAN_TO_CHILD',
+        requester_id: guardianId,
+        target_email: 'user@test.com',
+        status: 'PENDING',
+      });
+      const child = mockUser({
+        id: userId,
+        email: 'user@test.com',
+        role: Role.USER,
+      });
+
+      requestRepo.findOneBy.mockResolvedValue(request);
+      userRepo.findOneBy.mockResolvedValue(child);
+      requestRepo.save.mockImplementation(async (data) => data as GuardianRequest);
+
+      const result = await service.rejectRequest('request-id', userId);
+
+      expect(result.message).toBe('Request rejected successfully');
+      expect(requestRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'REJECTED' }),
+      );
+    });
+
+    it('GUARDIAN_TO_CHILD: throws if request is not addressed to acting user', async () => {
+      const request = mockGuardianRequest({
+        direction: 'GUARDIAN_TO_CHILD',
+        requester_id: 'guardian-id',
+        target_email: 'other@test.com',
+        status: 'PENDING',
+      });
+
+      requestRepo.findOneBy.mockResolvedValue(request);
+      userRepo.findOneBy.mockResolvedValue(null);
+
+      await expect(
+        service.rejectRequest('request-id', userId),
       ).rejects.toThrow(BadRequestException);
     });
   });
