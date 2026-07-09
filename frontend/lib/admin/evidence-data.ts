@@ -1,4 +1,4 @@
-import { MOCK_CASES, type CaseStatus, type SosPriority } from "@/lib/admin/mock-data"
+import type { CaseStatus, SosPriority } from "@/lib/admin/mock-data"
 
 export type EvidenceFileType = "audio" | "gps" | "document" | "witness"
 
@@ -14,50 +14,6 @@ export interface EvidenceRecord {
   caseStatus: CaseStatus
   sizeLabel: string
   capturedAt: string
-}
-
-function inferType(filename: string): { type: EvidenceFileType; label: string } {
-  if (filename.startsWith("witness_")) return { type: "witness", label: "Witness" }
-  if (filename.endsWith(".aes")) return { type: "audio", label: "Audio" }
-  if (filename.endsWith(".json")) return { type: "gps", label: "GPS Log" }
-  return { type: "document", label: "Document" }
-}
-
-function mockSize(filename: string): string {
-  const seed = filename.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)
-  const kb = 120 + (seed % 2800)
-  return kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`
-}
-
-function formatCapturedAt(iso: string) {
-  return new Date(iso).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  })
-}
-
-export function buildEvidenceRecords(): EvidenceRecord[] {
-  return MOCK_CASES.flatMap((c) =>
-    c.evidenceFiles.map((file) => {
-      const { type, label } = inferType(file)
-      return {
-        file,
-        type,
-        typeLabel: label,
-        caseId: c.id,
-        victim: c.victim,
-        district: c.district,
-        province: c.province,
-        priority: c.priority,
-        caseStatus: c.status,
-        sizeLabel: mockSize(file),
-        capturedAt: formatCapturedAt(c.openedAt),
-      }
-    })
-  )
 }
 
 export function getEvidenceSummary(records: EvidenceRecord[]) {

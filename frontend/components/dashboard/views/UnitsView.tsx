@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Car, MapPin, Phone, Radio, Users } from "lucide-react"
 import { Panel, SectionHeader, StatCard, StatusPill } from "@/components/dashboard/shared"
-// TODO: no backend endpoint yet
-import { fieldUnits, type UnitStatus } from "@/lib/dashboard/operations-data"
+import { fetchPoliceCases, fetchPoliceUnits } from "@/lib/api/police"
+import { mapApiUnitToFieldUnit } from "@/lib/dashboard/operations-mappers"
+import type { FieldUnit, UnitStatus } from "@/lib/dashboard/operations-data"
 import { cn } from "@/lib/utils"
 
 function unitVariant(status: UnitStatus): "critical" | "warning" | "success" | "muted" | "default" {
@@ -22,7 +23,39 @@ const STATUS_LABELS: Record<UnitStatus, string> = {
 }
 
 export default function UnitsView() {
+  const [fieldUnits, setFieldUnits] = useState<FieldUnit[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [provinceFilter, setProvinceFilter] = useState<string>("all")
+
+  const loadUnits = useCallback(() => {
+    setLoading(true)
+    setLoadError(null)
+    Promise.all([fetchPoliceUnits(), fetchPoliceCases({ limit: 100 })])
+      .then(([unitsData, casesData]) => {
+        const caseNumberByUnitId = new Map<string, string>()
+        for (const c of casesData.cases) {
+          if (c.assigned_unit_id && c.status !== "CLOSED") {
+            caseNumberByUnitId.set(c.assigned_unit_id, c.case_number)
+          }
+        }
+        setFieldUnits(
+          unitsData.units.map((u) =>
+            mapApiUnitToFieldUnit(u, caseNumberByUnitId.get(u.id))
+          )
+        )
+        setLoading(false)
+      })
+      .catch((err: Error) => {
+        setLoadError(err.message)
+        setLoading(false)
+      })
+  }, [])
+
+  useEffect(() => {
+    loadUnits()
+  }, [loadUnits])
+
   const provinces = ["all", ...new Set(fieldUnits.map((u) => u.province))]
 
   const filtered =
@@ -32,6 +65,21 @@ export default function UnitsView() {
 
   const available = fieldUnits.filter((u) => u.status === "available").length
   const deployed = fieldUnits.filter((u) => u.status === "dispatched" || u.status === "on_scene").length
+
+  if (loading) {
+    return <p className="text-sm text-[#666]">Loading units…</p>
+  }
+
+  if (loadError) {
+    return (
+      <div>
+        <p className="text-sm text-red-400">{loadError}</p>
+        <button type="button" onClick={loadUnits} className="mt-2 text-xs text-[#888] underline">
+          Retry
+        </button>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -52,7 +100,7 @@ export default function UnitsView() {
         <StatCard label="Total units" value={String(fieldUnits.length)} hint="Suraksha-linked" />
         <StatCard label="Available now" value={String(available)} hint="Ready to dispatch" trend="down" />
         <StatCard label="Deployed" value={String(deployed)} hint="Active response" trend="up" />
-        <StatCard label="Avg response" value="4.6 min" hint="National average" trend="down" />
+        <StatCard label="Avg response" value="—" hint="Station-scoped" />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -74,7 +122,9 @@ export default function UnitsView() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((unit) => (
+        {filtered.length === 0 ? (
+          <p className="col-span-full py-12 text-center text-sm text-[#666]">No units found</p>
+        ) : filtered.map((unit) => (
           <div
             key={unit.id}
             className="rounded-lg border border-[#222] bg-[#111] p-4 transition-colors hover:border-[#333]"

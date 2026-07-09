@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import toast from "react-hot-toast"
 import {
@@ -32,10 +32,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { fetchAdminEvidence } from "@/lib/api/admin-evidence"
+import { clearAdminSession } from "@/lib/auth/admin-session"
+import { mapApiEvidenceListToRecords } from "@/lib/admin/evidence-mappers"
 import {
   buildEvidenceManifestCsv,
-  buildEvidenceRecords,
   getEvidenceSummary,
   groupEvidenceByCase,
   type EvidenceFileType,
@@ -143,11 +146,35 @@ function FileRow({
 }
 
 export default function EvidenceVaultDashboard() {
-  const allRecords = useMemo(() => buildEvidenceRecords(), [])
+  const [allRecords, setAllRecords] = useState<EvidenceRecord[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState<EvidenceFileType | "all">("all")
   const [view, setView] = useState<"list" | "grouped">("list")
   const [selectedFile, setSelectedFile] = useState<EvidenceRecord | null>(null)
+
+  const loadEvidence = useCallback(() => {
+    setLoading(true)
+    setLoadError(null)
+    fetchAdminEvidence({ limit: 100 }).then(({ data, error, status }) => {
+      if (status === 401) {
+        clearAdminSession()
+        return
+      }
+      if (error || !data) {
+        setLoadError(error ?? "Failed to load evidence")
+        setLoading(false)
+        return
+      }
+      setAllRecords(mapApiEvidenceListToRecords(data.evidence))
+      setLoading(false)
+    })
+  }, [])
+
+  useEffect(() => {
+    loadEvidence()
+  }, [loadEvidence])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -193,6 +220,24 @@ export default function EvidenceVaultDashboard() {
         </div>
       </div>
 
+      {loading ? (
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 rounded-lg" />
+            ))}
+          </div>
+          <Skeleton className="h-96 w-full rounded-xl" />
+        </div>
+      ) : loadError ? (
+        <div>
+          <p className="text-sm text-red-400">{loadError}</p>
+          <button type="button" onClick={loadEvidence} className="admin-btn-ghost mt-3 text-xs">
+            Retry
+          </button>
+        </div>
+      ) : (
+        <>
       <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Files" value={summary.total} icon={FolderLock} animate={false} />
         <StatCard label="Linked Cases" value={summary.cases} icon={FileText} animate={false} />
@@ -437,6 +482,8 @@ export default function EvidenceVaultDashboard() {
           )}
         </SheetContent>
       </Sheet>
+        </>
+      )}
     </PageTransition>
   )
 }

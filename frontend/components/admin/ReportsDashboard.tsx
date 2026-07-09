@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, type ReactNode } from "react"
+import { useCallback, useEffect, useState, type ReactNode } from "react"
 import toast from "react-hot-toast"
 import {
   BarChart,
@@ -28,16 +28,18 @@ import {
 } from "lucide-react"
 import PageTransition from "@/components/admin/PageTransition"
 import StatCard from "@/components/admin/StatCard"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import {
+  fetchAdminReportDailySeries,
+  fetchAdminReportProvinceBreakdown,
+  fetchAdminReportSummary,
+} from "@/lib/api/admin-reports"
+import { clearAdminSession } from "@/lib/auth/admin-session"
+import { provinceShortLabel, uiRangeToApiRange } from "@/lib/admin/reports-mappers"
+import {
   REPORT_RANGES,
-  PROVINCE_BAR_DATA,
   buildProvinceCsv,
-  getProvinceTableForRange,
-  getReportSummary,
-  getResponseTrend,
-  getStatusTrend,
-  getUserGrowth,
   type ReportRange,
 } from "@/lib/admin/reports-data"
 
@@ -113,12 +115,105 @@ function CoverageBar({ value }: { value: number }) {
 
 export default function ReportsDashboard() {
   const [range, setRange] = useState<ReportRange>("30 days")
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [summary, setSummary] = useState({
+    totalSos: 0,
+    avgResponse: "0",
+    resolutionRate: 0,
+    avgCoverage: 0,
+    activeUnits: 0,
+  })
+  const [responseData, setResponseData] = useState<{ date: string; minutes: number }[]>([])
+  const [statusData, setStatusData] = useState<{ date: string; open: number; resolved: number; escalated: number }[]>([])
+  const [growthData, setGrowthData] = useState<{ date: string; users: number }[]>([])
+  const [provinceBarData, setProvinceBarData] = useState<{ province: string; shortLabel: string; sos: number }[]>([])
+  const [tableData, setTableData] = useState<
+    {
+      province: string
+      totalSos: number
+      resolved: number
+      avgResponse: string
+      units: number
+      coverage: number
+      resolutionRate: number
+    }[]
+  >([])
 
-  const summary = useMemo(() => getReportSummary(range), [range])
-  const responseData = useMemo(() => getResponseTrend(range), [range])
-  const statusData = useMemo(() => getStatusTrend(range), [range])
-  const growthData = useMemo(() => getUserGrowth(range), [range])
-  const tableData = useMemo(() => getProvinceTableForRange(range), [range])
+  const loadReports = useCallback(() => {
+    setLoading(true)
+    setLoadError(null)
+    const apiRange = uiRangeToApiRange(range)
+
+    Promise.all([
+      fetchAdminReportSummary(apiRange),
+      fetchAdminReportDailySeries(apiRange),
+      fetchAdminReportProvinceBreakdown(apiRange),
+    ]).then(([summaryRes, seriesRes, provinceRes]) => {
+      if (
+        summaryRes.status === 401 ||
+        seriesRes.status === 401 ||
+        provinceRes.status === 401
+      ) {
+        clearAdminSession()
+        return
+      }
+      if (summaryRes.error || !summaryRes.data) {
+        setLoadError(summaryRes.error ?? "Failed to load reports")
+        setLoading(false)
+        return
+      }
+
+      const s = summaryRes.data
+      const totalUnits =
+        provinceRes.data?.provinces.reduce((sum, p) => sum + p.units, 0) ?? 0
+
+      setSummary({
+        totalSos: s.total_sos,
+        avgResponse: s.avg_response_minutes,
+        resolutionRate: s.resolution_rate,
+        avgCoverage: s.resolution_rate,
+        activeUnits: totalUnits || s.units_dispatched,
+      })
+
+      const series = seriesRes.data?.series ?? []
+      setResponseData(series.map((d) => ({ date: d.date, minutes: d.minutes })))
+      setStatusData(
+        series.map((d) => ({
+          date: d.date,
+          open: d.open,
+          resolved: d.resolved,
+          escalated: d.escalated,
+        }))
+      )
+      setGrowthData(series.map((d) => ({ date: d.date, users: d.users })))
+
+      const provinces = provinceRes.data?.provinces ?? []
+      setProvinceBarData(
+        provinces.map((p) => ({
+          province: p.province,
+          shortLabel: provinceShortLabel(p.province),
+          sos: p.total_sos,
+        }))
+      )
+      setTableData(
+        provinces.map((p) => ({
+          province: p.province,
+          totalSos: p.total_sos,
+          resolved: p.resolved,
+          avgResponse: p.avg_response,
+          units: p.units,
+          coverage: p.resolution_rate,
+          resolutionRate: p.resolution_rate,
+        }))
+      )
+      setLoading(false)
+    })
+  }, [range])
+
+  useEffect(() => {
+    loadReports()
+  }, [loadReports])
 
   const xInterval = range === "7 days" ? 0 : range === "90 days" ? 13 : 4
   const growthInterval = range === "90 days" ? 13 : range === "7 days" ? 0 : 4
@@ -165,16 +260,33 @@ export default function ReportsDashboard() {
       </div>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)
+        ) : (
+          <>
         <StatCard label="Total SOS" value={summary.totalSos} icon={Activity} />
         <StatCard label="Avg Response" value={`${summary.avgResponse} min`} icon={Clock} />
         <StatCard label="Resolution Rate" value={`${summary.resolutionRate}%`} icon={ShieldCheck} />
         <StatCard label="Network Coverage" value={`${summary.avgCoverage}%`} icon={TrendingUp} />
+          </>
+        )}
       </div>
 
+      {loadError && (
+        <p className="mb-4 text-sm text-red-400">
+          {loadError}{" "}
+          <button type="button" onClick={loadReports} className="underline">
+            Retry
+          </button>
+        </p>
+      )}
+
+      {!loading && (
+      <>
       <div className="grid gap-6 lg:grid-cols-2">
         <ChartCard title="SOS Incidents by Province" subtitle="Distribution across all seven provinces">
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={PROVINCE_BAR_DATA} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
+            <BarChart data={provinceBarData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
               <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="shortLabel"
@@ -412,10 +524,12 @@ export default function ReportsDashboard() {
           </table>
         </div>
       </div>
+      </>
+      )}
 
       <p className="mt-4 flex items-center gap-1.5 text-[10px] text-white/25">
         <Users className="h-3 w-3" />
-        Data reflects mock operational metrics · syncs with backend when API is connected
+        Live analytics from Surakshya backend
       </p>
     </PageTransition>
   )

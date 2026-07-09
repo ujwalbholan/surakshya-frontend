@@ -1,17 +1,141 @@
 "use client"
 
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { BarChart3, Download, FileSpreadsheet, MapPin, TrendingUp } from "lucide-react"
 import { Panel, SectionHeader, StatCard } from "@/components/dashboard/shared"
-// TODO: no backend endpoint yet
 import {
-  districtBreakdown,
-  evidenceTypes,
-  monthlySosStats,
-  reportMetrics,
-} from "@/lib/dashboard/operations-data"
+  fetchPoliceCases,
+  fetchPoliceEvidence,
+  fetchPoliceReportSummary,
+} from "@/lib/api/police"
+import type { ReportMetric } from "@/lib/dashboard/operations-data"
+
+const EVIDENCE_TYPE_LABELS: Record<string, string> = {
+  audio: "Audio recordings",
+  gps: "GPS track logs",
+  document: "Documents",
+  witness: "Witness statements",
+}
 
 export default function ReportsView() {
-  const maxAlerts = Math.max(...monthlySosStats.map((m) => m.alerts))
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [reportMetrics, setReportMetrics] = useState<ReportMetric[]>([])
+  const [districtBreakdown, setDistrictBreakdown] = useState<
+    { district: string; alerts: number; share: number }[]
+  >([])
+  const [evidenceTypes, setEvidenceTypes] = useState<{ type: string; count: number }[]>([])
+  const [monthlySosStats, setMonthlySosStats] = useState<
+    { month: string; alerts: number; resolved: number; avgMinutes: number }[]
+  >([])
+
+  const loadReports = useCallback(() => {
+    setLoading(true)
+    setLoadError(null)
+
+    Promise.all([
+      fetchPoliceReportSummary("30d"),
+      fetchPoliceCases({ limit: 100 }),
+      fetchPoliceEvidence({ limit: 100 }),
+    ])
+      .then(([summary, casesData, evidenceData]) => {
+        setReportMetrics([
+          {
+            label: "SOS alerts",
+            value: String(summary.total_sos),
+            period: "Last 30 days",
+            change: `${summary.resolution_rate}% resolved`,
+            positive: summary.resolution_rate >= 80,
+          },
+          {
+            label: "Avg response",
+            value: `${summary.avg_response_minutes} min`,
+            period: "Last 30 days",
+            change: "Station average",
+            positive: Number(summary.avg_response_minutes) <= 5,
+          },
+          {
+            label: "Active cases",
+            value: String(summary.active_cases),
+            period: "Open now",
+            change: `${summary.units_dispatched} units deployed`,
+            positive: false,
+          },
+          {
+            label: "Resolved",
+            value: String(summary.resolved_count),
+            period: "Last 30 days",
+            change: `${summary.resolution_rate}% rate`,
+            positive: true,
+          },
+        ])
+
+        const districtMap = new Map<string, number>()
+        for (const c of casesData.cases) {
+          const district = c.district ?? "Unknown"
+          districtMap.set(district, (districtMap.get(district) ?? 0) + 1)
+        }
+        const totalCases = casesData.cases.length || 1
+        const districts = Array.from(districtMap.entries())
+          .map(([district, alerts]) => ({
+            district,
+            alerts,
+            share: Math.round((alerts / totalCases) * 100),
+          }))
+          .sort((a, b) => b.alerts - a.alerts)
+          .slice(0, 6)
+        setDistrictBreakdown(districts)
+
+        const typeMap = new Map<string, number>()
+        for (const e of evidenceData.evidence) {
+          typeMap.set(e.file_type, (typeMap.get(e.file_type) ?? 0) + 1)
+        }
+        setEvidenceTypes(
+          Array.from(typeMap.entries()).map(([type, count]) => ({
+            type: EVIDENCE_TYPE_LABELS[type] ?? type,
+            count,
+          }))
+        )
+
+        setMonthlySosStats([
+          {
+            month: "Current",
+            alerts: summary.total_sos,
+            resolved: summary.resolved_count,
+            avgMinutes: Number(summary.avg_response_minutes),
+          },
+        ])
+        setLoading(false)
+      })
+      .catch((err: Error) => {
+        setLoadError(err.message)
+        setLoading(false)
+      })
+  }, [])
+
+  useEffect(() => {
+    loadReports()
+  }, [loadReports])
+
+  const maxAlerts = useMemo(
+    () => Math.max(...monthlySosStats.map((m) => m.alerts), 1),
+    [monthlySosStats]
+  )
+
+  if (loading) {
+    return <p className="text-sm text-[#666]">Loading reports…</p>
+  }
+
+  if (loadError) {
+    return (
+      <div>
+        <p className="text-sm text-red-400">{loadError}</p>
+        <button type="button" onClick={loadReports} className="mt-2 text-xs text-[#888] underline">
+          Retry
+        </button>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -51,7 +175,7 @@ export default function ReportsView() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="SOS volume — 6 months" icon={BarChart3}>
+        <Panel title="SOS volume — 30 days" icon={BarChart3}>
           <div className="flex h-48 items-end justify-between gap-2 pt-4">
             {monthlySosStats.map((m) => (
               <div key={m.month} className="flex flex-1 flex-col items-center gap-2">
@@ -65,46 +189,56 @@ export default function ReportsView() {
               </div>
             ))}
           </div>
-          <p className="mt-4 text-xs text-[#666]">
-            Resolved: {monthlySosStats[5].resolved} / {monthlySosStats[5].alerts} in May · Avg{" "}
-            {monthlySosStats[5].avgMinutes} min response
-          </p>
+          {monthlySosStats[0] && (
+            <p className="mt-4 text-xs text-[#666]">
+              Resolved: {monthlySosStats[0].resolved} / {monthlySosStats[0].alerts} · Avg{" "}
+              {monthlySosStats[0].avgMinutes} min response
+            </p>
+          )}
         </Panel>
 
         <Panel title="District breakdown" icon={MapPin}>
-          <ul className="space-y-3">
-            {districtBreakdown.map((d) => (
-              <li key={d.district}>
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#ccc]">{d.district}</span>
-                  <span className="font-mono text-[#FAFAFA]">
-                    {d.alerts} ({d.share}%)
-                  </span>
-                </div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#222]">
-                  <div
-                    className="h-full rounded-full bg-[#C0392B]"
-                    style={{ width: `${d.share}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+          {districtBreakdown.length === 0 ? (
+            <p className="text-sm text-[#666]">No case data for district breakdown</p>
+          ) : (
+            <ul className="space-y-3">
+              {districtBreakdown.map((d) => (
+                <li key={d.district}>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-[#ccc]">{d.district}</span>
+                    <span className="font-mono text-[#FAFAFA]">
+                      {d.alerts} ({d.share}%)
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#222]">
+                    <div
+                      className="h-full rounded-full bg-[#C0392B]"
+                      style={{ width: `${d.share}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </Panel>
 
         <Panel title="Evidence collected" icon={TrendingUp}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {evidenceTypes.map((e) => (
-              <div
-                key={e.type}
-                className="rounded border border-[#222] bg-[#0a0a0a] p-3"
-              >
-                <p className="text-sm text-[#FAFAFA]">{e.type}</p>
-                <p className="mt-1 font-mono text-xl font-bold text-[#C0392B]">{e.count}</p>
-                <p className="text-[10px] text-[#666]">Last 30 days</p>
-              </div>
-            ))}
-          </div>
+          {evidenceTypes.length === 0 ? (
+            <p className="text-sm text-[#666]">No evidence files recorded</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {evidenceTypes.map((e) => (
+                <div
+                  key={e.type}
+                  className="rounded border border-[#222] bg-[#0a0a0a] p-3"
+                >
+                  <p className="text-sm text-[#FAFAFA]">{e.type}</p>
+                  <p className="mt-1 font-mono text-xl font-bold text-[#C0392B]">{e.count}</p>
+                  <p className="text-[10px] text-[#666]">Station scope</p>
+                </div>
+              ))}
+            </div>
+          )}
         </Panel>
 
         <Panel title="Scheduled reports" icon={Download}>

@@ -10,7 +10,17 @@ export type {
 export type { AdminSosAlert as MockSosAlert } from "@/lib/admin/sos-types"
 export type CaseStatus = "OPEN" | "INVESTIGATING" | "CLOSED" | "ESCALATED"
 export type UnitStatus = "available" | "dispatched" | "on_scene" | "offline"
-export type AuditAction = "LOGIN" | "CREATE_USER" | "UPDATE_CASE" | "DELETE_USER" | "LOGOUT" | "UPDATE_USER"
+export type AuditAction =
+  | "LOGIN"
+  | "CREATE_USER"
+  | "UPDATE_CASE"
+  | "DELETE_USER"
+  | "LOGOUT"
+  | "UPDATE_USER"
+  | "CREATE_CASE"
+  | "RESOLVE_SOS"
+  | "CREATE_UNIT"
+  | "UPDATE_UNIT"
 
 import type { AdminSosAlert, SosPriority } from "@/lib/admin/sos-types"
 
@@ -26,6 +36,7 @@ export interface MockUser {
 
 export interface MockCase {
   id: string
+  uuid: string
   victim: string
   district: string
   province: string
@@ -42,6 +53,7 @@ export interface MockCase {
 
 export interface MockUnit {
   id: string
+  uuid: string
   province: string
   zone: string
   officer: string
@@ -352,7 +364,7 @@ export const MOCK_SOS_ALERTS: AdminSosAlert[] = [
   },
 ]
 
-export const MOCK_CASES: MockCase[] = [
+const _MOCK_CASES = [
   {
     id: "CASE-1047",
     victim: "Priya Sharma",
@@ -528,7 +540,9 @@ export const MOCK_CASES: MockCase[] = [
   },
 ]
 
-export const MOCK_UNITS: MockUnit[] = [
+export const MOCK_CASES: MockCase[] = _MOCK_CASES.map((c) => ({ ...c, uuid: c.id })) as MockCase[]
+
+const _MOCK_UNITS = [
   { id: "UNIT-01", province: "Bagmati", zone: "Kathmandu Valley", officer: "SI Prakash Adhikari", vehicle: "NP-01-GA-1234", status: "dispatched", activeCase: "SOS-2847", lastUpdated: "2 min ago" },
   { id: "UNIT-02", province: "Bagmati", zone: "Kathmandu Valley", officer: "ASI Bikash Shrestha", vehicle: "NP-01-GA-2345", status: "on_scene", activeCase: "SOS-2844", lastUpdated: "5 min ago" },
   { id: "UNIT-03", province: "Bagmati", zone: "Kathmandu Valley", officer: "HC Ram Thapa", vehicle: "NP-01-GA-3456", status: "available", lastUpdated: "1 min ago" },
@@ -544,6 +558,8 @@ export const MOCK_UNITS: MockUnit[] = [
   { id: "UNIT-13", province: "Sudurpaschim", zone: "Dhangadhi", officer: "SI Krishna Oli", vehicle: "NP-07-SP-8888", status: "available", lastUpdated: "12 min ago" },
   { id: "UNIT-14", province: "Sudurpaschim", zone: "Mahendranagar", officer: "HC Surya Bhandari", vehicle: "NP-07-SP-9999", status: "offline", lastUpdated: "45 min ago" },
 ]
+
+export const MOCK_UNITS: MockUnit[] = _MOCK_UNITS.map((c) => ({ ...c, uuid: c.id })) as MockUnit[]
 
 export const MOCK_AUDIT_LOG: MockAuditEntry[] = [
   { id: "aud-001", timestamp: "2025-06-09 07:41:22", admin: "Ujwal Bholan", action: "LOGIN", target: "—", ipAddress: "192.168.1.1", result: "Success" },

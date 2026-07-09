@@ -3,6 +3,7 @@ export type UnitStatus = "available" | "dispatched" | "on_scene" | "offline"
 
 export interface PoliceCase {
   id: string
+  uuid: string
   sosId: string
   victimName: string
   district: string
@@ -43,7 +44,7 @@ export interface MonthlySosStat {
   avgMinutes: number
 }
 
-export const policeCases: PoliceCase[] = [
+const _policeCases = [
   {
     id: "CASE-2026-0891",
     sosId: "SOS-2847",
@@ -123,6 +124,8 @@ export const policeCases: PoliceCase[] = [
     priority: "low",
   },
 ]
+
+export const policeCases: PoliceCase[] = _policeCases.map((c) => ({ ...c, uuid: c.id })) as PoliceCase[]
 
 export const fieldUnits: FieldUnit[] = [
   {

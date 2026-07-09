@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
   Car,
@@ -30,12 +30,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import toast from "react-hot-toast"
+import { fetchAdminCases, updateAdminCase } from "@/lib/api/admin-cases"
+import { fetchAdminUnits, updateAdminUnit } from "@/lib/api/admin-units"
+import { clearAdminSession } from "@/lib/auth/admin-session"
+import { mapApiCasesToMockCases } from "@/lib/admin/case-mappers"
+import { mapApiUnitsToMockUnits } from "@/lib/admin/unit-mappers"
 import {
-  MOCK_CASES,
-  MOCK_UNITS,
   NEPAL_PROVINCES,
+  type MockCase,
   type MockUnit,
   type UnitStatus,
 } from "@/lib/admin/mock-data"
@@ -71,12 +76,51 @@ function parseOfficer(officer: string) {
 }
 
 export default function UnitsDashboard() {
-  const [units, setUnits] = useState<MockUnit[]>(MOCK_UNITS)
+  const [units, setUnits] = useState<MockUnit[]>([])
+  const [openCases, setOpenCases] = useState<MockCase[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<UnitStatus | "all">("all")
   const [provinceFilter, setProvinceFilter] = useState("All")
   const [dispatchUnit, setDispatchUnit] = useState<MockUnit | null>(null)
   const [selectedCase, setSelectedCase] = useState("")
+
+  const loadData = useCallback(() => {
+    setLoading(true)
+    setLoadError(null)
+
+    Promise.all([
+      fetchAdminUnits({ limit: 100 }),
+      fetchAdminCases({ limit: 100 }),
+    ]).then(([unitsRes, casesRes]) => {
+      if (unitsRes.status === 401 || casesRes.status === 401) {
+        clearAdminSession()
+        return
+      }
+      if (unitsRes.error || !unitsRes.data) {
+        setLoadError(unitsRes.error ?? "Failed to load units")
+        setLoading(false)
+        return
+      }
+
+      const cases = mapApiCasesToMockCases(casesRes.data?.cases ?? [])
+      const caseNumberByUnitId = new Map<string, string>()
+      for (const c of casesRes.data?.cases ?? []) {
+        if (c.assigned_unit_id && c.status !== "CLOSED") {
+          caseNumberByUnitId.set(c.assigned_unit_id, c.case_number)
+        }
+      }
+
+      setOpenCases(cases.filter((c) => c.status !== "CLOSED"))
+      setUnits(mapApiUnitsToMockUnits(unitsRes.data.units, caseNumberByUnitId))
+      setLoading(false)
+    })
+  }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const counts = useMemo(
     () => ({
@@ -104,26 +148,61 @@ export default function UnitsDashboard() {
     })
   }, [units, search, statusFilter, provinceFilter])
 
-  const openCases = MOCK_CASES.filter((c) => c.status !== "CLOSED")
-
-  const handleDispatch = () => {
+  const handleDispatch = async () => {
     if (!dispatchUnit || !selectedCase) return
+    const targetCase = openCases.find((c) => c.uuid === selectedCase)
+    if (!targetCase) return
+
+    const { error: unitError, status: unitStatus } = await updateAdminUnit(dispatchUnit.uuid, {
+      status: "dispatched",
+    })
+    if (unitStatus === 401) {
+      clearAdminSession()
+      return
+    }
+    if (unitError) {
+      toast.error(unitError)
+      return
+    }
+
+    const { error: caseError, status: caseStatus } = await updateAdminCase(targetCase.uuid, {
+      assigned_unit_id: dispatchUnit.uuid,
+    })
+    if (caseStatus === 401) {
+      clearAdminSession()
+      return
+    }
+    if (caseError) {
+      toast.error(caseError)
+      return
+    }
+
     setUnits((prev) =>
       prev.map((u) =>
-        u.id === dispatchUnit.id
-          ? { ...u, status: "dispatched" as UnitStatus, activeCase: selectedCase, lastUpdated: "Just now" }
+        u.uuid === dispatchUnit.uuid
+          ? { ...u, status: "dispatched" as UnitStatus, activeCase: targetCase.id, lastUpdated: "Just now" }
           : u
       )
     )
-    toast.success(`${dispatchUnit.id} dispatched to ${selectedCase}`)
+    toast.success(`${dispatchUnit.id} dispatched to ${targetCase.id}`)
     setDispatchUnit(null)
     setSelectedCase("")
   }
 
-  const markAvailable = (id: string) => {
+  const markAvailable = async (unit: MockUnit) => {
+    const { error, status } = await updateAdminUnit(unit.uuid, { status: "available" })
+    if (status === 401) {
+      clearAdminSession()
+      return
+    }
+    if (error) {
+      toast.error(error)
+      return
+    }
+
     setUnits((prev) =>
       prev.map((u) =>
-        u.id === id
+        u.uuid === unit.uuid
           ? { ...u, status: "available" as UnitStatus, activeCase: undefined, lastUpdated: "Just now" }
           : u
       )
@@ -133,6 +212,31 @@ export default function UnitsDashboard() {
 
   const toggleStatusFilter = (status: UnitStatus) => {
     setStatusFilter((prev) => (prev === status ? "all" : status))
+  }
+
+  if (loading) {
+    return (
+      <PageTransition>
+        <Skeleton className="mb-6 h-9 w-48" />
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-lg" />
+          ))}
+        </div>
+        <Skeleton className="h-96 w-full rounded-xl" />
+      </PageTransition>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <PageTransition>
+        <p className="text-sm text-red-400">{loadError}</p>
+        <button type="button" onClick={loadData} className="admin-btn-ghost mt-3 text-xs">
+          Retry
+        </button>
+      </PageTransition>
+    )
   }
 
   return (
@@ -247,7 +351,7 @@ export default function UnitsDashboard() {
                   const { rank, name } = parseOfficer(unit.officer)
                   return (
                     <tr
-                      key={unit.id}
+                      key={unit.uuid}
                       className="border-b border-white/5 transition hover:bg-white/[0.02]"
                     >
                       <td className="px-5 py-3.5">
@@ -306,7 +410,7 @@ export default function UnitsDashboard() {
                           {unit.status !== "available" && unit.status !== "offline" && (
                             <button
                               type="button"
-                              onClick={() => markAvailable(unit.id)}
+                              onClick={() => markAvailable(unit)}
                               className="admin-btn-ghost px-2.5 py-1 text-[10px]"
                             >
                               Mark Available
@@ -371,7 +475,7 @@ export default function UnitsDashboard() {
               </SelectTrigger>
               <SelectContent className="border-white/10 bg-[#0A0A0A]">
                 {openCases.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
+                  <SelectItem key={c.uuid} value={c.uuid}>
                     {c.id} — {c.victim} · {c.district}
                   </SelectItem>
                 ))}

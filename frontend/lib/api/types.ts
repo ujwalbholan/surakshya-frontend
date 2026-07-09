@@ -349,3 +349,335 @@ export interface AdminSosEventsResponse {
   limit: number
   totalPages: number
 }
+
+// ——— Cases ———
+
+export interface ApiUserSummary {
+  id: string
+  full_name: string
+  email: string
+  phone: string
+}
+
+export interface ApiStationSummary {
+  id: string
+  name: string
+}
+
+export interface ApiUnitSummary {
+  id: string
+  name: string
+  vehicle: string
+  zone: string
+}
+
+export interface ApiCaseRecord {
+  id: string
+  case_number: string
+  status: string
+  priority: string
+  summary: string
+  district: string | null
+  province: string | null
+  victim_name: string | null
+  sos_event_id: string | null
+  station_id: string | null
+  station: ApiStationSummary | null
+  assigned_officer_id: string | null
+  assigned_officer: ApiUserSummary | null
+  assigned_unit_id: string | null
+  assigned_unit: ApiUnitSummary | null
+  opened_at: string
+  closed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ApiCaseStatusHistory {
+  id: string
+  status: string
+  changed_by_id: string | null
+  changed_by: ApiUserSummary | null
+  created_at: string
+}
+
+export interface ApiCaseNote {
+  id: string
+  body: string
+  author_id: string | null
+  author: ApiUserSummary | null
+  created_at: string
+}
+
+export interface ApiCaseDetail extends ApiCaseRecord {
+  status_history: ApiCaseStatusHistory[]
+  notes: ApiCaseNote[]
+}
+
+export interface AdminCasesListResponse {
+  message: string
+  cases: ApiCaseRecord[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface AdminCaseDetailResponse {
+  message: string
+  case: ApiCaseDetail
+}
+
+export interface AdminCaseStatusResponse {
+  message: string
+  case: ApiCaseDetail
+}
+
+export interface AdminCaseNoteResponse {
+  message: string
+  note: ApiCaseNote
+}
+
+export interface CreateCasePayload {
+  summary: string
+  priority?: string
+  status?: string
+  district?: string
+  province?: string
+  victim_name?: string
+  sos_event_id?: string
+  station_id?: string
+  assigned_officer_id?: string
+  assigned_unit_id?: string
+}
+
+export type UpdateCasePayload = Partial<CreateCasePayload>
+
+// ——— Patrol units ———
+
+export interface ApiPatrolUnitRecord {
+  id: string
+  name: string
+  vehicle: string
+  zone: string
+  province: string
+  status: string
+  station_id: string | null
+  station: ApiStationSummary | null
+  lead_officer_id: string | null
+  lead_officer: ApiUserSummary | null
+  contact_phone: string | null
+  latitude: number | null
+  longitude: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminPatrolUnitsListResponse {
+  message: string
+  units: ApiPatrolUnitRecord[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface AdminPatrolUnitResponse {
+  message: string
+  unit: ApiPatrolUnitRecord
+}
+
+export interface CreatePatrolUnitPayload {
+  name: string
+  vehicle: string
+  zone: string
+  province: string
+  status?: string
+  station_id?: string
+  lead_officer_id?: string
+  contact_phone?: string
+  latitude?: number
+  longitude?: number
+}
+
+export type UpdatePatrolUnitPayload = Partial<CreatePatrolUnitPayload>
+
+// ——— Evidence ———
+
+export interface ApiEvidenceCaseSummary {
+  id: string
+  case_number: string
+  status: string
+  priority: string
+  victim_name: string | null
+  district: string | null
+  province: string | null
+  station_id: string | null
+}
+
+export interface ApiEvidenceRecord {
+  id: string
+  case_id: string
+  case: ApiEvidenceCaseSummary | null
+  file_name: string
+  storage_key: string
+  mime_type: string | null
+  file_type: string
+  size_bytes: string
+  checksum: string
+  uploaded_by_id: string
+  uploaded_by: ApiUserSummary | null
+  captured_at: string | null
+  created_at: string
+}
+
+export interface AdminEvidenceListResponse {
+  message: string
+  evidence: ApiEvidenceRecord[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface AdminEvidenceDetailResponse {
+  message: string
+  evidence: ApiEvidenceRecord
+}
+
+export interface CreateEvidencePayload {
+  case_id: string
+  file_name: string
+  storage_key: string
+  file_type: string
+  size_bytes: number
+  checksum: string
+  mime_type?: string
+  captured_at?: string
+}
+
+// ——— Audit ———
+
+export interface ApiAuditLogRecord {
+  id: string
+  actor_user_id: string | null
+  actor: ApiUserSummary | null
+  actor_role: string
+  action: string
+  target_entity_type: string | null
+  target_entity_id: string | null
+  target_label: string | null
+  ip_address: string | null
+  result: string
+  result_label: "Success" | "Failed"
+  metadata: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface AdminAuditListResponse {
+  message: string
+  audit_logs: ApiAuditLogRecord[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface AdminAuditDetailResponse {
+  message: string
+  audit_log: ApiAuditLogRecord
+}
+
+// ——— Reports ———
+
+export type ApiReportRange = "7d" | "30d" | "90d"
+
+export interface AdminReportSummaryResponse {
+  message: string
+  range: ApiReportRange
+  total_sos: number
+  resolved_count: number
+  avg_response_minutes: string
+  resolution_rate: number
+  active_cases: number
+  units_dispatched: number
+}
+
+export interface AdminDailySeriesPoint {
+  date: string
+  sos: number
+  resolved: number
+  open: number
+  escalated: number
+  users: number
+  minutes: number
+}
+
+export interface AdminDailySeriesResponse {
+  message: string
+  range: ApiReportRange
+  series: AdminDailySeriesPoint[]
+}
+
+export interface AdminProvinceBreakdownRow {
+  province: string
+  total_sos: number
+  resolved: number
+  avg_response_minutes: number
+  avg_response: string
+  resolution_rate: number
+  units: number
+}
+
+export interface AdminProvinceBreakdownResponse {
+  message: string
+  range: ApiReportRange
+  provinces: AdminProvinceBreakdownRow[]
+}
+
+// ——— Police (cases, units, evidence, reports) ———
+
+export interface PoliceCasesListResponse {
+  message: string
+  cases: ApiCaseRecord[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface PoliceCaseDetailResponse {
+  message: string
+  case: ApiCaseDetail
+}
+
+export interface PolicePatrolUnitsListResponse {
+  message: string
+  units: ApiPatrolUnitRecord[]
+  total: number
+}
+
+export interface PoliceEvidenceListResponse {
+  message: string
+  evidence: ApiEvidenceRecord[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface PoliceEvidenceDetailResponse {
+  message: string
+  evidence: ApiEvidenceRecord
+}
+
+export interface PoliceReportSummaryResponse {
+  message: string
+  range: ApiReportRange
+  total_sos: number
+  resolved_count: number
+  avg_response_minutes: string
+  resolution_rate: number
+  active_cases: number
+  units_dispatched: number
+}

@@ -1,11 +1,18 @@
 import { API_BASE } from "./client"
 import { getAccessToken } from "@/lib/auth/session"
 import type {
+  PoliceCaseDetailResponse,
+  PoliceCasesListResponse,
   PoliceDashboardResponse,
   PoliceDeviceLocationResponse,
+  PoliceEvidenceListResponse,
   PoliceGuardian,
+  PolicePatrolUnitsListResponse,
+  PoliceReportSummaryResponse,
   PoliceSosEventsResponse,
   PoliceUserInfo,
+  ApiReportRange,
+  UpdateCasePayload,
 } from "./types"
 
 function authHeaders(): HeadersInit {
@@ -69,4 +76,57 @@ export function fetchUserGuardians(userId: string) {
   return policeRequest<{ guardians: PoliceGuardian[] }>(
     `/police/users/${userId}/guardians`
   )
+}
+
+export function fetchPoliceCases(options?: {
+  status?: string
+  priority?: string
+  page?: number
+  limit?: number
+}) {
+  const params = new URLSearchParams()
+  if (options?.status) params.set("status", options.status)
+  if (options?.priority) params.set("priority", options.priority)
+  if (options?.page) params.set("page", String(options.page))
+  if (options?.limit) params.set("limit", String(options.limit))
+  const qs = params.toString()
+  return policeRequest<PoliceCasesListResponse>(`/police/cases${qs ? `?${qs}` : ""}`)
+}
+
+export function fetchPoliceCase(id: string) {
+  return policeRequest<PoliceCaseDetailResponse>(`/police/cases/${id}`)
+}
+
+export function updatePoliceCase(id: string, payload: UpdateCasePayload) {
+  return policeRequest<PoliceCaseDetailResponse>(`/police/cases/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function fetchPoliceUnits(options?: { status?: string }) {
+  const params = new URLSearchParams()
+  if (options?.status) params.set("status", options.status)
+  const qs = params.toString()
+  return policeRequest<PolicePatrolUnitsListResponse>(`/police/units${qs ? `?${qs}` : ""}`)
+}
+
+export function fetchPoliceEvidence(options?: {
+  case_id?: string
+  file_type?: string
+  page?: number
+  limit?: number
+}) {
+  const params = new URLSearchParams()
+  if (options?.case_id) params.set("case_id", options.case_id)
+  if (options?.file_type) params.set("file_type", options.file_type)
+  if (options?.page) params.set("page", String(options.page))
+  if (options?.limit) params.set("limit", String(options.limit))
+  const qs = params.toString()
+  return policeRequest<PoliceEvidenceListResponse>(`/police/evidence${qs ? `?${qs}` : ""}`)
+}
+
+export function fetchPoliceReportSummary(range?: ApiReportRange) {
+  const qs = range ? `?range=${range}` : ""
+  return policeRequest<PoliceReportSummaryResponse>(`/police/reports/summary${qs}`)
 }

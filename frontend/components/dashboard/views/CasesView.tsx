@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   FileText,
   FolderOpen,
@@ -9,8 +9,9 @@ import {
   User,
 } from "lucide-react"
 import { Panel, SectionHeader, StatCard, StatusPill } from "@/components/dashboard/shared"
-// TODO: no backend endpoint yet
-import { policeCases, type CaseStatus } from "@/lib/dashboard/operations-data"
+import { fetchPoliceCases, fetchPoliceEvidence } from "@/lib/api/police"
+import { mapApiCaseToPoliceCase } from "@/lib/dashboard/operations-mappers"
+import type { CaseStatus, PoliceCase } from "@/lib/dashboard/operations-data"
 import { cn } from "@/lib/utils"
 
 const STATUS_FILTERS: { id: CaseStatus | "all"; label: string }[] = [
@@ -28,12 +29,36 @@ function caseVariant(status: CaseStatus): "critical" | "warning" | "success" | "
 }
 
 export default function CasesView() {
+  const [cases, setCases] = useState<PoliceCase[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [filter, setFilter] = useState<CaseStatus | "all">("all")
   const [search, setSearch] = useState("")
-  const [selectedId, setSelectedId] = useState(policeCases[0]?.id ?? "")
+  const [selectedId, setSelectedId] = useState("")
+  const [evidenceFiles, setEvidenceFiles] = useState<string[]>([])
+
+  const loadCases = useCallback(() => {
+    setLoading(true)
+    setLoadError(null)
+    fetchPoliceCases({ limit: 100 })
+      .then((data) => {
+        const mapped = data.cases.map((c) => mapApiCaseToPoliceCase(c))
+        setCases(mapped)
+        setSelectedId((prev) => prev || mapped[0]?.uuid || "")
+        setLoading(false)
+      })
+      .catch((err: Error) => {
+        setLoadError(err.message)
+        setLoading(false)
+      })
+  }, [])
+
+  useEffect(() => {
+    loadCases()
+  }, [loadCases])
 
   const filtered = useMemo(() => {
-    return policeCases.filter((c) => {
+    return cases.filter((c) => {
       const matchFilter = filter === "all" || c.status === filter
       const q = search.toLowerCase()
       const matchSearch =
@@ -43,15 +68,40 @@ export default function CasesView() {
         c.officer.toLowerCase().includes(q)
       return matchFilter && matchSearch
     })
-  }, [filter, search])
+  }, [cases, filter, search])
 
-  const selected = policeCases.find((c) => c.id === selectedId) ?? filtered[0]
+  const selected = cases.find((c) => c.uuid === selectedId) ?? filtered[0]
+
+  useEffect(() => {
+    if (!selected?.uuid) {
+      setEvidenceFiles([])
+      return
+    }
+    fetchPoliceEvidence({ case_id: selected.uuid, limit: 20 })
+      .then((data) => setEvidenceFiles(data.evidence.map((e) => e.file_name)))
+      .catch(() => setEvidenceFiles([]))
+  }, [selected?.uuid])
 
   const stats = {
-    open: policeCases.filter((c) => c.status === "open").length,
-    investigating: policeCases.filter((c) => c.status === "investigating").length,
-    escalated: policeCases.filter((c) => c.status === "escalated").length,
-    closed: policeCases.filter((c) => c.status === "closed").length,
+    open: cases.filter((c) => c.status === "open").length,
+    investigating: cases.filter((c) => c.status === "investigating").length,
+    escalated: cases.filter((c) => c.status === "escalated").length,
+    closed: cases.filter((c) => c.status === "closed").length,
+  }
+
+  if (loading) {
+    return <p className="text-sm text-[#666]">Loading cases…</p>
+  }
+
+  if (loadError) {
+    return (
+      <div>
+        <p className="text-sm text-red-400">{loadError}</p>
+        <button type="button" onClick={loadCases} className="mt-2 text-xs text-[#888] underline">
+          Retry
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -112,14 +162,16 @@ export default function CasesView() {
             <span className="font-mono text-[10px] text-[#666]">{filtered.length} cases</span>
           }>
             <div className="max-h-[480px] space-y-2 overflow-y-auto">
-              {filtered.map((c) => (
+              {filtered.length === 0 ? (
+                <p className="py-8 text-center text-sm text-[#666]">No cases found</p>
+              ) : filtered.map((c) => (
                 <button
-                  key={c.id}
+                  key={c.uuid}
                   type="button"
-                  onClick={() => setSelectedId(c.id)}
+                  onClick={() => setSelectedId(c.uuid)}
                   className={cn(
                     "w-full rounded border p-3 text-left transition-colors",
-                    selected?.id === c.id
+                    selected?.uuid === c.uuid
                       ? "border-[#C0392B] bg-[#C0392B]/10"
                       : "border-[#222] bg-[#0a0a0a] hover:border-[#333]"
                   )}
@@ -180,27 +232,26 @@ export default function CasesView() {
                 icon={Paperclip}
                 headerRight={
                   <span className="font-mono text-[10px] text-[#666]">
-                    {selected.evidenceCount} items
+                    {evidenceFiles.length} items
                   </span>
                 }
               >
                 <ul className="space-y-2 text-xs text-[#aaa]">
-                  <li className="flex justify-between rounded border border-[#222] bg-[#0a0a0a] px-3 py-2">
-                    <span>GPS track log (full route)</span>
-                    <span className="text-emerald-500">Secured</span>
-                  </li>
-                  <li className="flex justify-between rounded border border-[#222] bg-[#0a0a0a] px-3 py-2">
-                    <span>Auto audio recording — SOS window</span>
-                    <span className="text-emerald-500">AES-256</span>
-                  </li>
-                  <li className="flex justify-between rounded border border-[#222] bg-[#0a0a0a] px-3 py-2">
-                    <span>Family contact notification log</span>
-                    <span className="text-[#888]">3 sent</span>
-                  </li>
-                  <li className="flex justify-between rounded border border-[#222] bg-[#0a0a0a] px-3 py-2">
-                    <span>Officer on-scene report</span>
-                    <span className="text-amber-400">Pending</span>
-                  </li>
+                  {evidenceFiles.length === 0 ? (
+                    <li className="rounded border border-[#222] bg-[#0a0a0a] px-3 py-2 text-[#666]">
+                      No evidence files linked to this case
+                    </li>
+                  ) : (
+                    evidenceFiles.map((file) => (
+                      <li
+                        key={file}
+                        className="flex justify-between rounded border border-[#222] bg-[#0a0a0a] px-3 py-2"
+                      >
+                        <span>{file}</span>
+                        <span className="text-emerald-500">Secured</span>
+                      </li>
+                    ))
+                  )}
                 </ul>
               </Panel>
 

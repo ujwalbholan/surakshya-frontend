@@ -1,15 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { LayoutGrid, List } from "lucide-react"
 import PageTransition from "@/components/admin/PageTransition"
 import CaseProfilePanel from "@/components/admin/CaseProfilePanel"
 import { PriorityBadge } from "@/components/admin/Badges"
-import {
-  Sheet,
-  SheetContent,
-} from "@/components/ui/sheet"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {
   Select,
   SelectContent,
@@ -17,9 +14,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import toast from "react-hot-toast"
 import {
-  MOCK_CASES,
+  addAdminCaseNote,
+  fetchAdminCases,
+  updateAdminCaseStatus,
+} from "@/lib/api/admin-cases"
+import { clearAdminSession } from "@/lib/auth/admin-session"
+import { mapApiCasesToMockCases } from "@/lib/admin/case-mappers"
+import {
   NEPAL_PROVINCES,
   type MockCase,
   type CaseStatus,
@@ -33,7 +37,9 @@ const COLUMNS: { status: CaseStatus; label: string; color: string }[] = [
 ]
 
 export default function CaseKanban() {
-  const [cases, setCases] = useState<MockCase[]>(MOCK_CASES)
+  const [cases, setCases] = useState<MockCase[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [view, setView] = useState<"kanban" | "table">("kanban")
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("All")
@@ -41,36 +47,110 @@ export default function CaseKanban() {
   const [selectedCase, setSelectedCase] = useState<MockCase | null>(null)
   const [dragging, setDragging] = useState<string | null>(null)
 
+  const loadCases = useCallback(() => {
+    setLoading(true)
+    setLoadError(null)
+    fetchAdminCases({ limit: 100 }).then(({ data, error, status }) => {
+      if (status === 401) {
+        clearAdminSession()
+        return
+      }
+      if (error || !data) {
+        setLoadError(error ?? "Failed to load cases")
+        setLoading(false)
+        return
+      }
+      setCases(mapApiCasesToMockCases(data.cases))
+      setLoading(false)
+    })
+  }, [])
+
+  useEffect(() => {
+    loadCases()
+  }, [loadCases])
+
   const activeCase = selectedCase
-    ? cases.find((c) => c.id === selectedCase.id) ?? selectedCase
+    ? cases.find((c) => c.uuid === selectedCase.uuid) ?? selectedCase
     : null
 
   const filtered = cases.filter((c) => {
     const q = search.toLowerCase()
-    const matchSearch = !q || c.victim.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
+    const matchSearch =
+      !q ||
+      c.victim.toLowerCase().includes(q) ||
+      c.id.toLowerCase().includes(q)
     const matchStatus = statusFilter === "All" || c.status === statusFilter
     const matchProvince = provinceFilter === "All" || c.province === provinceFilter
     return matchSearch && matchStatus && matchProvince
   })
 
-  const updateCase = (caseId: string, updater: (c: MockCase) => MockCase) => {
-    setCases((prev) => prev.map((c) => (c.id === caseId ? updater(c) : c)))
-    setSelectedCase((prev) => (prev?.id === caseId ? updater(prev) : prev))
+  const updateCase = (caseUuid: string, updater: (c: MockCase) => MockCase) => {
+    setCases((prev) => prev.map((c) => (c.uuid === caseUuid ? updater(c) : c)))
+    setSelectedCase((prev) => (prev?.uuid === caseUuid ? updater(prev) : prev))
   }
 
-  const handleDrop = (caseId: string, newStatus: CaseStatus) => {
-    updateCase(caseId, (c) => ({
+  const handleDrop = async (caseUuid: string, newStatus: CaseStatus) => {
+    const previous = cases.find((c) => c.uuid === caseUuid)
+    updateCase(caseUuid, (c) => ({
       ...c,
       status: newStatus,
       statusHistory: [...c.statusHistory, { status: newStatus, timestamp: new Date().toISOString() }],
     }))
     setDragging(null)
+
+    const { error, status } = await updateAdminCaseStatus(caseUuid, newStatus)
+    if (status === 401) {
+      clearAdminSession()
+      return
+    }
+    if (error) {
+      toast.error(error)
+      if (previous) {
+        setCases((prev) => prev.map((c) => (c.uuid === caseUuid ? previous : c)))
+        setSelectedCase((prev) => (prev?.uuid === caseUuid ? previous : prev))
+      }
+      return
+    }
+    toast.success("Case status updated")
   }
 
-  const saveNote = (note: string) => {
+  const saveNote = async (note: string) => {
     if (!selectedCase) return
-    updateCase(selectedCase.id, (c) => ({ ...c, notes: [...c.notes, note] }))
+    const { error, status } = await addAdminCaseNote(selectedCase.uuid, note)
+    if (status === 401) {
+      clearAdminSession()
+      return
+    }
+    if (error) {
+      toast.error(error)
+      return
+    }
+    updateCase(selectedCase.uuid, (c) => ({ ...c, notes: [...c.notes, note] }))
     toast.success("Note saved")
+  }
+
+  if (loading) {
+    return (
+      <PageTransition>
+        <Skeleton className="mb-6 h-9 w-48" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {COLUMNS.map((col) => (
+            <Skeleton key={col.status} className="h-64 rounded-xl" />
+          ))}
+        </div>
+      </PageTransition>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <PageTransition>
+        <p className="text-sm text-red-400">{loadError}</p>
+        <button type="button" onClick={loadCases} className="admin-btn-ghost mt-3 text-xs">
+          Retry
+        </button>
+      </PageTransition>
+    )
   }
 
   return (
@@ -114,7 +194,7 @@ export default function CaseKanban() {
               className="rounded-xl border border-white/5 bg-[#0A0A0A] p-3"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
-                const id = e.dataTransfer.getData("caseId")
+                const id = e.dataTransfer.getData("caseUuid")
                 if (id) handleDrop(id, col.status)
               }}
             >
@@ -124,14 +204,14 @@ export default function CaseKanban() {
               <div className="space-y-2 min-h-[100px]">
                 {filtered.filter((c) => c.status === col.status).map((c) => (
                   <div
-                    key={c.id}
+                    key={c.uuid}
                     draggable
-                    onDragStart={(e) => { e.dataTransfer.setData("caseId", c.id); setDragging(c.id) }}
+                    onDragStart={(e) => { e.dataTransfer.setData("caseUuid", c.uuid); setDragging(c.uuid) }}
                     onDragEnd={() => setDragging(null)}
                     onClick={() => setSelectedCase(c)}
                     className={cn(
                       "cursor-pointer rounded-lg border border-white/5 bg-black p-3 transition hover:border-white/10",
-                      dragging === c.id && "opacity-50"
+                      dragging === c.uuid && "opacity-50"
                     )}
                   >
                     <p className="font-mono-admin text-[10px] text-white/40">{c.id}</p>
@@ -161,7 +241,7 @@ export default function CaseKanban() {
             </thead>
             <tbody>
               {filtered.map((c) => (
-                <tr key={c.id} className="border-b border-white/5 hover:bg-white/5">
+                <tr key={c.uuid} className="border-b border-white/5 hover:bg-white/5">
                   <td className="px-4 py-3 font-mono-admin text-xs">{c.id}</td>
                   <td className="px-4 py-3 text-white">{c.victim}</td>
                   <td className="px-4 py-3 text-white/60">{c.district}</td>
@@ -185,7 +265,7 @@ export default function CaseKanban() {
           {activeCase && (
             <CaseProfilePanel
               caseData={activeCase}
-              onStatusChange={(status) => handleDrop(activeCase.id, status)}
+              onStatusChange={(status) => handleDrop(activeCase.uuid, status)}
               onNoteSave={saveNote}
             />
           )}

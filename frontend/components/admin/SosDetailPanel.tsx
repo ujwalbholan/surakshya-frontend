@@ -1,6 +1,6 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import {
   Car,
@@ -16,7 +16,8 @@ import {
 import { PriorityBadge, StatusBadge } from "@/components/admin/Badges"
 import { cn } from "@/lib/utils"
 import { mapsUrl } from "@/lib/admin/sos-data"
-import { getInitials, MOCK_CASES } from "@/lib/admin/mock-data"
+import { getInitials } from "@/lib/admin/mock-data"
+import { fetchAdminCases } from "@/lib/api/admin-cases"
 import type { AdminSosAlert } from "@/lib/admin/sos-types"
 
 function SectionHeading({ children }: { children: ReactNode }) {
@@ -34,6 +35,26 @@ interface SosDetailPanelProps {
 }
 
 export default function SosDetailPanel({ alert, onResolve, onEscalate }: SosDetailPanelProps) {
+  const [relatedCaseId, setRelatedCaseId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!alert) {
+      setRelatedCaseId(null)
+      return
+    }
+    let cancelled = false
+    fetchAdminCases({ limit: 100 }).then(({ data }) => {
+      if (cancelled || !data) return
+      const match =
+        data.cases.find((c) => c.sos_event_id === alert.id) ??
+        data.cases.find((c) => c.victim_name === alert.victim)
+      setRelatedCaseId(match?.case_number ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [alert])
+
   if (!alert) {
     return (
       <div className="flex h-full min-h-[480px] flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-[#0A0A0A] px-8 text-center">
@@ -46,7 +67,6 @@ export default function SosDetailPanel({ alert, onResolve, onEscalate }: SosDeta
     )
   }
 
-  const relatedCase = MOCK_CASES.find((c) => c.victim === alert.victim)
   const mapsLink = mapsUrl(alert.lat, alert.lng)
   const isCritical = alert.priority === "CRITICAL" && alert.status !== "Resolved"
 
@@ -248,8 +268,8 @@ export default function SosDetailPanel({ alert, onResolve, onEscalate }: SosDeta
           <Link href={`/admin/sos/${alert.id}`} className="admin-btn-ghost text-sm">
             View Alert Record
           </Link>
-          {relatedCase && (
-            <Link href={`/admin/cases/${relatedCase.id}`} className="admin-btn-ghost text-sm">
+          {relatedCaseId && (
+            <Link href={`/admin/cases/${relatedCaseId}`} className="admin-btn-ghost text-sm">
               View Incident Case
             </Link>
           )}
