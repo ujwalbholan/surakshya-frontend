@@ -39,10 +39,13 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton"
 import { getAdminSession } from "@/lib/auth/admin-session"
 import { fetchUserCount } from "@/lib/api/admin-auth"
+import { sortSosAlerts } from "@/lib/admin/sos-data"
+import { loadAdminSosAlerts } from "@/lib/admin/sos-mappers"
+import type { AdminSosAlert } from "@/lib/admin/sos-types"
 import {
-  DASHBOARD_SOS_ROWS,
   USER_ROLE_BREAKDOWN,
   LATEST_REGISTERED_USERS,
   generateSosChartData,
@@ -80,6 +83,9 @@ export default function DashboardPage() {
   const [clock, setClock] = useState(getNepalTime())
   const [userCount, setUserCount] = useState<number>(1247)
   const [loadingStats, setLoadingStats] = useState(true)
+  const [sosAlerts, setSosAlerts] = useState<AdminSosAlert[]>([])
+  const [loadingSos, setLoadingSos] = useState(true)
+  const [sosError, setSosError] = useState<string | null>(null)
   const [broadcastOpen, setBroadcastOpen] = useState(false)
   const [broadcastMsg, setBroadcastMsg] = useState("")
   const chartData = generateSosChartData()
@@ -94,6 +100,20 @@ export default function DashboardPage() {
       if (data?.count) setUserCount(data.count)
       setLoadingStats(false)
     })
+  }, [])
+
+  useEffect(() => {
+    loadAdminSosAlerts()
+      .then((alerts) => {
+        const live = sortSosAlerts(alerts.filter((a) => a.status !== "Resolved")).slice(0, 5)
+        setSosAlerts(live)
+        setSosError(null)
+      })
+      .catch(() => {
+        setSosError("Failed to load SOS alerts")
+        setSosAlerts([])
+      })
+      .finally(() => setLoadingSos(false))
   }, [])
 
   const handleExportCsv = () => {
@@ -160,23 +180,48 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {DASHBOARD_SOS_ROWS.map((row, i) => (
-                    <tr
-                      key={row.id}
-                      className={`border-b border-white/5 transition hover:bg-white/5 ${i % 2 === 0 ? "bg-[#0A0A0A]" : ""}`}
-                    >
-                      <td className="px-5 py-3 font-mono-admin text-xs text-white/50">{row.time}</td>
-                      <td className="px-5 py-3 text-white">{row.victim}</td>
-                      <td className="px-5 py-3 text-white/70">{row.location}</td>
-                      <td className="px-5 py-3"><PriorityBadge priority={row.priority} /></td>
-                      <td className="px-5 py-3"><StatusBadge status={row.status} /></td>
-                      <td className="px-5 py-3">
-                        <Link href={`/admin/sos/${row.id}`} className="text-xs text-white/50 transition hover:text-white">
-                          View
-                        </Link>
+                  {loadingSos ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i} className={`border-b border-white/5 ${i % 2 === 0 ? "bg-[#0A0A0A]" : ""}`}>
+                        <td colSpan={6} className="px-5 py-3">
+                          <Skeleton className="h-4 w-full bg-white/5" />
+                        </td>
+                      </tr>
+                    ))
+                  ) : sosError ? (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-8 text-center text-sm text-[#E74C3C]">
+                        <span className="inline-flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 shrink-0" />
+                          {sosError}
+                        </span>
                       </td>
                     </tr>
-                  ))}
+                  ) : sosAlerts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-8 text-center text-sm text-white/40">
+                        No active SOS alerts
+                      </td>
+                    </tr>
+                  ) : (
+                    sosAlerts.map((row, i) => (
+                      <tr
+                        key={row.id}
+                        className={`border-b border-white/5 transition hover:bg-white/5 ${i % 2 === 0 ? "bg-[#0A0A0A]" : ""}`}
+                      >
+                        <td className="px-5 py-3 font-mono-admin text-xs text-white/50">{row.timeAgo}</td>
+                        <td className="px-5 py-3 text-white">{row.victim}</td>
+                        <td className="px-5 py-3 text-white/70">{row.location}</td>
+                        <td className="px-5 py-3"><PriorityBadge priority={row.priority} /></td>
+                        <td className="px-5 py-3"><StatusBadge status={row.status} /></td>
+                        <td className="px-5 py-3">
+                          <Link href={`/admin/sos/${row.id}`} className="text-xs text-white/50 transition hover:text-white">
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
