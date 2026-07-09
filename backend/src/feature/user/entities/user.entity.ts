@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { PoliceAccountStatus } from 'src/constants/police-provisioning.constants';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { PoliceStation } from 'src/feature/police-stations/entities/police-station.entity';
 
@@ -43,6 +44,29 @@ export class User {
 
   @Column({ default: false })
   phone_verified: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: PoliceAccountStatus,
+    enumName: 'police_account_status',
+    nullable: true,
+  })
+  police_account_status?: PoliceAccountStatus | null;
+
+  @Column({ default: false })
+  must_change_password: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  temp_password_hash?: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  temp_password_expires_at?: Date | null;
+
+  @Column({ type: 'int', default: 0 })
+  temp_password_resend_count: number;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  temp_password_last_resend_at?: Date | null;
 
   @Column({ type: 'uuid', nullable: true })
   station_id?: string | null;

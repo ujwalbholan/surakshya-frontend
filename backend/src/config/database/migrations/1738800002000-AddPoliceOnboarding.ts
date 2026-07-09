@@ -16,9 +16,7 @@ export class AddPoliceOnboarding1738800002000 implements MigrationInterface {
       )`,
     );
 
-    await queryRunner.query(
-      `ALTER TABLE "users" ADD COLUMN "station_id" uuid`,
-    );
+    await queryRunner.query(`ALTER TABLE "users" ADD COLUMN "station_id" uuid`);
     await queryRunner.query(
       `ALTER TABLE "users" ADD CONSTRAINT "FK_users_station_id" FOREIGN KEY ("station_id") REFERENCES "police_stations"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
     );
@@ -60,7 +58,9 @@ export class AddPoliceOnboarding1738800002000 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "police_invites" DROP CONSTRAINT "FK_police_invites_station_id"`,
     );
-    await queryRunner.query(`DROP INDEX "public"."idx_police_invites_token_hash"`);
+    await queryRunner.query(
+      `DROP INDEX "public"."idx_police_invites_token_hash"`,
+    );
     await queryRunner.query(`DROP INDEX "public"."idx_police_invites_email"`);
     await queryRunner.query(`DROP TABLE "police_invites"`);
     await queryRunner.query(

@@ -222,7 +222,7 @@ describe('AdminService', () => {
           user,
         },
       ];
-      deviceRepo.findAndCount.mockResolvedValue([devices as Device[], 1]);
+      deviceRepo.findAndCount.mockResolvedValue([devices, 1]);
 
       const result = await service.getDevices(1, 20);
 
@@ -259,8 +259,8 @@ describe('AdminService', () => {
         lastSeenAt: null,
         user: null,
       };
-      deviceRepo.create.mockReturnValue(created as Device);
-      deviceRepo.save.mockResolvedValue(created as Device);
+      deviceRepo.create.mockReturnValue(created);
+      deviceRepo.save.mockResolvedValue(created);
 
       const result = await service.createDevice({ imei: 'wearable-001' });
 
@@ -306,13 +306,11 @@ describe('AdminService', () => {
 
     it('should reject non-USER role', async () => {
       deviceRepo.findOne.mockResolvedValue(device);
-      userRepo.findOneBy.mockResolvedValue(
-        mockUser({ role: Role.GUARDIAN }),
-      );
+      userRepo.findOneBy.mockResolvedValue(mockUser({ role: Role.GUARDIAN }));
 
-      await expect(
-        service.assignDevice('dev-1', 'user-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.assignDevice('dev-1', 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject if already assigned to another user', async () => {
@@ -320,9 +318,9 @@ describe('AdminService', () => {
       deviceRepo.findOne.mockResolvedValue({ ...device, user: other });
       userRepo.findOneBy.mockResolvedValue(mockUser());
 
-      await expect(
-        service.assignDevice('dev-1', 'user-1'),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.assignDevice('dev-1', 'user-1')).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -424,7 +422,11 @@ describe('AdminService', () => {
           status: 'resolved',
           resolvedAt: new Date(),
         });
-      sosRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+      sosRepo.update.mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      });
 
       const result = await service.resolveSosEvent('sos-1');
 

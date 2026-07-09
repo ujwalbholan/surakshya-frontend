@@ -80,7 +80,12 @@ describe('TrackingService', () => {
         },
         {
           provide: getRepositoryToken(SosEvent),
-          useValue: { findOne: jest.fn(), create: jest.fn(), save: jest.fn(), update: jest.fn() },
+          useValue: {
+            findOne: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
+            update: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(PoliceStation),
@@ -172,7 +177,11 @@ describe('TrackingService', () => {
 
       await service.ingestMqttMessage(
         'device/wearable-001/telemetry',
-        JSON.stringify({ deviceId: 'wearable-001', latitude: 27.7172, longitude: 85.324 }),
+        JSON.stringify({
+          deviceId: 'wearable-001',
+          latitude: 27.7172,
+          longitude: 85.324,
+        }),
       );
 
       expect(pingRepo.save).toHaveBeenCalled();
@@ -415,7 +424,11 @@ describe('TrackingService', () => {
       const activeSos = makeSos();
       deviceRepo.findOne.mockResolvedValue(mockDevice);
       sosRepo.findOne.mockResolvedValue(activeSos);
-      sosRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+      sosRepo.update.mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      });
 
       await service.ingestMqttMessage(
         'surakshawatch/wearable-001/events',
@@ -446,7 +459,11 @@ describe('TrackingService', () => {
       const activeSos = makeSos();
       deviceRepo.findOne.mockResolvedValue(mockDevice);
       sosRepo.findOne.mockResolvedValue(activeSos);
-      sosRepo.update.mockResolvedValue({ affected: 0, raw: [], generatedMaps: [] });
+      sosRepo.update.mockResolvedValue({
+        affected: 0,
+        raw: [],
+        generatedMaps: [],
+      });
 
       await service.ingestMqttMessage(
         'surakshawatch/wearable-001/events',

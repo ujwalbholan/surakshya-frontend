@@ -45,10 +45,14 @@ export class PoliceSetupService {
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
-    await this.userRepo.update({ id: user.id }, { password_hash: passwordHash });
+    await this.userRepo.update(
+      { id: user.id },
+      { password_hash: passwordHash },
+    );
 
     return {
-      message: 'Password updated successfully. Please verify your phone via OTP.',
+      message:
+        'Password updated successfully. Please verify your phone via OTP.',
     };
   }
 
@@ -106,7 +110,10 @@ export class PoliceSetupService {
     const otpKey = `police:otp:${tokenHash}`;
     const verifyKey = `police:otp:verify:${tokenHash}`;
 
-    const attemptCount = await this.redisService.incr(verifyKey, OTP_TTL_SECONDS);
+    const attemptCount = await this.redisService.incr(
+      verifyKey,
+      OTP_TTL_SECONDS,
+    );
     if (attemptCount > MAX_VERIFY_ATTEMPTS) {
       throw new HttpException(
         'Too many verification attempts. Please request a new OTP.',
@@ -140,10 +147,7 @@ export class PoliceSetupService {
       { id: user.id },
       { phone_verified: true, is_active: true },
     );
-    await this.inviteRepo.update(
-      { id: invite.id },
-      { used_at: new Date() },
-    );
+    await this.inviteRepo.update({ id: invite.id }, { used_at: new Date() });
 
     return {
       message:

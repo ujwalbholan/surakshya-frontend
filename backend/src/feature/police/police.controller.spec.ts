@@ -99,7 +99,9 @@ describe('PoliceController', () => {
     };
     service.resolveSosEvent.mockResolvedValue(expected as any);
 
-    const result = await controller.resolveSosEvent('sos-1', { notes: 'Resolved on scene' });
+    const result = await controller.resolveSosEvent('sos-1', {
+      notes: 'Resolved on scene',
+    });
 
     expect(result).toEqual(expected);
   });

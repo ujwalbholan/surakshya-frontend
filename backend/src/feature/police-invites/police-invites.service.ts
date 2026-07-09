@@ -60,7 +60,9 @@ export class PoliceInvitesService {
       where: [{ email }, { phone }],
     });
     if (existingUser) {
-      throw new ConflictException('A user with this email or phone already exists');
+      throw new ConflictException(
+        'A user with this email or phone already exists',
+      );
     }
 
     const tempPassword = this.generateTempPassword();

@@ -14,9 +14,9 @@ const DEFAULT_NAME = 'Super Admin';
 const DEFAULT_PHONE = '9800000001';
 
 async function seedSuperAdmin() {
-  const email = (
-    process.env.SUPER_ADMIN_EMAIL ?? DEFAULT_EMAIL
-  ).trim().toLowerCase();
+  const email = (process.env.SUPER_ADMIN_EMAIL ?? DEFAULT_EMAIL)
+    .trim()
+    .toLowerCase();
   const password = process.env.SUPER_ADMIN_PASSWORD ?? DEFAULT_PASSWORD;
   const fullName = process.env.SUPER_ADMIN_NAME ?? DEFAULT_NAME;
   const phone = (process.env.SUPER_ADMIN_PHONE ?? DEFAULT_PHONE).replace(

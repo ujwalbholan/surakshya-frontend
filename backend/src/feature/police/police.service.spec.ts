@@ -192,13 +192,24 @@ describe('PoliceService', () => {
 
     it('should resolve the event with conditional update', async () => {
       const event = mockSosEvent();
-      const resolved = { ...event, status: 'resolved' as const, resolvedAt: new Date() };
+      const resolved = {
+        ...event,
+        status: 'resolved' as const,
+        resolvedAt: new Date(),
+      };
       sosRepo.findOne
         .mockResolvedValueOnce(event)
         .mockResolvedValueOnce(resolved);
-      sosRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+      sosRepo.update.mockResolvedValue({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      });
 
-      const result = await service.resolveSosEvent('sos-1', 'Resolved on scene');
+      const result = await service.resolveSosEvent(
+        'sos-1',
+        'Resolved on scene',
+      );
 
       expect(sosRepo.update).toHaveBeenCalledWith(
         { id: 'sos-1', status: 'active' },
@@ -217,11 +228,16 @@ describe('PoliceService', () => {
     });
 
     it('should throw ConflictException when event already resolved', async () => {
-      const event = mockSosEvent({ status: 'resolved', resolvedAt: new Date() });
-      sosRepo.findOne
-        .mockResolvedValueOnce(event)
-        .mockResolvedValueOnce(event);
-      sosRepo.update.mockResolvedValue({ affected: 0, raw: [], generatedMaps: [] });
+      const event = mockSosEvent({
+        status: 'resolved',
+        resolvedAt: new Date(),
+      });
+      sosRepo.findOne.mockResolvedValueOnce(event).mockResolvedValueOnce(event);
+      sosRepo.update.mockResolvedValue({
+        affected: 0,
+        raw: [],
+        generatedMaps: [],
+      });
 
       await expect(service.resolveSosEvent('sos-1')).rejects.toThrow(
         ConflictException,

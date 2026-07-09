@@ -31,7 +31,10 @@ export function testPhone(): string {
 }
 
 function normalizePhone(phone: string): string {
-  return phone.trim().replace(/^\+977/, '').replace(/[\s-]/g, '');
+  return phone
+    .trim()
+    .replace(/^\+977/, '')
+    .replace(/[\s-]/g, '');
 }
 
 export async function issueToken(
@@ -133,19 +136,22 @@ export async function cleanupTestUsers(
     .getRepository(GuardianLink)
     .createQueryBuilder()
     .delete()
-    .where('child_user_id IN (:...userIds) OR guardian_user_id IN (:...userIds)', {
-      userIds,
-    })
+    .where(
+      'child_user_id IN (:...userIds) OR guardian_user_id IN (:...userIds)',
+      {
+        userIds,
+      },
+    )
     .execute();
 
   await dataSource
     .getRepository(GuardianRequest)
     .createQueryBuilder()
     .delete()
-    .where(
-      'requester_id IN (:...userIds) OR target_email IN (:...emails)',
-      { userIds, emails },
-    )
+    .where('requester_id IN (:...userIds) OR target_email IN (:...emails)', {
+      userIds,
+      emails,
+    })
     .execute();
 
   await dataSource

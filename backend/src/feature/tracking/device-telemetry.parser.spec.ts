@@ -17,9 +17,9 @@ describe('extractDeviceIdFromTopic', () => {
   });
 
   it('extracts device id from surakshawatch events topic', () => {
-    expect(
-      extractDeviceIdFromTopic('surakshawatch/wearable-001/events'),
-    ).toBe('wearable-001');
+    expect(extractDeviceIdFromTopic('surakshawatch/wearable-001/events')).toBe(
+      'wearable-001',
+    );
   });
 
   it('returns last segment for simple device topic', () => {

@@ -204,7 +204,9 @@ export class AdminService {
     const imei = dto.imei.trim();
     const existing = await this.deviceRepo.findOne({ where: { imei } });
     if (existing) {
-      throw new ConflictException(`Device with band ID "${imei}" already exists`);
+      throw new ConflictException(
+        `Device with band ID "${imei}" already exists`,
+      );
     }
 
     const device = this.deviceRepo.create({

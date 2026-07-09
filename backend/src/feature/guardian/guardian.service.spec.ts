@@ -417,7 +417,9 @@ describe('GuardianService', () => {
       linkRepo.findOne.mockResolvedValue(null);
       linkRepo.create.mockImplementation((data) => data as GuardianLink);
       linkRepo.save.mockImplementation(async (data) => data as GuardianLink);
-      requestRepo.save.mockImplementation(async (data) => data as GuardianRequest);
+      requestRepo.save.mockImplementation(
+        async (data) => data as GuardianRequest,
+      );
 
       const result = await service.acceptRequest('request-id', guardianId);
 
@@ -451,7 +453,9 @@ describe('GuardianService', () => {
       linkRepo.findOne.mockResolvedValue(null);
       linkRepo.create.mockImplementation((data) => data as GuardianLink);
       linkRepo.save.mockImplementation(async (data) => data as GuardianLink);
-      requestRepo.save.mockImplementation(async (data) => data as GuardianRequest);
+      requestRepo.save.mockImplementation(
+        async (data) => data as GuardianRequest,
+      );
 
       const result = await service.acceptRequest('request-id', userId);
 
@@ -503,9 +507,9 @@ describe('GuardianService', () => {
       requestRepo.findOneBy.mockResolvedValue(request);
       userRepo.findOneBy.mockResolvedValue(child);
 
-      await expect(
-        service.acceptRequest('request-id', userId),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.acceptRequest('request-id', userId)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(linkRepo.save).not.toHaveBeenCalled();
     });
   });
@@ -527,7 +531,9 @@ describe('GuardianService', () => {
 
       requestRepo.findOneBy.mockResolvedValue(request);
       userRepo.findOneBy.mockResolvedValue(child);
-      requestRepo.save.mockImplementation(async (data) => data as GuardianRequest);
+      requestRepo.save.mockImplementation(
+        async (data) => data as GuardianRequest,
+      );
 
       const result = await service.rejectRequest('request-id', userId);
 
@@ -548,9 +554,9 @@ describe('GuardianService', () => {
       requestRepo.findOneBy.mockResolvedValue(request);
       userRepo.findOneBy.mockResolvedValue(null);
 
-      await expect(
-        service.rejectRequest('request-id', userId),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.rejectRequest('request-id', userId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

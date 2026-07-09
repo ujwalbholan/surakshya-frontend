@@ -214,7 +214,9 @@ export class TrackingService implements TrackingIngestService {
     const latitude = parseOptionalNumber(json.latitude);
     const longitude = parseOptionalNumber(json.longitude);
     if (latitude == null || longitude == null) {
-      this.logger.warn(`sos_location missing coordinates for device ${deviceId}`);
+      this.logger.warn(
+        `sos_location missing coordinates for device ${deviceId}`,
+      );
       return;
     }
 
@@ -300,7 +302,8 @@ export class TrackingService implements TrackingIngestService {
       status: 'active',
       latitude: latitude ?? undefined,
       longitude: longitude ?? undefined,
-      startedAt: parseRecordedAt(json)?.toISOString() ?? new Date().toISOString(),
+      startedAt:
+        parseRecordedAt(json)?.toISOString() ?? new Date().toISOString(),
       latestPing: latestPing
         ? {
             latitude: latestPing.latitude,

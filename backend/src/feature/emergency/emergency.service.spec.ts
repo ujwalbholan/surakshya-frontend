@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -103,7 +101,7 @@ describe('EmergencyService', () => {
         latitude: 27.718,
         longitude: 85.325,
         recordedAt: new Date('2026-07-07T08:01:00Z'),
-      } as LocationPing);
+      });
 
       const result = await service.getLiveEmergencies();
 

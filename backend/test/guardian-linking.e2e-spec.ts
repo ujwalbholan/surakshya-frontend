@@ -264,7 +264,12 @@ describe('Guardian linking (e2e)', () => {
 
       expect(inviteRes.body.request_id).toBeDefined();
 
-      await setGuardianCredentials(dataSource, guardianEmail, TEST_PASSWORD, true);
+      await setGuardianCredentials(
+        dataSource,
+        guardianEmail,
+        TEST_PASSWORD,
+        true,
+      );
 
       const guardianUser = await dataSource
         .getRepository(User)

@@ -165,7 +165,13 @@ describe('AdminController', () => {
       label: 'Band',
       isOnline: true,
       lastSeenAt: null,
-      user: { id: 'user-1', full_name: 'Test', email: 't@t.com', phone: '123', role: 'USER' },
+      user: {
+        id: 'user-1',
+        full_name: 'Test',
+        email: 't@t.com',
+        phone: '123',
+        role: 'USER',
+      },
     };
     service.assignDevice.mockResolvedValue(expected);
 
