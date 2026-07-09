@@ -373,7 +373,8 @@ User device                Backend                    Guardians / Police
 |---|---|---|
 | `NODE_ENV` | Runtime environment (`development`, `test`, `production`) | `development` |
 | `PORT` | HTTP server port | `3000` |
-| `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:3000` |
+| `CORS_ORIGIN` | Comma-separated allowed browser origins for REST and Socket.IO (no wildcards) | `http://localhost:3002` |
+| `FRONTEND_URL` | Public frontend URL for invite/setup links in email | `http://localhost:3002` |
 
 ### Serial bridge (development hardware)
 
@@ -884,29 +885,43 @@ feature/{name}/
 
 ## Deployment
 
+See [`docs/production-deployment.md`](../docs/production-deployment.md) for the full production checklist (Vercel frontend, CORS, WebSocket URL, migrations).
+
 ### Docker Build
 
 ```bash
 docker build --no-cache -t surakshya-backend .
 ```
 
+The container entrypoint runs `pnpm migration:run:prod` (compiled migrations) before starting the API. Set `RUN_MIGRATIONS=false` to disable.
+
 ### Environment
 
-For production (Render, Railway, etc.), set the following env vars:
+For production (Render, Railway, Docker, etc.), set at minimum:
 
 ```bash
 NODE_ENV=production
 PORT=3000
 DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require
+DB_SSL=true
 REDIS_URL=rediss://:password@host:6379
 JWT_ACCESS_SECRET=<random-64-char-string>
 JWT_REFRESH_SECRET=<different-random-64-char-string>
+CORS_ORIGIN=https://your-frontend.vercel.app
+FRONTEND_URL=https://your-frontend.vercel.app
 RESEND_API_KEY=<resend-api-key>
 RESEND_MAIL_FROM=Surakshya <noreply@your-domain.com>
 TWILIO_ACCOUNT_SID=<twilio-sid>
 TWILIO_AUTH_TOKEN=<twilio-token>
 TWILIO_PHONE_NUMBER=<twilio-number>
-CORS_ORIGIN=https://your-frontend.com
+```
+
+`CORS_ORIGIN` must list every browser origin that calls the API or Socket.IO directly (comma-separated). Do not use `*`.
+
+Non-Docker PaaS release command example:
+
+```bash
+pnpm build && pnpm migration:run:prod && pnpm start:prod
 ```
 
 ---
@@ -918,7 +933,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 - **Triggers:** Push / PR to `main`
 - **Services:** PostGIS 16 + Redis 7
 - **Matrix:** Node.js 20 and 22
-- **Steps:** `pnpm install --frozen-lockfile` → `pnpm lint` → `pnpm test`
+- **Steps:** `pnpm install --frozen-lockfile` → `pnpm lint` → `pnpm migration:run` → `pnpm test`
 
 ---
 

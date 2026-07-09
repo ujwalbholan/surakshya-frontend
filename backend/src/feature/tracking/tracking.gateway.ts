@@ -10,6 +10,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { getCorsOrigins } from 'src/config/cors.config';
 import { TokenPayloadType } from 'src/types/TokenRelTypes';
 import { LocationUpdatePayload, SosEventPayload } from './tracking.types';
 
@@ -18,7 +19,7 @@ const POLICE_OPS_ROLES = new Set(['POLICE', 'ADMIN', 'SUPER_ADMIN']);
 @WebSocketGateway({
   namespace: '/tracking',
   cors: {
-    origin: true,
+    origin: getCorsOrigins(),
     credentials: true,
   },
 })

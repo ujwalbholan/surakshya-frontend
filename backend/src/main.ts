@@ -7,6 +7,7 @@ import {
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { getCorsOrigins } from './config/cors.config';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
@@ -28,7 +29,7 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
+    origin: getCorsOrigins(),
     credentials: true,
   });
 
