@@ -25,6 +25,7 @@ import { PatrolUnitsModule } from './feature/patrol-units/patrol-units.module';
 import { CasesModule } from './feature/cases/cases.module';
 import { EvidenceModule } from './feature/evidence/evidence.module';
 import { AuditModule } from './feature/audit/audit.module';
+import { ReportsModule } from './feature/reports/reports.module';
 import { HealthModule } from './feature/health/health.module';
 import { RedisModule } from './config/redis/redis.module';
 import { RedisThrottlerStorage } from './config/redis/redis-throttler.service';
@@ -93,6 +94,7 @@ const isProduction = process.env.NODE_ENV === 'production';
     CasesModule,
     EvidenceModule,
     AuditModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [
