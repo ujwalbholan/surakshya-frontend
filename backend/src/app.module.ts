@@ -21,6 +21,7 @@ import { PoliceStationsModule } from './feature/police-stations/police-stations.
 import { PoliceProvisioningModule } from './feature/police-provisioning/police-provisioning.module';
 import { MqttModule } from './feature/mqtt/mqtt.module';
 import { EmergencyModule } from './feature/emergency/emergency.module';
+import { PatrolUnitsModule } from './feature/patrol-units/patrol-units.module';
 import { HealthModule } from './feature/health/health.module';
 import { RedisModule } from './config/redis/redis.module';
 import { RedisThrottlerStorage } from './config/redis/redis-throttler.service';
@@ -85,6 +86,7 @@ const isProduction = process.env.NODE_ENV === 'production';
     GuardianModule,
     MqttModule,
     EmergencyModule,
+    PatrolUnitsModule,
   ],
   controllers: [AppController],
   providers: [
