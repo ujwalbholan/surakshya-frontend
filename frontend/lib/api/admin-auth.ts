@@ -66,12 +66,20 @@ export interface AdminUsersListResponse {
   totalPages: number
 }
 
+export interface UserRoleCount {
+  role: string
+  count: number
+}
+
 export interface AdminStatsResponse {
   totalUsers: number
   totalDevices: number
   totalPings: number
   activeSosEvents: number
+  usersByRole: UserRoleCount[]
   newUsersToday: number
+  pingsToday: number
+  resolvedSosToday: number
 }
 
 export function adminLogin(email: string, password: string) {
@@ -121,8 +129,12 @@ export function refreshSession() {
   return adminApiRequest<null>("/auth/refresh", { method: "POST" })
 }
 
+export function fetchAdminStats() {
+  return adminApiRequest<AdminStatsResponse>("/admin/stats")
+}
+
 export async function fetchUserCount() {
-  const result = await adminApiRequest<AdminStatsResponse>("/admin/stats")
+  const result = await fetchAdminStats()
   return {
     ...result,
     data: result.data ? { count: result.data.totalUsers } : null,
