@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { DeleteResult, Repository, UpdateResult } from 'typeorm';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { TokenService } from 'src/utils/token/token.service';
+import { PoliceProvisioningService } from 'src/feature/police-provisioning/police-provisioning.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
@@ -15,6 +16,7 @@ describe('UserService', () => {
   let service: UserService;
   let repository: jest.Mocked<Repository<User>>;
   let tokenService: jest.Mocked<TokenService>;
+  let policeProvisioningService: jest.Mocked<PoliceProvisioningService>;
 
   const mockUserRepository = {
     create: jest.fn(),
@@ -27,6 +29,9 @@ describe('UserService', () => {
   };
   const mockTokenService = {
     generateToken: jest.fn(),
+  };
+  const mockPoliceProvisioningService = {
+    evaluatePoliceLogin: jest.fn(),
   };
 
   const makeUser = (overrides: Partial<User> = {}): User => ({
@@ -55,12 +60,17 @@ describe('UserService', () => {
           provide: TokenService,
           useValue: mockTokenService,
         },
+        {
+          provide: PoliceProvisioningService,
+          useValue: mockPoliceProvisioningService,
+        },
       ],
     }).compile();
 
     service = module.get<UserService>(UserService);
     repository = module.get(getRepositoryToken(User));
     tokenService = module.get(TokenService);
+    policeProvisioningService = module.get(PoliceProvisioningService);
 
     jest.clearAllMocks();
   });
@@ -115,6 +125,7 @@ describe('UserService', () => {
       };
 
       repository.findOne.mockResolvedValue(user);
+      policeProvisioningService.evaluatePoliceLogin.mockResolvedValue(null);
       tokenService.generateToken.mockResolvedValue(tokens as never);
 
       const result = await service.login({
@@ -142,6 +153,32 @@ describe('UserService', () => {
         },
         ...tokens,
       });
+    });
+
+    it('should return password-change challenge for police temp-password login', async () => {
+      const user = makeUser({
+        role: Role.POLICE,
+        is_active: false,
+      });
+
+      repository.findOne.mockResolvedValue(user);
+      policeProvisioningService.evaluatePoliceLogin.mockResolvedValue({
+        message: 'Password change required before activation',
+        requiresPasswordChange: true,
+        challengeToken: 'challenge-token',
+      });
+
+      const result = await service.login({
+        email: user.email,
+        password: 'temp-password',
+      });
+
+      expect(result).toEqual({
+        message: 'Password change required before activation',
+        requiresPasswordChange: true,
+        challengeToken: 'challenge-token',
+      });
+      expect(tokenService.generateToken).not.toHaveBeenCalled();
     });
   });
 

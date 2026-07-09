@@ -9,15 +9,17 @@ import { Repository, Not } from 'typeorm';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { LoginDto } from 'src/feature/auth/dto/auth.dto';
+import { LoginDto, Role } from 'src/feature/auth/dto/auth.dto';
 import { TokenService } from 'src/utils/token/token.service';
 import { safeUser } from 'src/utils/safe-user';
+import { PoliceProvisioningService } from 'src/feature/police-provisioning/police-provisioning.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly tokenService: TokenService,
+    private readonly policeProvisioningService: PoliceProvisioningService,
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<User> {
@@ -61,19 +63,40 @@ export class UserService {
       throw new UnauthorizedException('Invalid Email');
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      loginDto.password,
-      user.password_hash,
-    );
+    if (user.role === Role.POLICE) {
+      const policeLoginResult =
+        await this.policeProvisioningService.evaluatePoliceLogin(
+          user,
+          loginDto.password,
+        );
 
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid Password');
-    }
+      if (policeLoginResult) {
+        return policeLoginResult;
+      }
 
-    if (!user.is_active) {
-      throw new UnauthorizedException(
-        'Account is not active. Please complete setup or contact an administrator.',
+      const isPasswordValid = await bcrypt.compare(
+        loginDto.password,
+        user.password_hash,
       );
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid Password');
+      }
+    } else {
+      const isPasswordValid = await bcrypt.compare(
+        loginDto.password,
+        user.password_hash,
+      );
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid Password');
+      }
+
+      if (!user.is_active) {
+        throw new UnauthorizedException(
+          'Account is not active. Please complete setup or contact an administrator.',
+        );
+      }
     }
 
     const token = await this.tokenService.generateToken({

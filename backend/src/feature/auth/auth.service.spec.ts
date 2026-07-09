@@ -5,6 +5,7 @@ import { RedisService } from 'src/config/redis/redis.service';
 import { OtpEmailService } from 'src/feature/notification/email/otp.email';
 import { WelcomeEmailService } from 'src/feature/notification/email/welcome.email';
 import { UserService } from 'src/feature/user/user.service';
+import { PoliceProvisioningService } from 'src/feature/police-provisioning/police-provisioning.service';
 import { TokenService } from 'src/utils/token/token.service';
 import { AuthService } from './auth.service';
 import { Role } from './dto/auth.dto';
@@ -13,6 +14,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let tokenService: jest.Mocked<TokenService>;
   let userService: jest.Mocked<UserService>;
+  let policeProvisioningService: jest.Mocked<PoliceProvisioningService>;
   let redisService: jest.Mocked<RedisService>;
   let otpEmailService: jest.Mocked<OtpEmailService>;
   let welcomeEmailService: jest.Mocked<WelcomeEmailService>;
@@ -36,6 +38,14 @@ describe('AuthService', () => {
             register: jest.fn(),
             findOneByEmail: jest.fn(),
             updatePassword: jest.fn(),
+            login: jest.fn(),
+          },
+        },
+        {
+          provide: PoliceProvisioningService,
+          useValue: {
+            completePoliceActivation: jest.fn(),
+            verifyPoliceActivationOtp: jest.fn(),
           },
         },
         {
@@ -64,6 +74,7 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     tokenService = module.get(TokenService);
     userService = module.get(UserService);
+    policeProvisioningService = module.get(PoliceProvisioningService);
     redisService = module.get(RedisService);
     otpEmailService = module.get(OtpEmailService);
     welcomeEmailService = module.get(WelcomeEmailService);
@@ -223,5 +234,42 @@ describe('AuthService', () => {
     expect(result).toEqual({
       message: 'Password reset successfully',
     });
+  });
+
+  it('should delegate police activation password change', async () => {
+    policeProvisioningService.completePoliceActivation.mockResolvedValue({
+      message: 'Password updated. OTP sent to your email.',
+      otpSent: true,
+    });
+
+    const result = await service.completePoliceActivation(
+      'challenge-token',
+      'new-password-123',
+    );
+
+    expect(
+      policeProvisioningService.completePoliceActivation,
+    ).toHaveBeenCalledWith('challenge-token', 'new-password-123');
+    expect(result).toEqual({
+      message: 'Password updated. OTP sent to your email.',
+      otpSent: true,
+    });
+  });
+
+  it('should delegate police activation OTP verification', async () => {
+    policeProvisioningService.verifyPoliceActivationOtp.mockResolvedValue({
+      message:
+        'Account activated successfully. You can now log in with your new password.',
+    });
+
+    const result = await service.verifyPoliceActivationOtp(
+      'challenge-token',
+      '123456',
+    );
+
+    expect(
+      policeProvisioningService.verifyPoliceActivationOtp,
+    ).toHaveBeenCalledWith('challenge-token', '123456');
+    expect(result.message).toContain('activated successfully');
   });
 });

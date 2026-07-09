@@ -45,13 +45,34 @@ export class AuthController {
   ) {
     const result = await this.authService.login(loginDto);
 
-    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    if ('requiresPasswordChange' in result && result.requiresPasswordChange) {
+      return {
+        message: result.message,
+        requiresPasswordChange: true,
+        challengeToken: result.challengeToken,
+      };
+    }
+
+    const session = result as {
+      message: string;
+      user: {
+        id: string;
+        full_name: string;
+        email: string;
+        phone: string;
+        role: string;
+      };
+      accessToken: string;
+      refreshToken: string;
+    };
+
+    this.setAuthCookies(res, session.accessToken, session.refreshToken);
 
     return {
-      message: result.message,
-      user: result.user,
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
+      message: session.message,
+      user: session.user,
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
     };
   }
 

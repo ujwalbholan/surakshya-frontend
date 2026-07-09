@@ -11,6 +11,7 @@ import {
   ResetPasswordDto,
 } from './dto/auth.dto';
 import { UserService } from 'src/feature/user/user.service';
+import { PoliceProvisioningService } from 'src/feature/police-provisioning/police-provisioning.service';
 import { TokenService } from 'src/utils/token/token.service';
 import { randomInt, randomUUID } from 'node:crypto';
 import * as bcrypt from 'bcrypt';
@@ -24,6 +25,7 @@ export class AuthService {
 
   constructor(
     private readonly userService: UserService,
+    private readonly policeProvisioningService: PoliceProvisioningService,
     private readonly tokenService: TokenService,
     private readonly redisService: RedisService,
     private readonly otpEmailService: OtpEmailService,
@@ -146,5 +148,19 @@ export class AuthService {
 
   async logout(userId: string, sessionId: string): Promise<void> {
     await this.tokenService.revokedRefreshToken(userId, sessionId);
+  }
+
+  completePoliceActivation(challengeToken: string, newPassword: string) {
+    return this.policeProvisioningService.completePoliceActivation(
+      challengeToken,
+      newPassword,
+    );
+  }
+
+  verifyPoliceActivationOtp(challengeToken: string, otp: string) {
+    return this.policeProvisioningService.verifyPoliceActivationOtp(
+      challengeToken,
+      otp,
+    );
   }
 }
