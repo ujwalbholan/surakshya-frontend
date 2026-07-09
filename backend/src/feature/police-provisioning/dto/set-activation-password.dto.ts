@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
-export class SetPolicePasswordDto {
+export class SetActivationPasswordDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  token!: string;
+  challengeToken!: string;
 
   @ApiProperty({ minLength: 8 })
   @IsString()
