@@ -1,4 +1,4 @@
-import type { CaseStatus, SosPriority } from "@/lib/admin/mock-data"
+import type { CaseStatus, SosPriority } from "@/lib/admin/domain-types"
 
 export type EvidenceFileType = "audio" | "gps" | "document" | "witness"
 

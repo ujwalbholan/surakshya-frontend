@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { getAdminSession, clearAdminSession } from "@/lib/auth/admin-session"
-import { getInitials } from "@/lib/admin/mock-data"
+import { getInitials } from "@/lib/admin/constants"
 import { adminLogout } from "@/lib/api/admin-auth"
 
 const ROUTE_LABELS: Record<string, string> = {

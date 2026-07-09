@@ -16,7 +16,7 @@ import {
 import { PriorityBadge, StatusBadge } from "@/components/admin/Badges"
 import { cn } from "@/lib/utils"
 import { mapsUrl } from "@/lib/admin/sos-data"
-import { getInitials } from "@/lib/admin/mock-data"
+import { getInitials } from "@/lib/admin/constants"
 import { fetchAdminCases } from "@/lib/api/admin-cases"
 import type { AdminSosAlert } from "@/lib/admin/sos-types"
 

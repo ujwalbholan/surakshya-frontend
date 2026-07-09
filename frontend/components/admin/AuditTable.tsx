@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { fetchAdminAuditLogs } from "@/lib/api/admin-audit"
 import { clearAdminSession } from "@/lib/auth/admin-session"
 import { mapApiAuditLogsToEntries } from "@/lib/admin/audit-mappers"
-import type { AuditAction, MockAuditEntry } from "@/lib/admin/mock-data"
+import type { AuditAction, MockAuditEntry } from "@/lib/admin/domain-types"
 
 const ACTION_STYLES: Record<AuditAction, string> = {
   LOGIN: "bg-blue-500/10 text-blue-400",

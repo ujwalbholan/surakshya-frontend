@@ -1,15 +1,11 @@
 "use client"
 
+import { useMemo } from "react"
 import Image from "next/image"
 import { AlertTriangle, ChevronRight, Clock, MapPin, Shield, Watch } from "lucide-react"
 import VictimProfilePanel from "@/components/dashboard/VictimProfilePanel"
 import { Panel, StatCard } from "@/components/dashboard/shared"
-import {
-  provinceCoverage,
-  recentActivity,
-  type DashboardStat,
-  type SosAlert,
-} from "@/lib/dashboard/mock-data"
+import type { DashboardStat, SosAlert } from "@/lib/dashboard/police-types"
 import { cn } from "@/lib/utils"
 
 function AlertRow({
@@ -79,6 +75,27 @@ export default function DashboardOverviewView({
   defaultCritical,
   onResolve,
 }: DashboardOverviewViewProps) {
+  const districtCoverage = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const alert of sosAlerts) {
+      if (alert.status !== "resolved") {
+        counts.set(alert.district, (counts.get(alert.district) ?? 0) + 1)
+      }
+    }
+    return Array.from(counts.entries())
+      .map(([district, active]) => ({ district, active }))
+      .sort((a, b) => b.active - a.active)
+  }, [sosAlerts])
+
+  const recentActivity = useMemo(
+    () =>
+      sosAlerts.slice(0, 5).map((alert) => ({
+        time: alert.triggeredAt,
+        text: `${alert.status === "critical" ? "Double-tap SOS" : "SOS update"} — ${alert.citizen}, ${alert.location} (${alert.id})`,
+      })),
+    [sosAlerts]
+  )
+
   return (
     <>
       {criticalCount > 0 && defaultCritical && (
@@ -155,26 +172,32 @@ export default function DashboardOverviewView({
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Panel title="Nepal coverage" icon={MapPin}>
+        <Panel title="Active alerts by district" icon={MapPin}>
           <ul className="space-y-2">
-            {provinceCoverage.map((p) => (
-              <li key={p.province} className="flex justify-between text-xs">
-                <span className="text-[#888]">{p.province} Province</span>
-                <span className="font-mono text-[#FAFAFA]">
-                  {p.active} active · {p.units} units
-                </span>
-              </li>
-            ))}
+            {districtCoverage.length === 0 ? (
+              <li className="text-xs text-[#666]">No active alerts</li>
+            ) : (
+              districtCoverage.map((p) => (
+                <li key={p.district} className="flex justify-between text-xs">
+                  <span className="text-[#888]">{p.district}</span>
+                  <span className="font-mono text-[#FAFAFA]">{p.active} active</span>
+                </li>
+              ))
+            )}
           </ul>
         </Panel>
         <Panel title="Recent activity" icon={Clock}>
           <ul className="space-y-3">
-            {recentActivity.map((item, i) => (
-              <li key={i} className="border-l-2 border-[#222] pl-3">
-                <p className="font-mono text-[9px] text-[#C0392B]">{item.time}</p>
-                <p className="mt-0.5 text-xs text-[#aaa]">{item.text}</p>
-              </li>
-            ))}
+            {recentActivity.length === 0 ? (
+              <li className="text-xs text-[#666]">No recent SOS activity</li>
+            ) : (
+              recentActivity.map((item, i) => (
+                <li key={i} className="border-l-2 border-[#222] pl-3">
+                  <p className="font-mono text-[9px] text-[#C0392B]">{item.time}</p>
+                  <p className="mt-0.5 text-xs text-[#aaa]">{item.text}</p>
+                </li>
+              ))
+            )}
           </ul>
         </Panel>
       </div>

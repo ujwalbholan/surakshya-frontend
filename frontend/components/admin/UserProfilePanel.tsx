@@ -5,7 +5,8 @@ import { Calendar, Mail, Phone, Shield, User } from "lucide-react"
 import { RoleBadge, UserStatusBadge } from "@/components/admin/Badges"
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { formatJoinDate } from "@/lib/admin/users-data"
-import { getInitials, type MockUser } from "@/lib/admin/mock-data"
+import { getInitials } from "@/lib/admin/constants"
+import type { MockUser } from "@/lib/admin/domain-types"
 
 function SectionHeading({ children }: { children: ReactNode }) {
   return (

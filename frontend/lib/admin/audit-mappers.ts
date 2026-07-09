@@ -1,5 +1,5 @@
 import type { ApiAuditLogRecord } from "@/lib/api/types"
-import type { AuditAction, MockAuditEntry } from "@/lib/admin/mock-data"
+import type { AuditAction, MockAuditEntry } from "@/lib/admin/domain-types"
 
 const KNOWN_ACTIONS = new Set<string>([
   "LOGIN",

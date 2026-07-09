@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { AlertTriangle, Watch, X } from "lucide-react"
-import type { SosAlert } from "@/lib/dashboard/mock-data"
+import type { SosAlert } from "@/lib/dashboard/police-types"
 
 interface IncomingSosModalProps {
   alert: SosAlert

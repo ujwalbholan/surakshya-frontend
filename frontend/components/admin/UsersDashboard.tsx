@@ -54,12 +54,8 @@ import {
   type UserRoleFilter,
   type UserStatusFilter,
 } from "@/lib/admin/users-data"
-import {
-  getInitials,
-  type MockUser,
-  type UserRole,
-  type UserStatus,
-} from "@/lib/admin/mock-data"
+import { getInitials } from "@/lib/admin/constants"
+import type { MockUser, UserRole, UserStatus } from "@/lib/admin/domain-types"
 
 const PAGE_SIZE = 10
 const EDITABLE_ROLES: UserRole[] = ["USER", "GUARDIAN", "POLICE", "ADMIN", "SUPER_ADMIN"]

@@ -38,12 +38,8 @@ import { fetchAdminUnits, updateAdminUnit } from "@/lib/api/admin-units"
 import { clearAdminSession } from "@/lib/auth/admin-session"
 import { mapApiCasesToMockCases } from "@/lib/admin/case-mappers"
 import { mapApiUnitsToMockUnits } from "@/lib/admin/unit-mappers"
-import {
-  NEPAL_PROVINCES,
-  type MockCase,
-  type MockUnit,
-  type UnitStatus,
-} from "@/lib/admin/mock-data"
+import { NEPAL_PROVINCES } from "@/lib/admin/constants"
+import type { MockCase, MockUnit, UnitStatus } from "@/lib/admin/domain-types"
 
 const STATUS_FILTERS: { value: UnitStatus | "all"; label: string }[] = [
   { value: "all", label: "All Units" },

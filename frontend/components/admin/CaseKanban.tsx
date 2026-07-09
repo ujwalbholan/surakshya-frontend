@@ -23,11 +23,8 @@ import {
 } from "@/lib/api/admin-cases"
 import { clearAdminSession } from "@/lib/auth/admin-session"
 import { mapApiCasesToMockCases } from "@/lib/admin/case-mappers"
-import {
-  NEPAL_PROVINCES,
-  type MockCase,
-  type CaseStatus,
-} from "@/lib/admin/mock-data"
+import { NEPAL_PROVINCES } from "@/lib/admin/constants"
+import type { MockCase, CaseStatus } from "@/lib/admin/domain-types"
 
 const COLUMNS: { status: CaseStatus; label: string; color: string }[] = [
   { status: "OPEN", label: "Open", color: "text-blue-400 border-blue-400/30" },

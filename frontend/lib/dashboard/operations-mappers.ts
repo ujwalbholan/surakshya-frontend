@@ -4,7 +4,7 @@ import type {
   FieldUnit,
   PoliceCase,
   UnitStatus,
-} from "@/lib/dashboard/operations-data"
+} from "@/lib/dashboard/operations-types"
 
 function toPoliceCaseStatus(status: string): CaseStatus {
   return status.toLowerCase() as CaseStatus

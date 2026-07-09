@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import type { CaseStatus, SosPriority, SosStatus, UnitStatus, UserRole, UserStatus } from "@/lib/admin/mock-data"
+import type { CaseStatus, SosPriority, SosStatus, UnitStatus, UserRole, UserStatus } from "@/lib/admin/domain-types"
 
 const PRIORITY_STYLES: Record<SosPriority, string> = {
   CRITICAL: "border-white/25 bg-white/10 text-white",

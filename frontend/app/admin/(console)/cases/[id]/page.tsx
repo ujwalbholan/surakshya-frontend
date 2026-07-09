@@ -10,7 +10,7 @@ import { fetchAdminCase, fetchAdminCases } from "@/lib/api/admin-cases"
 import { fetchAdminEvidence } from "@/lib/api/admin-evidence"
 import { clearAdminSession } from "@/lib/auth/admin-session"
 import { mapApiCaseDetailToMockCase } from "@/lib/admin/case-mappers"
-import type { MockCase } from "@/lib/admin/mock-data"
+import type { MockCase } from "@/lib/admin/domain-types"
 
 export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)

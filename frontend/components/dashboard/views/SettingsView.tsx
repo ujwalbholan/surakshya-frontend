@@ -14,7 +14,7 @@ import { Panel, SectionHeader } from "@/components/dashboard/shared"
 import {
   notificationSettings,
   systemSettings,
-} from "@/lib/dashboard/operations-data"
+} from "@/lib/dashboard/settings-defaults"
 import { getStoredEmail } from "@/lib/auth/session"
 import { cn } from "@/lib/utils"
 

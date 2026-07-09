@@ -1,4 +1,4 @@
-import type { MockUser, UserRole, UserStatus } from "@/lib/admin/mock-data"
+import type { MockUser, UserRole, UserStatus } from "@/lib/admin/domain-types"
 
 export type UserRoleFilter = UserRole | "ALL"
 export type UserStatusFilter = UserStatus | "all"

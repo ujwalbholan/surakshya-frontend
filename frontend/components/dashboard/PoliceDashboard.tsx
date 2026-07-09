@@ -24,8 +24,7 @@ import {
   applySosSocketEvent,
   usePoliceSosSocket,
 } from "@/hooks/usePoliceSosSocket"
-import type { DashboardStat } from "@/lib/dashboard/mock-data"
-import type { SosAlert } from "@/lib/dashboard/mock-data"
+import type { DashboardStat, SosAlert } from "@/lib/dashboard/police-types"
 import { mapSosEventToAlert } from "@/lib/dashboard/sos-mappers"
 import { NAV_ITEMS, VIEW_TITLES, type DashboardView } from "@/lib/dashboard/nav"
 import { cn } from "@/lib/utils"

@@ -1,5 +1,5 @@
 import type { ApiCaseDetail, ApiCaseRecord } from "@/lib/api/types"
-import type { CaseStatus, MockCase, SosPriority } from "@/lib/admin/mock-data"
+import type { CaseStatus, MockCase, SosPriority } from "@/lib/admin/domain-types"
 
 function formatRelativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime()

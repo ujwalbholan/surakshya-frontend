@@ -8,7 +8,7 @@ import {
 } from "@/lib/api/socket"
 import type { PoliceSosEventSummary, SosSocketEvent } from "@/lib/api/types"
 import { mapSosEventToAlert } from "@/lib/dashboard/sos-mappers"
-import type { SosAlert } from "@/lib/dashboard/mock-data"
+import type { SosAlert } from "@/lib/dashboard/police-types"
 
 function socketPayloadToSummary(payload: SosSocketEvent): PoliceSosEventSummary {
   return {

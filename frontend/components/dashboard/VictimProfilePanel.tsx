@@ -14,8 +14,8 @@ import {
   Watch,
   X,
 } from "lucide-react"
-import type { SosAlert } from "@/lib/dashboard/mock-data"
-import { mapsUrl, relationLabels } from "@/lib/dashboard/mock-data"
+import type { SosAlert } from "@/lib/dashboard/police-types"
+import { mapsUrl, relationLabels } from "@/lib/dashboard/police-utils"
 import {
   fetchDeviceLocation,
   fetchUserGuardians,

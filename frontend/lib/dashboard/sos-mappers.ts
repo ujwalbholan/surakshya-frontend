@@ -1,5 +1,5 @@
 import type { PoliceSosEventSummary } from "@/lib/api/types"
-import type { AlertStatus, SosAlert } from "@/lib/dashboard/mock-data"
+import type { AlertStatus, SosAlert } from "@/lib/dashboard/police-types"
 
 const PLACEHOLDER_PHOTO = "/images/social-1.jpg"
 

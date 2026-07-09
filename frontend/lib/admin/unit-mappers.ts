@@ -1,5 +1,5 @@
 import type { ApiPatrolUnitRecord } from "@/lib/api/types"
-import type { MockUnit, UnitStatus } from "@/lib/admin/mock-data"
+import type { MockUnit, UnitStatus } from "@/lib/admin/domain-types"
 
 function formatRelativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime()

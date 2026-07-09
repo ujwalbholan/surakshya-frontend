@@ -1,5 +1,6 @@
 import L from "leaflet"
-import { getInitials, type MockSosAlert } from "@/lib/admin/mock-data"
+import { getInitials } from "@/lib/admin/constants"
+import type { MockSosAlert } from "@/lib/admin/domain-types"
 import { priorityMarkerColor } from "@/lib/admin/live-data"
 
 export const GPS_ACCURACY_METERS = 85

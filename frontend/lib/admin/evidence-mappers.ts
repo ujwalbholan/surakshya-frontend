@@ -1,5 +1,5 @@
 import type { ApiEvidenceRecord } from "@/lib/api/types"
-import type { CaseStatus, SosPriority } from "@/lib/admin/mock-data"
+import type { CaseStatus, SosPriority } from "@/lib/admin/domain-types"
 import type { EvidenceFileType, EvidenceRecord } from "@/lib/admin/evidence-data"
 
 const TYPE_LABELS: Record<EvidenceFileType, string> = {

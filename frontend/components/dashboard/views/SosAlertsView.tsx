@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 import VictimProfilePanel from "@/components/dashboard/VictimProfilePanel"
 import { Panel, SectionHeader, StatCard, StatusPill } from "@/components/dashboard/shared"
-import { type AlertStatus, type SosAlert } from "@/lib/dashboard/mock-data"
+import { type AlertStatus, type SosAlert } from "@/lib/dashboard/police-types"
 import { cn } from "@/lib/utils"
 
 const FILTERS: { id: AlertStatus | "all"; label: string }[] = [

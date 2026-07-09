@@ -26,11 +26,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import {
-  getInitials,
-  type CaseStatus,
-  type MockCase,
-} from "@/lib/admin/mock-data"
+import { getInitials } from "@/lib/admin/constants"
+import type { CaseStatus, MockCase } from "@/lib/admin/domain-types"
 
 const STATUS_OPTIONS: { status: CaseStatus; label: string }[] = [
   { status: "OPEN", label: "Open" },
