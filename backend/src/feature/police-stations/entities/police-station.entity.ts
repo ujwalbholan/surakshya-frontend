@@ -26,6 +26,12 @@ export class PoliceStation {
   @Column('double precision', { nullable: true })
   longitude?: number | null;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  place_id?: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  formatted_address?: string | null;
+
   @CreateDateColumn()
   created_at!: Date;
 
