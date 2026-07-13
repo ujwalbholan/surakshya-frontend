@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { Loader2, MapPin, Plus } from "lucide-react"
+import {
+  AddressAutocompleteInput,
+  type PlaceSelectedPayload,
+} from "@/components/admin/AddressAutocompleteInput"
 import PageTransition from "@/components/admin/PageTransition"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -32,6 +36,10 @@ export default function PoliceStationsPage() {
   const [name, setName] = useState("")
   const [address, setAddress] = useState("")
   const [contactNumber, setContactNumber] = useState("")
+  const [latitude, setLatitude] = useState<number | null>(null)
+  const [longitude, setLongitude] = useState<number | null>(null)
+  const [placeId, setPlaceId] = useState<string | null>(null)
+  const [formattedAddress, setFormattedAddress] = useState<string | null>(null)
 
   const loadStations = useCallback(async () => {
     setLoading(true)
@@ -54,7 +62,26 @@ export default function PoliceStationsPage() {
     setName("")
     setAddress("")
     setContactNumber("")
+    setLatitude(null)
+    setLongitude(null)
+    setPlaceId(null)
+    setFormattedAddress(null)
     setFormError(null)
+  }
+
+  const handlePlaceSelected = (place: PlaceSelectedPayload | null) => {
+    if (!place) {
+      setLatitude(null)
+      setLongitude(null)
+      setPlaceId(null)
+      setFormattedAddress(null)
+      return
+    }
+    setAddress(place.formattedAddress)
+    setLatitude(place.latitude)
+    setLongitude(place.longitude)
+    setPlaceId(place.placeId || null)
+    setFormattedAddress(place.formattedAddress)
   }
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -75,6 +102,12 @@ export default function PoliceStationsPage() {
       name: name.trim(),
       address: address.trim(),
       contact_number: contactNumber.trim(),
+      ...(latitude != null ? { latitude } : {}),
+      ...(longitude != null ? { longitude } : {}),
+      ...(placeId ? { place_id: placeId } : {}),
+      ...(formattedAddress
+        ? { formatted_address: formattedAddress }
+        : {}),
     })
     setSubmitting(false)
 
@@ -179,10 +212,11 @@ export default function PoliceStationsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="station-address">Address</Label>
-              <Input
+              <AddressAutocompleteInput
                 id="station-address"
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={setAddress}
+                onPlaceSelected={handlePlaceSelected}
                 maxLength={300}
                 className="border-white/10 bg-black/40"
               />

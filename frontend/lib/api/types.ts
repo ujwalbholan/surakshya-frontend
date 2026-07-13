@@ -44,6 +44,10 @@ export interface PoliceStation {
   name: string
   address: string
   contact_number: string
+  latitude?: number | null
+  longitude?: number | null
+  place_id?: string | null
+  formatted_address?: string | null
 }
 
 export interface PoliceStationsResponse {
@@ -55,6 +59,10 @@ export interface CreatePoliceStationPayload {
   name: string
   address: string
   contact_number: string
+  latitude?: number
+  longitude?: number
+  place_id?: string
+  formatted_address?: string
 }
 
 export interface InvitePoliceOfficerPayload {
