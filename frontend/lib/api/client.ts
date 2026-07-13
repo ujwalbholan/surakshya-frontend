@@ -62,11 +62,24 @@ export async function surakshyaPublicRequest<T>(
   const body = await parseJson<T & ApiErrorBody>(response)
 
   if (!response.ok) {
+    const rawMessage =
+      body && typeof body === "object" && "message" in body
+        ? body.message
+        : undefined
     const message =
-      (body && typeof body === "object" && "message" in body && body.message) ||
+      (typeof rawMessage === "string" && rawMessage) ||
+      (rawMessage &&
+        typeof rawMessage === "object" &&
+        "message" in rawMessage &&
+        typeof (rawMessage as { message?: unknown }).message === "string" &&
+        (rawMessage as { message: string }).message) ||
       response.statusText ||
       "Request failed"
-    throw new ApiError(String(message), response.status, body ?? {})
+    const errorBody =
+      rawMessage && typeof rawMessage === "object"
+        ? { ...(body ?? {}), ...(rawMessage as Record<string, unknown>) }
+        : (body ?? {})
+    throw new ApiError(String(message), response.status, errorBody)
   }
 
   if (body === null) {

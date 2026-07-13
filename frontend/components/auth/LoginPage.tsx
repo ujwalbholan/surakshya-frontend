@@ -5,7 +5,9 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginUser } from "@/lib/api/auth";
 import { isApiError } from "@/lib/api/client";
+import { isPoliceLoginChallenge } from "@/lib/api/types";
 import { saveAuthSession, getRedirectForRole } from "@/lib/auth/session";
+import { savePoliceActivationSession } from "@/lib/auth/police-activation-session";
 import { labelStyle, inputBaseStyle } from "@/lib/customCss/customCss";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -60,6 +62,22 @@ export default function LoginPage() {
 
     try {
       const data = await loginUser({ email: email.trim(), password });
+
+      if (isPoliceLoginChallenge(data)) {
+        savePoliceActivationSession({
+          challengeToken: data.challengeToken,
+          email: email.trim(),
+          startAtOtp:
+            "requiresActivationOtp" in data && data.requiresActivationOtp,
+        });
+        setPanelFadingOut(true);
+        setFlashVisible(true);
+        setTimeout(() => {
+          router.push("/police/activate");
+        }, 520);
+        return;
+      }
+
       saveAuthSession(
         data.user.email,
         { accessToken: data.accessToken, refreshToken: data.refreshToken },

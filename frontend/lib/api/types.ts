@@ -2,6 +2,7 @@ export interface ApiErrorBody {
   message?: string
   error?: string
   statusCode?: number
+  code?: string
 }
 
 export interface LoginRequest {
@@ -27,6 +28,44 @@ export interface LoginResponse {
   user: AuthUser
   accessToken: string
   refreshToken: string
+}
+
+/** First login with admin-issued temporary password. */
+export interface PolicePasswordChallengeResponse {
+  message: string
+  requiresPasswordChange: true
+  challengeToken: string
+}
+
+/** Password already changed; email OTP still required to activate. */
+export interface PoliceOtpResumeResponse {
+  message: string
+  requiresActivationOtp: true
+  challengeToken: string
+}
+
+export type PoliceLoginChallengeResponse =
+  | PolicePasswordChallengeResponse
+  | PoliceOtpResumeResponse
+
+export type LoginResult = LoginResponse | PoliceLoginChallengeResponse
+
+export function isPoliceLoginChallenge(
+  value: LoginResult
+): value is PoliceLoginChallengeResponse {
+  return (
+    ("requiresPasswordChange" in value && value.requiresPasswordChange === true) ||
+    ("requiresActivationOtp" in value && value.requiresActivationOtp === true)
+  )
+}
+
+export interface PoliceActivationPasswordResponse {
+  message: string
+  otpSent: boolean
+}
+
+export interface PoliceActivationVerifyResponse {
+  message: string
 }
 
 export interface PoliceStation {
@@ -68,8 +107,50 @@ export interface InvitePoliceOfficerResponse {
   user_id: string
 }
 
-export interface PoliceSetupMessageResponse {
+export interface PendingStationLinkOfficer {
+  id: string
+  full_name: string
+  email: string
+  phone: string
+}
+
+export interface PendingStationLinkStation {
+  id: string
+  name: string
+  address: string
+}
+
+export interface PendingStationLinkRequester {
+  id: string
+  full_name: string
+  email: string
+}
+
+export interface PendingStationLink {
+  id: string
+  officer: PendingStationLinkOfficer
+  station: PendingStationLinkStation
+  requested_by: PendingStationLinkRequester
+  created_at: string
+}
+
+export interface PendingStationLinksResponse {
   message: string
+  links: PendingStationLink[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface ApproveStationLinkResponse {
+  message: string
+  link_id: string
+}
+
+export interface RejectStationLinkResponse {
+  message: string
+  link_id: string
 }
 
 export interface PoliceDashboardResponse {

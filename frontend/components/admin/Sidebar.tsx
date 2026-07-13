@@ -10,7 +10,7 @@ import AdminSessionSidebar from "@/components/admin/AdminSessionSidebar"
 import { getAdminSession, clearAdminSession } from "@/lib/auth/admin-session"
 import { adminLogout } from "@/lib/api/admin-auth"
 import { fetchActiveSosCount } from "@/lib/api/admin-live"
-import { ADMIN_NAV_GROUPS, isAdminNavActive } from "@/lib/admin/nav-config"
+import { getVisibleAdminNavGroups, isAdminNavActive } from "@/lib/admin/nav-config"
 import { useInterval } from "@/hooks/use-interval"
 import {
   Collapsible,
@@ -23,9 +23,10 @@ function MobileNavContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const session = getAdminSession()
+  const navGroups = getVisibleAdminNavGroups(session?.role)
   const [sosCount, setSosCount] = useState(0)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
-    Object.fromEntries(ADMIN_NAV_GROUPS.map((g) => [g.title, true]))
+    Object.fromEntries(navGroups.map((g) => [g.title, true]))
   )
 
   useEffect(() => {
@@ -55,7 +56,7 @@ function MobileNavContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2 py-3">
-        {ADMIN_NAV_GROUPS.map((group) => (
+        {navGroups.map((group) => (
           <Collapsible
             key={group.title}
             open={openGroups[group.title]}

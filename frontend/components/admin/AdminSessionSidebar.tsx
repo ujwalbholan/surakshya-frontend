@@ -28,7 +28,7 @@ import { getAdminSession, clearAdminSession } from "@/lib/auth/admin-session"
 import { adminLogout } from "@/lib/api/admin-auth"
 import { getInitials } from "@/lib/admin/constants"
 import { fetchActiveSosCount } from "@/lib/api/admin-live"
-import { ADMIN_NAV_GROUPS, isAdminNavActive } from "@/lib/admin/nav-config"
+import { getVisibleAdminNavGroups, isAdminNavActive } from "@/lib/admin/nav-config"
 import { useInterval } from "@/hooks/use-interval"
 
 const sidebarVariants = {
@@ -129,6 +129,7 @@ export default function AdminSessionSidebar() {
   }
 
   const initials = session ? getInitials(session.full_name) : "SA"
+  const navGroups = getVisibleAdminNavGroups(session?.role)
 
   return (
     <motion.div
@@ -190,7 +191,7 @@ export default function AdminSessionSidebar() {
               <div className="flex grow flex-col gap-4">
                 <ScrollArea className="h-16 grow p-2">
                   <div className="flex w-full flex-col gap-1">
-                    {ADMIN_NAV_GROUPS.map((group, groupIndex) => (
+                    {navGroups.map((group, groupIndex) => (
                       <div key={group.title}>
                         {groupIndex > 0 && <Separator className="my-2 bg-white/5" />}
                         {group.items.map((item) => {
