@@ -74,8 +74,8 @@ export default function InviteOfficerPage() {
         status === 401
           ? "Session expired. Please sign out and log in again."
           : status === 409
-          ? inviteError ?? "An active invite or user already exists for this email."
-          : inviteError ?? "Failed to send invite."
+          ? inviteError ?? "A user with this email or phone already exists."
+          : inviteError ?? "Failed to create officer account."
       )
       return
     }
@@ -93,18 +93,19 @@ export default function InviteOfficerPage() {
         <div className="mx-auto max-w-lg rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-8 text-center">
           <Send className="mx-auto h-10 w-10 text-emerald-400" />
           <h1 className="mt-4 font-display text-2xl italic text-white">
-            Invite sent
+            Officer created
           </h1>
           <p className="mt-2 text-sm text-white/60">
-            Invite sent to <span className="text-white">{successEmail}</span>.
-            The officer will receive setup instructions by email.
+            Account created for <span className="text-white">{successEmail}</span>.
+            They will receive a temporary password by email. Login stays blocked
+            until a Super Admin approves the station assignment.
           </p>
           <button
             type="button"
             onClick={() => setSuccessEmail(null)}
             className="mt-6 text-xs uppercase tracking-wider text-[#C0392B] underline"
           >
-            Invite another officer
+            Create another officer
           </button>
         </div>
       </PageTransition>
@@ -116,7 +117,7 @@ export default function InviteOfficerPage() {
       <div className="mb-6">
         <h1 className="font-display text-[28px] italic text-white">Invite Officer</h1>
         <p className="mt-1 text-sm text-white/40">
-          Send a secure onboarding invite to a new police officer
+          Create a police officer account and assign a station (pending Super Admin approval)
         </p>
       </div>
 
@@ -194,7 +195,7 @@ export default function InviteOfficerPage() {
             ) : (
               <Send className="h-4 w-4" />
             )}
-            Send invite
+            Create officer
           </button>
         </form>
       )}

@@ -21,6 +21,14 @@ declare namespace google.maps {
     radius: number
   }
 
+  /** Southwest/northeast bounds used as locationBias / locationRestriction. */
+  interface LatLngBoundsLiteral {
+    east: number
+    north: number
+    south: number
+    west: number
+  }
+
   interface LatLng {
     lat(): number
     lng(): number
@@ -35,12 +43,14 @@ declare namespace google.maps {
       input: string
       sessionToken?: AutocompleteSessionToken
       includedRegionCodes?: string[]
-      locationBias?: LatLngLiteral | CircleLiteral
+      /** CLDR region for formatting / ranking (does not hard-restrict). */
+      region?: string
+      locationBias?: LatLngLiteral | CircleLiteral | LatLngBoundsLiteral
     }
 
     interface FormattableText {
       toString(): string
-      text?: string
+      text: string
     }
 
     interface PlacePrediction {

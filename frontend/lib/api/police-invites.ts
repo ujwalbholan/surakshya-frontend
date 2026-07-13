@@ -4,6 +4,10 @@ import type {
   InvitePoliceOfficerResponse,
 } from "./types"
 
+/**
+ * Creates a police officer account (temp password email + pending station link).
+ * Backend route: POST /admin/police/create (old /invite was removed).
+ */
 export async function invitePoliceOfficer(
   payload: InvitePoliceOfficerPayload
 ): Promise<{
@@ -12,7 +16,7 @@ export async function invitePoliceOfficer(
   status: number
 }> {
   const { data, error, status } = await adminApiRequest<InvitePoliceOfficerResponse>(
-    "/admin/police/invite",
+    "/admin/police/create",
     {
       method: "POST",
       body: JSON.stringify(payload),

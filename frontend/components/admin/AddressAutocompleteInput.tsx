@@ -19,12 +19,22 @@ export const AUTOCOMPLETE_DEBOUNCE_MS = 300
 export const MIN_QUERY_LENGTH = 3
 /** Cap suggestions shown in the dropdown. */
 export const MAX_SUGGESTIONS = 6
-/** Bias autocomplete toward Nepal (Kathmandu-ish center). */
-export const NEPAL_BIAS_CENTER = { lat: 27.7172, lng: 85.324 } as const
-/** Radius (meters) for locationBias — roughly covers Nepal. */
-export const NEPAL_BIAS_RADIUS_METERS = 400_000
+/**
+ * Places Autocomplete (New) rejects circle locationBias radius above this
+ * (meters). Do not use a country-scale circle — use a LatLngBounds instead.
+ */
+export const MAX_CIRCLE_BIAS_RADIUS_METERS = 50_000
+/** Approximate bounding box for Nepal — used as locationBias (viewport). */
+export const NEPAL_LOCATION_BIAS_BOUNDS = {
+  north: 30.45,
+  south: 26.35,
+  east: 88.2,
+  west: 80.05,
+} as const
 /** Restrict suggestions to Nepal. */
 export const INCLUDED_REGION_CODES = ['np'] as const
+/** Region code for result ranking / address formatting. */
+export const AUTOCOMPLETE_REGION = 'np'
 
 export type PlaceSelectedPayload = {
   formattedAddress: string
@@ -76,6 +86,8 @@ export function AddressAutocompleteInput({
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([])
   const [highlightIndex, setHighlightIndex] = useState(-1)
   const [mapsError, setMapsError] = useState(false)
+  /** Soft message when Places returns empty or a recoverable request error. */
+  const [listMessage, setListMessage] = useState<string | null>(null)
 
   const ensureSessionToken = useCallback(async () => {
     await loadGoogleMapsScript()
@@ -126,6 +138,7 @@ export function AddressAutocompleteInput({
       setSuggestions([])
       setLoading(false)
       setHighlightIndex(-1)
+      setListMessage(null)
       return
     }
 
@@ -133,6 +146,7 @@ export function AddressAutocompleteInput({
     const timer = window.setTimeout(() => {
       void (async () => {
         setLoading(true)
+        setListMessage(null)
         try {
           const { sessionToken } = await ensureSessionToken()
           const { AutocompleteSuggestion } =
@@ -140,15 +154,16 @@ export function AddressAutocompleteInput({
               'places',
             )) as google.maps.PlacesLibrary
 
+          // Prefer country region codes + Nepal viewport bias.
+          // Circle radius must stay ≤ MAX_CIRCLE_BIAS_RADIUS_METERS (50km);
+          // a country-scale circle (e.g. 400km) is rejected by Places API (New).
           const { suggestions: raw } =
             await AutocompleteSuggestion.fetchAutocompleteSuggestions({
               input: query,
               sessionToken,
+              region: AUTOCOMPLETE_REGION,
               includedRegionCodes: [...INCLUDED_REGION_CODES],
-              locationBias: {
-                center: { ...NEPAL_BIAS_CENTER },
-                radius: NEPAL_BIAS_RADIUS_METERS,
-              },
+              locationBias: { ...NEPAL_LOCATION_BIAS_BOUNDS },
             })
 
           if (requestId !== requestIdRef.current) return
@@ -157,7 +172,11 @@ export function AddressAutocompleteInput({
           for (const suggestion of raw) {
             const prediction = suggestion.placePrediction
             if (!prediction) continue
-            const label = prediction.text.toString()
+            const label =
+              prediction.text?.text?.trim() ||
+              prediction.text?.toString()?.trim() ||
+              ''
+            if (!label) continue
             items.push({
               key: prediction.placeId ?? `${label}-${items.length}`,
               label,
@@ -169,11 +188,20 @@ export function AddressAutocompleteInput({
           setSuggestions(items)
           setOpen(true)
           setHighlightIndex(items.length > 0 ? 0 : -1)
-        } catch {
+          setListMessage(
+            items.length === 0
+              ? 'No matches — you can still type a custom address'
+              : null,
+          )
+        } catch (err) {
           if (requestId !== requestIdRef.current) return
+          console.error('[AddressAutocomplete] Places request failed', err)
           setSuggestions([])
           setOpen(true)
           setHighlightIndex(-1)
+          setListMessage(
+            'Address suggestions unavailable — you can still type a custom address',
+          )
         } finally {
           if (requestId === requestIdRef.current) {
             setLoading(false)
@@ -341,10 +369,8 @@ export function AddressAutocompleteInput({
             </li>
           )}
 
-          {!loading && suggestions.length === 0 && (
-            <li className="px-3 py-2 text-sm text-white/50">
-              No matches — you can still type a custom address
-            </li>
+          {!loading && suggestions.length === 0 && listMessage && (
+            <li className="px-3 py-2 text-sm text-white/50">{listMessage}</li>
           )}
 
           {suggestions.map((item, index) => {
