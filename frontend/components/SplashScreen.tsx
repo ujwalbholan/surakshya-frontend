@@ -39,7 +39,7 @@ const HOLD_DURATION_MS = 200
 const BAR_FADE_DURATION_MS = 800
 const OVERLAY_FADE_DURATION_MS = 600
 
-const SKIP_SPLASH_PREFIXES = ["/dashboard", "/login", "/signup", "/admin"]
+const SKIP_SPLASH_PREFIXES = ["/dashboard", "/login", "/admin"]
 
 function subscribeToReducedMotion(callback: () => void) {
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)")

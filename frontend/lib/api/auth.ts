@@ -1,18 +1,6 @@
-import { surakshyaPublicRequest, API_BASE, apiRequest } from "./client"
+import { surakshyaPublicRequest, API_BASE } from "./client"
 import { getAccessToken } from "@/lib/auth/session"
-import type {
-  LoginRequest,
-  LoginResponse,
-  RegisterRequest,
-  RegisterResponse,
-} from "./types"
-
-export function registerUser(payload: RegisterRequest) {
-  return apiRequest<RegisterResponse>("/auth/register", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
+import type { LoginRequest, LoginResponse } from "./types"
 
 export function loginUser(payload: LoginRequest) {
   return surakshyaPublicRequest<LoginResponse>("/auth/login", {

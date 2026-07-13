@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-const apiOrigin =
-  process.env.API_URL?.replace(/\/$/, "") ??
-  "https://ams-omwj.onrender.com";
-
 const surakshyaOrigin =
   process.env.SURAKSHYA_API_URL?.replace(/\/$/, "") ??
   "http://localhost:3000";
@@ -23,10 +19,6 @@ const nextConfig: NextConfig = {
   transpilePackages: ["three", "gsap"],
   async rewrites() {
     return [
-      {
-        source: "/api/ams/:path*",
-        destination: `${apiOrigin}/:path*`,
-      },
       {
         source: "/api/surakshya/:path*",
         destination: `${surakshyaOrigin}/:path*`,

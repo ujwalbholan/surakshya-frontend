@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginUser } from "@/lib/api/auth";
@@ -488,26 +487,10 @@ export default function LoginPage() {
 
               <div
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.35)",
-                  marginBottom: 20,
-                }}
-              >
-                Don&apos;t have an account?{" "}
-                <Link
-                  href="/signup"
-                  style={{ color: "#CC2233", textDecoration: "none" }}
-                >
-                  Create one
-                </Link>
-              </div>
-
-              <div
-                style={{
                   width: "100%",
                   height: 1,
                   background: "rgba(255,255,255,0.1)",
+                  marginTop: 4,
                   marginBottom: 14,
                 }}
               />
