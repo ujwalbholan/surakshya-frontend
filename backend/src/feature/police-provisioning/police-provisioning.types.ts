@@ -6,6 +6,17 @@ export type PoliceLoginChallengeResponse = {
   challengeToken: string;
 };
 
+/** Officer already set a password but has not finished email OTP activation. */
+export type PoliceLoginOtpResumeResponse = {
+  message: string;
+  requiresActivationOtp: true;
+  challengeToken: string;
+};
+
+export type PoliceLoginChallengeResult =
+  | PoliceLoginChallengeResponse
+  | PoliceLoginOtpResumeResponse;
+
 export type PoliceLoginBlockedExceptionBody = {
   message: string;
   code: PoliceLoginBlockedReason;

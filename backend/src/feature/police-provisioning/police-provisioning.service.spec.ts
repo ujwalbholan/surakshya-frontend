@@ -352,6 +352,41 @@ describe('PoliceProvisioningService', () => {
       );
     });
 
+    it('resumes OTP activation when password already set but status pending', async () => {
+      linkRepo.findOne.mockResolvedValue(
+        mockLink({ status: PoliceStationLinkStatus.APPROVED }),
+      );
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      redisService.set.mockResolvedValue('OK');
+      redisService.incr.mockResolvedValue(1);
+      userRepo.findOne.mockResolvedValue(
+        mockOfficer({
+          must_change_password: false,
+          police_account_status: PoliceAccountStatus.PENDING_ACTIVATION,
+          password_hash: 'hashed-permanent',
+          temp_password_hash: null,
+        }),
+      );
+
+      const result = await service.evaluatePoliceLogin(
+        mockOfficer({
+          must_change_password: false,
+          police_account_status: PoliceAccountStatus.PENDING_ACTIVATION,
+          password_hash: 'hashed-permanent',
+          temp_password_hash: null,
+        }),
+        'new-password-123',
+      );
+
+      expect(result).toEqual({
+        message:
+          'Account activation incomplete. Enter the OTP sent to your email.',
+        requiresActivationOtp: true,
+        challengeToken: expect.any(String) as string,
+      });
+      expect(otpEmailService.sendPasswordResetOtp).toHaveBeenCalled();
+    });
+
     it('blocks suspended officers', async () => {
       await expect(
         service.evaluatePoliceLogin(

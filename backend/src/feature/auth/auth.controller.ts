@@ -53,6 +53,14 @@ export class AuthController {
       };
     }
 
+    if ('requiresActivationOtp' in result && result.requiresActivationOtp) {
+      return {
+        message: result.message,
+        requiresActivationOtp: true,
+        challengeToken: result.challengeToken,
+      };
+    }
+
     const session = result as {
       message: string;
       user: {

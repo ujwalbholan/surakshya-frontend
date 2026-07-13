@@ -33,7 +33,7 @@ import { RedisService } from 'src/config/redis/redis.service';
 import { PoliceStationLink } from './entities/police-station-link.entity';
 import { CreatePoliceOfficerDto } from './dto/create-police-officer.dto';
 import {
-  PoliceLoginChallengeResponse,
+  PoliceLoginChallengeResult,
   POLICE_ACTIVATION_CHALLENGE_TTL_SECONDS,
   POLICE_ACTIVATION_MAX_OTP_SENDS_PER_HOUR,
   POLICE_ACTIVATION_MAX_OTP_VERIFY_ATTEMPTS,
@@ -358,7 +358,7 @@ export class PoliceProvisioningService {
   async evaluatePoliceLogin(
     user: User,
     password: string,
-  ): Promise<PoliceLoginChallengeResponse | null> {
+  ): Promise<PoliceLoginChallengeResult | null> {
     if (user.role !== Role.POLICE) {
       return null;
     }
@@ -410,12 +410,7 @@ export class PoliceProvisioningService {
         throw new UnauthorizedException('Invalid Password');
       }
 
-      const challengeToken = randomUUID();
-      await this.redisService.set(
-        policeActivationChallengeKey(challengeToken),
-        user.id,
-        POLICE_ACTIVATION_CHALLENGE_TTL_SECONDS,
-      );
+      const challengeToken = await this.issueActivationChallenge(user.id);
 
       return {
         message: 'Password change required before activation',
@@ -425,9 +420,26 @@ export class PoliceProvisioningService {
     }
 
     if (user.police_account_status === PoliceAccountStatus.PENDING_ACTIVATION) {
-      throw new UnauthorizedException(
-        'Please complete account activation before logging in.',
-      );
+      if (!user.password_hash) {
+        throw new UnauthorizedException(
+          'Please complete account activation before logging in.',
+        );
+      }
+
+      const passwordMatches = await bcrypt.compare(password, user.password_hash);
+      if (!passwordMatches) {
+        throw new UnauthorizedException('Invalid Password');
+      }
+
+      const challengeToken = await this.issueActivationChallenge(user.id);
+      await this.sendActivationOtp(challengeToken, user.email);
+
+      return {
+        message:
+          'Account activation incomplete. Enter the OTP sent to your email.',
+        requiresActivationOtp: true,
+        challengeToken,
+      };
     }
 
     if (user.police_account_status !== PoliceAccountStatus.ACTIVE) {
@@ -437,6 +449,16 @@ export class PoliceProvisioningService {
     }
 
     return null;
+  }
+
+  private async issueActivationChallenge(userId: string): Promise<string> {
+    const challengeToken = randomUUID();
+    await this.redisService.set(
+      policeActivationChallengeKey(challengeToken),
+      userId,
+      POLICE_ACTIVATION_CHALLENGE_TTL_SECONDS,
+    );
+    return challengeToken;
   }
 
   async completePoliceActivation(challengeToken: string, newPassword: string) {
