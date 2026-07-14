@@ -2,6 +2,8 @@
 
 Phase 7 verification for both guardian ↔ child linking directions. Automated API coverage lives in `backend/test/guardian-linking.e2e-spec.ts`; UI steps are manual.
 
+**Citizen UI is Flutter-only** (`suraksha-app/`): there is no web `/app/*` portal. Use the Flutter app for child/USER steps; use Next.js `/guardian/*` for guardian web steps.
+
 ## Run automated tests
 
 ```bash
@@ -33,7 +35,7 @@ npm run test:e2e -- --testPathPatterns=guardian-linking
 | Step | Action | Expected | Automated |
 |------|--------|----------|-----------|
 | 1 | Child logs in on Flutter → `/guardians` → **Invite guardian** (name, email, phone) | Guardian account + `CHILD_TO_GUARDIAN` request created; credentials email sent | — |
-| 2 | Guardian opens `/guardian/setup?email=…` → send OTP → verify OTP → set password | `phone_verified = true`; can log in | — |
+| 2 | Guardian opens `/guardian/setup?email=…` (web or Flutter) → send OTP → verify OTP → set password | `phone_verified = true`; can log in | — |
 | 3 | Guardian logs in → `/guardian` → **Pending requests** | Shows `CHILD_TO_GUARDIAN` request with child name | ✅ |
 | 4 | Guardian clicks **Accept** | `200` — accepted message | ✅ |
 | 5 | Query `guardian_links` | `child_user_id` = `requester_id`, `guardian_user_id` = guardian JWT id | ✅ |
@@ -41,38 +43,38 @@ npm run test:e2e -- --testPathPatterns=guardian-linking
 
 ---
 
-## Access control & regression
+## Cross-cutting checks
 
 | Check | Expected | Automated |
 |-------|----------|-----------|
 | `GET /guardian/wards/:wardId/sos` — linked guardian | `200`, empty or populated SOS list | ✅ |
 | Same endpoint — unlinked guardian | `403` — not linked to ward | ✅ |
-| `/app` loads for `USER` role (no 404) | Citizen shell renders | ✅ build |
-| `/app/guardians` route exists | Linking UI compiles | ✅ build |
-| `/guardian/wards/[wardId]/sos` still works | Route compiles; API unchanged | ✅ build |
-| `/guardian/setup` wizard route | Compiles; OTP-before-password order | ✅ build |
+| Flutter `/guardians` route | Linking UI compiles | ✅ |
+| Flutter `/guardian/setup` | OTP → set-password flow | ✅ |
+| `/guardian/wards/[wardId]/sos` (web) | Route compiles; API unchanged | ✅ build |
+| `/guardian/setup` wizard (web) | Compiles; OTP-before-password order | ✅ build |
 
 ---
 
 ## Manual UI walkthrough (both directions)
 
-Prerequisites: backend on `:3000`, frontend on `:3002`, Postgres + Redis up.
+Prerequisites: backend on `:3000`, Flutter app pointed at that API, frontend on `:3002` (guardian web), Postgres + Redis up.
 
 ### Option 1 UI
 
-- [ ] Register/login as **child** (`USER`) → land on `/app`
-- [ ] Register/login as **guardian** (`GUARDIAN`) in a separate browser/incognito
+- [ ] Register/login as **child** (`USER`) on Flutter
+- [ ] Register/login as **guardian** (`GUARDIAN`) on web `/guardian` (or Flutter parent)
 - [ ] Guardian: invite ward by child email on `/guardian`
-- [ ] Child: see pending request on `/app/guardians`, accept
+- [ ] Child: see pending request on Flutter `/guardians`, accept
 - [ ] Confirm guardian sees ward on `/guardian` home
 - [ ] Confirm `guardian_links` row in DB has correct orientation
 
 ### Option 2 UI
 
-- [ ] Child: invite guardian on `/app/guardians` (new email/phone)
+- [ ] Child: invite guardian on Flutter `/guardians` (new email/phone)
 - [ ] Guardian: complete `/guardian/setup` (email → OTP → verify → password)
 - [ ] Guardian: log in, accept pending request on `/guardian`
-- [ ] Child: guardian appears in linked list on `/app/guardians`
+- [ ] Child: guardian appears in linked list on Flutter `/guardians`
 - [ ] Confirm `guardian_links` row orientation in DB
 
 ### Unauthorized checks (manual)
@@ -96,12 +98,16 @@ Unique constraint: `(child_user_id, guardian_user_id)`.
 
 ---
 
-## Frontend routes verified (build)
+## Frontend routes verified
+
+**Flutter (`suraksha-app/`):** `/guardians`, `/guardian/setup`, `/parent`, `/tracking`
+
+**Next.js guardian surfaces:**
 
 ```
-○ /app
-○ /app/guardians
 ○ /guardian
 ○ /guardian/setup
 ƒ /guardian/wards/[wardId]/sos
 ```
+
+Citizen web `/app` and `/app/guardians` are **out of scope** (not shipped).
