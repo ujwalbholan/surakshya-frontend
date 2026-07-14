@@ -12,8 +12,8 @@ import { labelStyle, inputBaseStyle } from "@/lib/customCss/customCss";
 
 const MIN_PASSWORD_LENGTH = 8;
 
-const WristbandModel = dynamic(
-  () => import("@/components/hero/WristbandModel"),
+const StellarCardGallery = dynamic(
+  () => import("@/components/ui/3d-image-gallery"),
   {
     ssr: false,
     loading: () => null,
@@ -133,32 +133,9 @@ export default function LoginPage() {
       `}</style>
 
       <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 1,
-          pointerEvents: "none",
-          opacity: 0.28,
-        }}
-      >
-        <WristbandModel />
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "rgba(8,8,8,0.74)",
-          zIndex: 2,
-          pointerEvents: "none",
-        }}
-      />
-
-      <div
         style={{
           position: "relative",
-          zIndex: 3,
+          zIndex: 1,
           minHeight: "100vh",
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -168,73 +145,95 @@ export default function LoginPage() {
           style={{
             background: "#050505",
             position: "relative",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0 56px",
+            overflow: "hidden",
+            minHeight: "100vh",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              gap: 14,
-            }}
-          >
+          <StellarCardGallery>
             <div
               style={{
-                width: 44,
-                height: 44,
-                display: "grid",
-                placeItems: "center",
-                position: "relative",
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0 48px",
               }}
             >
               <div
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  animation: "spinSlow 18s linear infinite",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  gap: 12,
+                  maxWidth: 320,
                 }}
-              />
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
               >
-                <path
-                  d="M12 2L5 5.5V10.8C5 16 8.6 20.8 12 22C15.4 20.8 19 16 19 10.8V5.5L12 2Z"
-                  stroke="#CC2233"
-                  strokeWidth="1.6"
+                <div
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "clamp(22px, 2.6vw, 34px)",
+                    fontWeight: 500,
+                    letterSpacing: "0.28em",
+                    color: "#F0EDE8",
+                    textShadow:
+                      "0 2px 24px rgba(0,0,0,0.85), 0 0 40px rgba(0,0,0,0.55)",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  SURAKSHA
+                </div>
+
+                <div
+                  style={{
+                    width: 36,
+                    height: 1,
+                    background:
+                      "linear-gradient(90deg, transparent, rgba(204,34,51,0.85), transparent)",
+                  }}
                 />
-              </svg>
+
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    letterSpacing: "0.06em",
+                    color: "rgba(240,237,232,0.55)",
+                    textShadow: "0 1px 12px rgba(0,0,0,0.9)",
+                  }}
+                >
+                  Wear it. Trust it. Stay safe.
+                </div>
+              </div>
             </div>
 
             <div
               style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 15,
-                letterSpacing: "0.25em",
-                color: "rgba(240,237,232,0.86)",
-              }}
-            >
-              THE SURAKSHA
-            </div>
-
-            <div
-              style={{
+                position: "absolute",
+                left: 24,
+                bottom: 18,
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                color: "rgba(255,255,255,0.28)",
+                fontSize: 9,
+                color: "rgba(255,255,255,0.22)",
+                letterSpacing: "0.02em",
               }}
             >
-              Wear it. Trust it. Stay safe.
+              © 2025 Suraksha Safety Pvt. Ltd.
             </div>
-          </div>
+          </StellarCardGallery>
+
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 4,
+              pointerEvents: "none",
+              background:
+                "radial-gradient(ellipse 90% 80% at 50% 50%, transparent 45%, rgba(0,0,0,0.35) 100%)",
+            }}
+          />
 
           <div
             aria-hidden="true"
@@ -245,22 +244,10 @@ export default function LoginPage() {
               bottom: 0,
               width: 1,
               background: "rgba(255,255,255,0.06)",
+              zIndex: 5,
+              pointerEvents: "none",
             }}
           />
-
-          <div
-            style={{
-              position: "absolute",
-              left: 24,
-              bottom: 18,
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              color: "rgba(255,255,255,0.18)",
-              letterSpacing: "0.02em",
-            }}
-          >
-            © 2025 Suraksha Safety Pvt. Ltd.
-          </div>
         </section>
 
         <section
