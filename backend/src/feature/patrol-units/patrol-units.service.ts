@@ -9,7 +9,9 @@ import { Repository } from 'typeorm';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { PoliceStation } from 'src/feature/police-stations/entities/police-station.entity';
 import { User } from 'src/feature/user/entities/user.entity';
+import { DispatchEventAction } from 'src/constants/dispatch.constants';
 import { UnitStatus } from 'src/constants/patrol-units.constants';
+import { DispatchService } from 'src/feature/dispatch/dispatch.service';
 import { PatrolUnit } from './entities/patrol-unit.entity';
 import { CreatePatrolUnitDto } from './dto/create-patrol-unit.dto';
 import { UpdatePatrolUnitDto } from './dto/update-patrol-unit.dto';
@@ -63,6 +65,7 @@ export class PatrolUnitsService {
     private readonly stationRepo: Repository<PoliceStation>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly dispatchService: DispatchService,
   ) {}
 
   async create(dto: CreatePatrolUnitDto) {
@@ -132,6 +135,7 @@ export class PatrolUnitsService {
 
   async update(id: string, dto: UpdatePatrolUnitDto) {
     const unit = await this.findUnitOrThrow(id);
+    const previousStatus = unit.status;
 
     if (dto.station_id !== undefined) {
       await this.validateStationId(dto.station_id);
@@ -156,6 +160,29 @@ export class PatrolUnitsService {
 
     await this.unitRepo.save(unit);
     const hydrated = await this.findUnitOrThrow(id);
+
+    if (dto.status !== undefined && dto.status !== previousStatus) {
+      let action: DispatchEventAction | null = null;
+      if (dto.status === UnitStatus.DISPATCHED) {
+        action = DispatchEventAction.DISPATCHED;
+      } else if (dto.status === UnitStatus.ON_SCENE) {
+        action = DispatchEventAction.ON_SCENE;
+      }
+
+      if (action) {
+        await this.dispatchService.record({
+          action,
+          unit_id: hydrated.id,
+          unit_name: hydrated.name,
+          officer_id: hydrated.lead_officer_id ?? null,
+          officer_name: hydrated.lead_officer?.full_name ?? null,
+          metadata: {
+            previous_status: previousStatus,
+            status: dto.status,
+          },
+        });
+      }
+    }
 
     return {
       message: 'Patrol unit updated successfully',

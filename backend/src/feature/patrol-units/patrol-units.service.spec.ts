@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { PoliceStation } from 'src/feature/police-stations/entities/police-station.entity';
 import { User } from 'src/feature/user/entities/user.entity';
+import { DispatchService } from 'src/feature/dispatch/dispatch.service';
 import { UnitStatus } from 'src/constants/patrol-units.constants';
 import { PatrolUnit } from './entities/patrol-unit.entity';
 import { PatrolUnitsService } from './patrol-units.service';
@@ -95,6 +96,10 @@ describe('PatrolUnitsService', () => {
           useValue: {
             findOne: jest.fn(),
           },
+        },
+        {
+          provide: DispatchService,
+          useValue: { record: jest.fn().mockResolvedValue({}) },
         },
       ],
     }).compile();

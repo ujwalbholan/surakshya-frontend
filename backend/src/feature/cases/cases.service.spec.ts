@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { CasePriority, CaseStatus } from 'src/constants/cases.constants';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
+import { DispatchService } from 'src/feature/dispatch/dispatch.service';
 import { PatrolUnit } from 'src/feature/patrol-units/entities/patrol-unit.entity';
 import { PoliceStation } from 'src/feature/police-stations/entities/police-station.entity';
 import { User } from 'src/feature/user/entities/user.entity';
@@ -128,6 +129,10 @@ describe('CasesService', () => {
         {
           provide: getRepositoryToken(SosEvent),
           useValue: { findOne: jest.fn() },
+        },
+        {
+          provide: DispatchService,
+          useValue: { record: jest.fn().mockResolvedValue({}) },
         },
       ],
     }).compile();

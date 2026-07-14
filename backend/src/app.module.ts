@@ -27,6 +27,10 @@ import { EvidenceModule } from './feature/evidence/evidence.module';
 import { AuditModule } from './feature/audit/audit.module';
 import { ReportsModule } from './feature/reports/reports.module';
 import { HealthModule } from './feature/health/health.module';
+import { DispatchModule } from './feature/dispatch/dispatch.module';
+import { ApiKeysModule } from './feature/api-keys/api-keys.module';
+import { RolesMatrixModule } from './feature/roles-matrix/roles-matrix.module';
+import { AdminSettingsModule } from './feature/admin-settings/admin-settings.module';
 import { RedisModule } from './config/redis/redis.module';
 import { RedisThrottlerStorage } from './config/redis/redis-throttler.service';
 
@@ -95,6 +99,10 @@ const isProduction = process.env.NODE_ENV === 'production';
     EvidenceModule,
     AuditModule,
     ReportsModule,
+    DispatchModule,
+    ApiKeysModule,
+    RolesMatrixModule,
+    AdminSettingsModule,
   ],
   controllers: [AppController],
   providers: [

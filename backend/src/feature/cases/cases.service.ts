@@ -7,8 +7,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CasePriority, CaseStatus } from 'src/constants/cases.constants';
+import { DispatchEventAction } from 'src/constants/dispatch.constants';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
+import { DispatchService } from 'src/feature/dispatch/dispatch.service';
 import { PatrolUnit } from 'src/feature/patrol-units/entities/patrol-unit.entity';
 import { PoliceStation } from 'src/feature/police-stations/entities/police-station.entity';
 import { User } from 'src/feature/user/entities/user.entity';
@@ -126,6 +128,7 @@ export class CasesService {
     private readonly unitRepo: Repository<PatrolUnit>,
     @InjectRepository(SosEvent)
     private readonly sosEventRepo: Repository<SosEvent>,
+    private readonly dispatchService: DispatchService,
   ) {}
 
   async create(dto: CreateCaseDto, actorUserId?: string) {
@@ -163,6 +166,10 @@ export class CasesService {
     );
 
     const hydrated = await this.findCaseOrThrow(saved.id, true);
+
+    if (hydrated.assigned_unit_id) {
+      await this.recordUnitAssignmentEvent(hydrated, DispatchEventAction.DISPATCHED);
+    }
 
     return {
       message: 'Case created successfully',
@@ -227,6 +234,7 @@ export class CasesService {
 
   async update(id: string, dto: UpdateCaseDto, actorUserId?: string) {
     const caseEntity = await this.findCaseOrThrow(id);
+    const previousUnitId = caseEntity.assigned_unit_id ?? null;
 
     if (dto.sos_event_id !== undefined) {
       await this.validateSosEventId(dto.sos_event_id);
@@ -266,6 +274,26 @@ export class CasesService {
 
     await this.caseRepo.save(caseEntity);
     const hydrated = await this.findCaseOrThrow(id, true);
+
+    const nextUnitId = hydrated.assigned_unit_id ?? null;
+    if (dto.assigned_unit_id !== undefined && nextUnitId !== previousUnitId) {
+      if (nextUnitId) {
+        await this.recordUnitAssignmentEvent(
+          hydrated,
+          DispatchEventAction.DISPATCHED,
+        );
+      } else if (previousUnitId) {
+        await this.dispatchService.record({
+          action: DispatchEventAction.RELEASED,
+          unit_id: previousUnitId,
+          unit_name: caseEntity.assigned_unit?.name ?? null,
+          case_id: hydrated.id,
+          case_number: hydrated.case_number,
+          officer_id: hydrated.assigned_officer_id ?? null,
+          officer_name: hydrated.assigned_officer?.full_name ?? null,
+        });
+      }
+    }
 
     return {
       message: 'Case updated successfully',
@@ -433,7 +461,12 @@ export class CasesService {
     id: string,
     includeDetails = false,
   ): Promise<Case> {
-    const relations = ['station', 'assigned_officer', 'assigned_unit'];
+    const relations = [
+      'station',
+      'assigned_officer',
+      'assigned_unit',
+      'assigned_unit.lead_officer',
+    ];
     if (includeDetails) {
       relations.push('status_history', 'status_history.changed_by', 'notes', 'notes.author');
     }
@@ -531,5 +564,26 @@ export class CasesService {
     if (!event) {
       throw new NotFoundException('SOS event not found');
     }
+  }
+
+  private async recordUnitAssignmentEvent(
+    caseEntity: Case,
+    action: DispatchEventAction,
+  ) {
+    await this.dispatchService.record({
+      action,
+      unit_id: caseEntity.assigned_unit_id ?? null,
+      unit_name: caseEntity.assigned_unit?.name ?? null,
+      case_id: caseEntity.id,
+      case_number: caseEntity.case_number,
+      officer_id:
+        caseEntity.assigned_unit?.lead_officer_id ??
+        caseEntity.assigned_officer_id ??
+        null,
+      officer_name:
+        caseEntity.assigned_unit?.lead_officer?.full_name ??
+        caseEntity.assigned_officer?.full_name ??
+        null,
+    });
   }
 }

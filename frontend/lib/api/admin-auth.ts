@@ -157,5 +157,12 @@ export function fetchUsers(params?: {
 }
 
 export function checkHealth() {
-  return adminApiRequest<{ status?: string }>("/health")
+  return adminApiRequest<{
+    status?: string
+    timestamp?: string
+    uptime?: number
+    uptime_ms?: number
+    database?: "up" | "down"
+    database_latency_ms?: number | null
+  }>("/health")
 }

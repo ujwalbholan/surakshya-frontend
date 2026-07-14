@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
+import { DispatchModule } from 'src/feature/dispatch/dispatch.module';
 import { PatrolUnit } from 'src/feature/patrol-units/entities/patrol-unit.entity';
 import { PoliceStation } from 'src/feature/police-stations/entities/police-station.entity';
 import { User } from 'src/feature/user/entities/user.entity';
@@ -22,6 +23,7 @@ import { CasesPoliceController } from './cases-police.controller';
       PatrolUnit,
       SosEvent,
     ]),
+    DispatchModule,
   ],
   controllers: [CasesAdminController, CasesPoliceController],
   providers: [CasesService],
