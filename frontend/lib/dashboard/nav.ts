@@ -35,7 +35,7 @@ export const NAV_ITEMS: NavItem[] = [
 export const VIEW_TITLES: Record<DashboardView, { title: string; subtitle: string }> = {
   dashboard: {
     title: "Command Overview",
-    subtitle: "Real-time Suraksha wristband network — Nepal-wide",
+    subtitle: "Real-time Surakshya wristband network — Nepal-wide",
   },
   sos: {
     title: "SOS Alert Centre",

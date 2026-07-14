@@ -182,7 +182,7 @@ export default function LoginPage() {
                     lineHeight: 1.2,
                   }}
                 >
-                  SURAKSHA
+                  SURAKSHYA
                 </div>
 
                 <div
@@ -219,7 +219,7 @@ export default function LoginPage() {
                 letterSpacing: "0.02em",
               }}
             >
-              © 2025 Suraksha Safety Pvt. Ltd.
+              © 2025 Surakshya Safety Pvt. Ltd.
             </div>
           </StellarCardGallery>
 

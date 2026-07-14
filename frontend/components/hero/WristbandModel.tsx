@@ -329,7 +329,7 @@ function SceneContent({
       {/* Key light — top right, slightly cool */}
       <directionalLight position={[5, 5, 5]} intensity={1.8} color="#f0f0ff" castShadow={false} />
 
-      {/* Crimson fill — Suraksha brand accent, bottom left */}
+      {/* Crimson fill — Surakshya brand accent, bottom left */}
       <directionalLight position={[-4, -3, -5]} intensity={0.6} color="#c0392b" />
 
       {/* Rim light — top back — creates edge separation against black background */}

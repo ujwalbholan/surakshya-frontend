@@ -1,9 +1,9 @@
 import type { AuthTokens } from "@/lib/api/types"
 
-const ACCESS_TOKEN_KEY = "suraksha_access_token"
-const REFRESH_TOKEN_KEY = "suraksha_refresh_token"
-const USER_EMAIL_KEY = "suraksha_user_email"
-const USER_ROLE_KEY = "suraksha_user_role"
+const ACCESS_TOKEN_KEY = "surakshya_access_token"
+const REFRESH_TOKEN_KEY = "surakshya_refresh_token"
+const USER_EMAIL_KEY = "surakshya_user_email"
+const USER_ROLE_KEY = "surakshya_user_role"
 
 export function saveAuthSession(
   email: string,

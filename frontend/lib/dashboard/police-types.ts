@@ -36,7 +36,7 @@ export interface SosAlert {
   status: AlertStatus
   priority: AlertPriority
   unit?: string
-  /** Triggered by double-tap on Suraksha wristband sensor */
+  /** Triggered by double-tap on Surakshya wristband sensor */
   triggerType: "double_tap"
   victim: VictimProfile
   liveLocation: LiveLocation

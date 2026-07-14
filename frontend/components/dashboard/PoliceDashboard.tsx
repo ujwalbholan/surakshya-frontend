@@ -336,7 +336,7 @@ export default function PoliceDashboard() {
       <aside className="hidden w-56 shrink-0 flex-col border-r border-[#222] bg-[#050505] lg:flex">
         <div className="border-b border-[#222] px-5 py-6">
           <Link href="/" className="font-serif text-lg italic text-[#FAFAFA]">
-            Suraksha
+            Surakshya
           </Link>
           <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.2em] text-[#C0392B]">
             Nepal Police Ops
@@ -421,7 +421,7 @@ export default function PoliceDashboard() {
             />
             <aside className="absolute left-0 top-0 flex h-full w-64 flex-col bg-[#050505] border-r border-[#222]">
               <div className="border-b border-[#222] px-5 py-5">
-                <p className="font-serif text-lg italic">Suraksha</p>
+                <p className="font-serif text-lg italic">Surakshya</p>
                 <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#C0392B]">
                   Nepal Police Ops
                 </p>

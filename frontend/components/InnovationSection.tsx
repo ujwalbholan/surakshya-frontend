@@ -42,7 +42,7 @@ export default function InnovationSection() {
           data-reveal="fade-up"
           data-reveal-delay="200"
         >
-          A single tap on the Suraksha band instantly sends your live GPS location 
+          A single tap on the Surakshya band instantly sends your live GPS location 
           to your family and emergency contacts. No phone in hand required. 
           SOS stays active until YOU switch it off.
         </p>

@@ -72,7 +72,7 @@ export default function SosAlertsView({
     <>
       <SectionHeader
         title="SOS Alert Queue"
-        subtitle="Every alert originates from a Suraksha wristband double-tap. Officers receive victim photo, live GPS, medical info, and family contacts instantly."
+        subtitle="Every alert originates from a Surakshya wristband double-tap. Officers receive victim photo, live GPS, medical info, and family contacts instantly."
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">

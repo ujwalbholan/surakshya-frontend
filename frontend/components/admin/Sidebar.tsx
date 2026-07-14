@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { LogOut, ChevronDown, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
-import SurakshaShieldLogo from "@/components/admin/SurakshaShieldLogo"
+import SurakshyaShieldLogo from "@/components/admin/SurakshyaShieldLogo"
 import AdminSessionSidebar from "@/components/admin/AdminSessionSidebar"
 import { getAdminSession, clearAdminSession } from "@/lib/auth/admin-session"
 import { adminLogout } from "@/lib/api/admin-auth"
@@ -47,8 +47,8 @@ function MobileNavContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col">
       <div className="border-b border-white/5 px-4 py-5">
         <div className="flex items-center gap-2.5">
-          <SurakshaShieldLogo size={28} variant="mono" />
-          <span className="font-body text-sm font-medium tracking-wide text-white">Suraksha</span>
+          <SurakshyaShieldLogo size={28} variant="mono" />
+          <span className="font-body text-sm font-medium tracking-wide text-white">Surakshya</span>
         </div>
         <span className="mt-2 inline-block rounded border border-white/10 px-2 py-0.5 font-mono-admin text-[10px] text-white/50 uppercase">
           Super Admin
@@ -148,8 +148,8 @@ export default function Sidebar() {
           </SheetContent>
         </Sheet>
         <div className="ml-3 flex items-center gap-2">
-          <SurakshaShieldLogo size={22} variant="mono" />
-          <span className="font-body text-sm font-medium text-white">Suraksha</span>
+          <SurakshyaShieldLogo size={22} variant="mono" />
+          <span className="font-body text-sm font-medium text-white">Surakshya</span>
         </div>
       </div>
     </>

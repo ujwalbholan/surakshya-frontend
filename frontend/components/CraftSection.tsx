@@ -59,7 +59,7 @@ export default function CraftSection() {
           >
             <Image
               src="/images/craft.jpg"
-              alt="Internal components of the Suraksha IoT safety band"
+              alt="Internal components of the Surakshya IoT safety band"
               fill
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 50vw"

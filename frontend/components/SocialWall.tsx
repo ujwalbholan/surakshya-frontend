@@ -19,7 +19,7 @@ const testimonials = [
   },
   {
     image: "/images/social-3.jpg",
-    quote: "We both wear Suraksha now. Knowing we can alert each other in one tap — it's the kind of tech that actually matters.",
+    quote: "We both wear Surakshya now. Knowing we can alert each other in one tap — it's the kind of tech that actually matters.",
     name: "Meera & Sana",
     delay: 200,
   },
@@ -32,7 +32,7 @@ export default function SocialWall() {
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="text-center mb-12 lg:mb-20" data-reveal="fade-up">
-          <p className="section-label mb-4">#StayWithSuraksha</p>
+          <p className="section-label mb-4">#StayWithSurakshya</p>
           <TextReveal
             as="h2"
             className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground text-balance"
@@ -55,7 +55,7 @@ export default function SocialWall() {
               <div className="relative aspect-[3/4] overflow-hidden">
                 <Image
                   src={item.image}
-                  alt={`${item.name} — Suraksha user`}
+                  alt={`${item.name} — Surakshya user`}
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                   sizes="(max-width: 768px) 100vw, 33vw"

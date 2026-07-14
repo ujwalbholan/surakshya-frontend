@@ -236,7 +236,7 @@ export default function DashboardPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = "suraksha-report.csv"
+    a.download = "surakshya-report.csv"
     a.click()
     URL.revokeObjectURL(url)
     toast.success("Report exported")

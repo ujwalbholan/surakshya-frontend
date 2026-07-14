@@ -93,7 +93,7 @@ const CARDS: Card[] = [
   { id: "62", imageUrl: "/gallery/card-62.jpg", alt: "Incident timeline log", title: "Timeline Log" },
   { id: "63", imageUrl: "/gallery/card-63.jpg", alt: "Municipal partner link", title: "City Partner" },
   { id: "64", imageUrl: "/gallery/card-64.jpg", alt: "Secure role handoff", title: "Role Handoff" },
-  { id: "65", imageUrl: "/gallery/card-65.jpg", alt: "Suraksha full circle", title: "Full Circle" },
+  { id: "65", imageUrl: "/gallery/card-65.jpg", alt: "Surakshya full circle", title: "Full Circle" },
 ];
 
 /* =========================

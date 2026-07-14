@@ -3,7 +3,7 @@
 import * as React from "react"
 
 const ITEMS = [
-  "Suraksha",
+  "Surakshya",
   "Safety",
   "Tracking",
   "Alerts",

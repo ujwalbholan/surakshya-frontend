@@ -248,7 +248,7 @@ export default function Navbar() {
             className="font-serif text-xl italic text-[var(--nav-text)] flex-shrink-0"
             style={{ fontFamily: "Georgia, serif" }}
           >
-            Suraksha
+            Surakshya
           </a>
 
           {/* Desktop Nav: centered */}
@@ -333,7 +333,7 @@ export default function Navbar() {
               className="font-serif text-xl italic text-[var(--nav-text)]"
               style={{ fontFamily: "Georgia, serif" }}
             >
-              Suraksha
+              Surakshya
             </span>
             <button
               onClick={() => setMobileOpen(false)}

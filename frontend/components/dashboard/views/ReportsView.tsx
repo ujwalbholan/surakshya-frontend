@@ -138,7 +138,7 @@ export default function ReportsView() {
 
   const exportPdf = () => {
     downloadReportPdf({
-      title: "Nepal Police — Suraksha Ops Report",
+      title: "Nepal Police — Surakshya Ops Report",
       subtitle: "Last 30 days",
       filename: "police-ops-report.pdf",
       columns: ["District", "Alerts", "Share %"],
@@ -166,7 +166,7 @@ export default function ReportsView() {
     <>
       <SectionHeader
         title="Operational reports"
-        subtitle="Suraksha network analytics for Nepal Police HQ — exportable summaries and provincial breakdowns."
+        subtitle="Surakshya network analytics for Nepal Police HQ — exportable summaries and provincial breakdowns."
         action={
           <div className="flex gap-2">
             <button

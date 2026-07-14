@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import gsap from "gsap"
 import toast, { Toaster } from "react-hot-toast"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
-import SurakshaShieldLogo from "@/components/admin/SurakshaShieldLogo"
+import SurakshyaShieldLogo from "@/components/admin/SurakshyaShieldLogo"
 import { adminLogin } from "@/lib/api/admin-auth"
 import { setAdminSession } from "@/lib/auth/admin-session"
 
@@ -122,7 +122,7 @@ export default function AdminLoginPage() {
     )
 
     if (rememberMe) {
-      localStorage.setItem("suraksha_admin_remember", email.trim())
+      localStorage.setItem("surakshya_admin_remember", email.trim())
     }
 
     router.push("/admin/dashboard")
@@ -144,7 +144,7 @@ export default function AdminLoginPage() {
         <div className="admin-grain-overlay" />
         <div className="relative z-10 flex flex-col items-center px-12 text-center">
           <div className="login-logo mb-8">
-            <SurakshaShieldLogo size={80} />
+            <SurakshyaShieldLogo size={80} />
           </div>
           <p
             className="login-tagline font-display text-[48px] italic leading-tight text-white"
@@ -164,12 +164,12 @@ export default function AdminLoginPage() {
 
         <div className="w-full max-w-md">
           <div className="mb-8 flex flex-col items-center lg:hidden">
-            <SurakshaShieldLogo size={56} />
+            <SurakshyaShieldLogo size={56} />
             <p className="mt-4 font-display text-2xl italic text-white">The Guardian On Your Wrist</p>
           </div>
 
           <h1 className="mb-2 font-body text-xl font-semibold text-white">Sign In</h1>
-          <p className="mb-8 font-body text-sm text-white/50">Access the Suraksha Super Admin console</p>
+          <p className="mb-8 font-body text-sm text-white/50">Access the Surakshya Super Admin console</p>
 
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
             <div className="login-field">
@@ -182,7 +182,7 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setEmailError(null) }}
                 className="admin-input"
-                placeholder="admin@suraksha.com.np"
+                placeholder="admin@surakshya.com.np"
                 autoComplete="email"
                 required
               />

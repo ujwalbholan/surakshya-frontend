@@ -32,7 +32,7 @@ export default function BrandStatement() {
           className="text-2xl sm:text-3xl lg:text-4xl italic font-light text-[#FAFAFA]/90 mb-8"
           data-reveal="fade-up"
         >
-          Suraksha
+          Surakshya
         </p>
 
         {/* Big bold uppercase heading */}
@@ -41,7 +41,7 @@ export default function BrandStatement() {
           className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-[3.5rem] font-bold tracking-tight text-[#FAFAFA] leading-[1.15] uppercase"
           staggerMs={50}
         >
-          At Suraksha, we craft more than a band. We shape icons of protection.
+          At Surakshya, we craft more than a band. We shape icons of protection.
         </TextReveal>
 
         {/* White rounded pill button */}

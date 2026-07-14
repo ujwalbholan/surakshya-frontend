@@ -18,7 +18,7 @@ export default function PhilosophySection() {
           >
             <Image
               src="/images/philosophy.jpg"
-              alt="Woman wearing Suraksha safety band on wrist"
+              alt="Woman wearing Surakshya safety band on wrist"
               fill
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 50vw"
@@ -44,7 +44,7 @@ export default function PhilosophySection() {
               data-reveal="fade-up"
               data-reveal-delay="200"
             >
-              Every detail of Suraksha is built around one purpose — keeping women safe. 
+              Every detail of Surakshya is built around one purpose — keeping women safe. 
               From the IoT band to the live GPS tracking, every component is engineered with 
               precision, speed, and trust.
             </p>

@@ -318,10 +318,10 @@ export default function ProductShowcase() {
           <div className="flex flex-col" data-reveal="fade-left">
             <p className="section-label mb-4">Evolution</p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-[#FAFAFA] uppercase mb-6">
-              Suraksha Band
+              Surakshya Band
             </h2>
             <p className="text-base lg:text-lg text-[#888888] leading-relaxed mb-8 max-w-md">
-              The all-new Suraksha Band continues our legacy with a completely re-engineered safety wearable built for instant alerts, precision GPS tracking, and seamless connectivity. First to feature dual-mode SOS technology, it handles emergencies with unmatched reliability.
+              The all-new Surakshya Band continues our legacy with a completely re-engineered safety wearable built for instant alerts, precision GPS tracking, and seamless connectivity. First to feature dual-mode SOS technology, it handles emergencies with unmatched reliability.
             </p>
 
             {/* White rounded pill button */}

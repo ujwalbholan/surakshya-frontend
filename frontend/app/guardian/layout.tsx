@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Guardian | Suraksha",
+  title: "Guardian | Surakshya",
   description: "Monitor SOS alerts for your linked wards.",
 }
 

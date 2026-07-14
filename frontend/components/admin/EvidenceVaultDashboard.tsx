@@ -199,7 +199,7 @@ export default function EvidenceVaultDashboard() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = "suraksha-evidence-manifest.csv"
+    a.download = "surakshya-evidence-manifest.csv"
     a.click()
     URL.revokeObjectURL(url)
     toast.success("Evidence manifest exported")

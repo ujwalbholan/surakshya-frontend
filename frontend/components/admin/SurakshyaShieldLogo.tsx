@@ -1,14 +1,14 @@
-interface SurakshaShieldLogoProps {
+interface SurakshyaShieldLogoProps {
   size?: number
   className?: string
   variant?: "brand" | "mono"
 }
 
-export default function SurakshaShieldLogo({
+export default function SurakshyaShieldLogo({
   size = 48,
   className,
   variant = "brand",
-}: SurakshaShieldLogoProps) {
+}: SurakshyaShieldLogoProps) {
   const isMono = variant === "mono"
 
   return (
@@ -19,7 +19,7 @@ export default function SurakshaShieldLogo({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="Suraksha shield logo"
+      aria-label="Surakshya shield logo"
     >
       <path
         d="M24 2L6 10V22C6 33.046 13.954 43.046 24 46C34.046 43.046 42 33.046 42 22V10L24 2Z"

@@ -125,7 +125,7 @@ export default function SettingsView() {
         <Panel title="Security" icon={Lock}>
           <div className="space-y-3 text-sm">
             <p className="text-[#aaa]">
-              Session secured via Suraksha AMS. Tokens refresh automatically. Sign out on shared terminals.
+              Session secured via Surakshya AMS. Tokens refresh automatically. Sign out on shared terminals.
             </p>
             <button
               type="button"

@@ -66,7 +66,7 @@ export default function Newsletter() {
             data-reveal="fade-up"
             data-reveal-delay="100"
           >
-            Stay informed with the latest from Suraksha.
+            Stay informed with the latest from Surakshya.
           </p>
 
           <form

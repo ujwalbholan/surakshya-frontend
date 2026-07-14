@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
-import SurakshaShieldLogo from "@/components/admin/SurakshaShieldLogo"
+import SurakshyaShieldLogo from "@/components/admin/SurakshyaShieldLogo"
 import { getAdminSession, clearAdminSession } from "@/lib/auth/admin-session"
 import { adminLogout } from "@/lib/api/admin-auth"
 import { getInitials } from "@/lib/admin/constants"
@@ -137,10 +137,10 @@ export default function AdminSessionSidebar() {
                       size="sm"
                       className="flex w-fit items-center gap-2 px-2 text-white/70 hover:bg-white/5 hover:text-white"
                     >
-                      <SurakshaShieldLogo size={16} variant="mono" />
+                      <SurakshyaShieldLogo size={16} variant="mono" />
                       <SidebarLabel isCollapsed={isCollapsed} className="w-fit gap-2">
                         <div className="text-left">
-                          <p className="text-sm font-medium text-white">Suraksha</p>
+                          <p className="text-sm font-medium text-white">Surakshya</p>
                           <p className="text-[10px] text-white/40">Super Admin</p>
                         </div>
                         <ChevronsUpDown className="h-4 w-4 shrink-0 text-white/30" />

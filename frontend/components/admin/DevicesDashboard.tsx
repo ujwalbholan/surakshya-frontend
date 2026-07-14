@@ -243,7 +243,7 @@ export default function DevicesDashboard() {
           <div>
             <h1 className="font-display text-[28px] italic text-white">Devices</h1>
             <p className="mt-1 text-sm text-white/40">
-              Register Suraksha bands and link them to citizen accounts. Band ID matches firmware{" "}
+              Register Surakshya bands and link them to citizen accounts. Band ID matches firmware{" "}
               <code className="text-white/60">DEVICE_ID</code> (e.g. wearable-001).
             </p>
           </div>

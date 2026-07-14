@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Command Centre | Suraksha — Nepal Police",
+  title: "Command Centre | Surakshya — Nepal Police",
   description:
-    "Nepal Police Suraksha operations dashboard for monitoring SOS alerts and coordinating emergency response.",
+    "Nepal Police Surakshya operations dashboard for monitoring SOS alerts and coordinating emergency response.",
 }
 
 export default function DashboardLayout({

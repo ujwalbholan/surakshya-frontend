@@ -41,7 +41,7 @@ export default function InviteWardForm({ onSuccess }: InviteWardFormProps) {
         err instanceof Error ? err.message : "Failed to send invitation"
       if (message.includes("No user found with this email")) {
         setError(
-          "No Suraksha account exists for that email. The child must sign up first."
+          "No Surakshya account exists for that email. The child must sign up first."
         )
       } else {
         setError(message)
@@ -60,7 +60,7 @@ export default function InviteWardForm({ onSuccess }: InviteWardFormProps) {
         </h2>
       </div>
       <p className="mb-4 text-xs text-[#666]">
-        Enter the email of a registered Suraksha user. They will receive a link
+        Enter the email of a registered Surakshya user. They will receive a link
         request and must accept before you can view their SOS alerts.
       </p>
 

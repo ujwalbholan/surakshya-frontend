@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import toast, { Toaster } from "react-hot-toast"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
-import SurakshaShieldLogo from "@/components/admin/SurakshaShieldLogo"
+import SurakshyaShieldLogo from "@/components/admin/SurakshyaShieldLogo"
 import {
   InputOTP,
   InputOTPGroup,
@@ -136,7 +136,7 @@ export default function ForgotPasswordPage() {
 
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center">
-          <SurakshaShieldLogo size={48} />
+          <SurakshyaShieldLogo size={48} />
           <h1 className="mt-4 font-display text-2xl italic text-white">Reset Password</h1>
         </div>
 

@@ -6,9 +6,9 @@ export interface AdminUser {
   role: string
 }
 
-const ADMIN_SESSION_KEY = "suraksha_admin_session"
-const ADMIN_ACCESS_TOKEN_KEY = "suraksha_admin_access_token"
-const ADMIN_REFRESH_TOKEN_KEY = "suraksha_admin_refresh_token"
+const ADMIN_SESSION_KEY = "surakshya_admin_session"
+const ADMIN_ACCESS_TOKEN_KEY = "surakshya_admin_access_token"
+const ADMIN_REFRESH_TOKEN_KEY = "surakshya_admin_refresh_token"
 
 export function getAdminAccessToken(): string | null {
   if (typeof window === "undefined") return null

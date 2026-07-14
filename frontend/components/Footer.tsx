@@ -7,8 +7,8 @@ const columns = {
   product: {
     title: "Product",
     links: [
-      { label: "Suraksha Band", href: "#craft" },
-      { label: "Suraksha App", href: "#product" },
+      { label: "Surakshya Band", href: "#craft" },
+      { label: "Surakshya App", href: "#product" },
       { label: "Safe Walk", href: "#product" },
       { label: "Live Tracking", href: "#product" },
     ],
@@ -56,7 +56,7 @@ export default function Footer() {
         <Crosshairs />
         <div className="mx-auto max-w-7xl px-6 lg:px-10 flex items-center justify-center">
           <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] italic font-light text-[#FAFAFA]/10 select-none tracking-tight">
-            Suraksha
+            Surakshya
           </span>
         </div>
       </div>
@@ -173,10 +173,10 @@ export default function Footer() {
                   +91 123 456 7890
                 </a>
                 <a
-                  href="mailto:hello@suraksha.com"
+                  href="mailto:hello@surakshya.com"
                   className="text-sm text-[#888888] hover:text-[#FAFAFA] transition-colors"
                 >
-                  hello@suraksha.com
+                  hello@surakshya.com
                 </a>
                 <a
                   href="#newsletter"
@@ -214,7 +214,7 @@ export default function Footer() {
               </a>
             </div>
             <p className="text-xs text-[#888888]/60">
-              {`\u00A9 ${new Date().getFullYear()} Suraksha. All rights reserved.`}
+              {`\u00A9 ${new Date().getFullYear()} Surakshya. All rights reserved.`}
             </p>
           </div>
         </div>

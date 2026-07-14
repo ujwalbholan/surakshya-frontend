@@ -85,7 +85,7 @@ export default function UnitsView() {
     <>
       <SectionHeader
         title="Field units & deployment"
-        subtitle="Nepal Police response units linked to Suraksha SOS network across all provinces."
+        subtitle="Nepal Police response units linked to Surakshya SOS network across all provinces."
         action={
           <button
             type="button"
@@ -97,7 +97,7 @@ export default function UnitsView() {
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Total units" value={String(fieldUnits.length)} hint="Suraksha-linked" />
+        <StatCard label="Total units" value={String(fieldUnits.length)} hint="Surakshya-linked" />
         <StatCard label="Available now" value={String(available)} hint="Ready to dispatch" trend="down" />
         <StatCard label="Deployed" value={String(deployed)} hint="Active response" trend="up" />
         <StatCard label="Avg response" value="—" hint="Station-scoped" />

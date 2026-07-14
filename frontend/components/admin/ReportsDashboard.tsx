@@ -225,7 +225,7 @@ export default function ReportsDashboard() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `suraksha-province-report-${range.replace(" ", "-")}.csv`
+    a.download = `surakshya-province-report-${range.replace(" ", "-")}.csv`
     a.click()
     URL.revokeObjectURL(url)
     toast.success("CSV exported")
@@ -233,9 +233,9 @@ export default function ReportsDashboard() {
 
   const exportPdf = () => {
     downloadReportPdf({
-      title: "Suraksha Province Report",
+      title: "Surakshya Province Report",
       subtitle: `Range: ${range}`,
-      filename: `suraksha-province-report-${range.replace(" ", "-")}.pdf`,
+      filename: `surakshya-province-report-${range.replace(" ", "-")}.pdf`,
       columns: [
         "Province",
         "Total SOS",

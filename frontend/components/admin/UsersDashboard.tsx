@@ -144,7 +144,7 @@ export default function UsersDashboard() {
           <div>
             <h1 className="font-display text-[28px] italic text-white">User Management</h1>
             <p className="mt-1 text-sm text-white/40">
-              Platform accounts, roles, and access control across the Suraksha network
+              Platform accounts, roles, and access control across the Surakshya network
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 self-start">

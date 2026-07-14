@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * TextPanels.tsx — Hero section content panels for Suraksha
+ * TextPanels.tsx — Hero section content panels for Surakshya
  *
  * Design direction: Editorial luxury-safety — think Aesop meets Dyson.
  * Left-aligned asymmetric layout. Thin display typography. Precise motion.
@@ -42,7 +42,7 @@ const PANELS: Record<string, PanelContent> = {
     eyebrow: "01 — Welcome",
     lines: ["The Evolution", "Of Safety"],
     subtext:
-      "Suraksha is a women's safety IoT wristband. One tap sends your live GPS location to family and emergency contacts — instantly, silently, reliably.",
+      "Surakshya is a women's safety IoT wristband. One tap sends your live GPS location to family and emergency contacts — instantly, silently, reliably.",
     hasCta: true,
   },
   PROTECTION: {

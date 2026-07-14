@@ -46,8 +46,8 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("General")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [platformName, setPlatformName] = useState("Suraksha")
-  const [supportEmail, setSupportEmail] = useState("support@suraksha.com.np")
+  const [platformName, setPlatformName] = useState("Surakshya")
+  const [supportEmail, setSupportEmail] = useState("support@surakshya.com.np")
   const [language, setLanguage] = useState("English")
   const [fullName, setFullName] = useState(session?.full_name ?? "")
   const [email, setEmail] = useState(session?.email ?? "")
@@ -75,7 +75,7 @@ export default function SettingsPage() {
         return
       }
       const s = data.settings
-      setPlatformName(String(s.platform_name ?? "Suraksha"))
+      setPlatformName(String(s.platform_name ?? "Surakshya"))
       setSupportEmail(String(s.support_email ?? ""))
       setLanguage(String(s.language ?? "English"))
       setSessionTimeout(String(s.session_timeout ?? "30 min"))
@@ -174,7 +174,7 @@ export default function SettingsPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = "suraksha-users-export.csv"
+    a.download = "surakshya-users-export.csv"
     a.click()
     URL.revokeObjectURL(url)
     toast.success("User data exported")

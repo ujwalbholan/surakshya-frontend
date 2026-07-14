@@ -11,8 +11,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Suraksha - The Guardian On Your Wrist',
-  description: 'Suraksha is a women\'s safety IoT wearable band and mobile app. One tap sends your live GPS location to family and emergency contacts instantly.',
+  title: 'Surakshya - The Guardian On Your Wrist',
+  description: 'Surakshya is a women\'s safety IoT wearable band and mobile app. One tap sends your live GPS location to family and emergency contacts instantly.',
   keywords: ['women safety', 'IoT wearable', 'GPS tracking', 'SOS band', 'personal safety'],
 }
 

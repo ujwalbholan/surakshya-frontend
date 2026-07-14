@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * HeroSection.tsx — Suraksha hero orchestrator
+ * HeroSection.tsx — Surakshya hero orchestrator
  *
  * Design direction: precision-instrument editorial.
  * Pure black field. Crimson surgical accents. 3D wristband as centrepiece.
@@ -252,7 +252,7 @@ function HeroText() {
               textTransform: "uppercase",
             }}
           >
-            Suraksha — SRK‑X1
+            Surakshya — SRK‑X1
           </span>
         </div>
 
@@ -401,7 +401,7 @@ export default function HeroSection() {
   return (
     <section
       id="hero"
-      aria-label="Suraksha — The Guardian On Your Wrist"
+      aria-label="Surakshya — The Guardian On Your Wrist"
       style={{
         position: "relative",
         width: "100%",
