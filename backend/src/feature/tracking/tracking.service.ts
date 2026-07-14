@@ -1,10 +1,16 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Not, Repository } from 'typeorm';
 import { Device } from '../device/entities/device.entity';
 import { LocationPing } from '../device/entities/location-ping.entity';
 import { SosEvent } from '../device/entities/sos-event.entity';
 import { PoliceStation } from '../police-stations/entities/police-station.entity';
+import { User } from '../user/entities/user.entity';
 import {
   DeviceTelemetry,
   extractDeviceIdFromTopic,
@@ -13,6 +19,37 @@ import {
 import { TrackingGateway } from './tracking.gateway';
 import { TrackingIngestService } from './tracking-ingest.interface';
 import { LocationUpdatePayload } from './tracking.types';
+
+export interface StartSosInput {
+  latitude?: number | null;
+  longitude?: number | null;
+  altitudeM?: number | null;
+  speedKmph?: number | null;
+  satellites?: number | null;
+  triggerNotes?: string | null;
+  connectionType?: string;
+  recordedAt?: Date;
+}
+
+export interface SosCreateResult {
+  id: string;
+  status: 'active';
+  startedAt: string;
+  assignedStationId?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+export interface AppendSosLocationInput {
+  latitude: number;
+  longitude: number;
+  altitudeM?: number | null;
+  speedKmph?: number | null;
+  satellites?: number | null;
+  recordedAt?: Date;
+}
+
+const ELEVATED_SOS_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'POLICE']);
 
 const SOS_LIFECYCLE_TYPES = ['sos_started', 'sos_stopped'];
 const SOS_LOCATION_EMIT_THROTTLE_MS = 2500;
@@ -94,70 +131,16 @@ export class TrackingService implements TrackingIngestService {
     const connectionType = json.connectionType as string | undefined;
 
     if (eventType === 'sos_started') {
-      await this.deviceRepo.update(device.id, {
-        lastSeenAt: new Date(),
-        isOnline: true,
-      });
-
-      const existing = await this.sosRepo.findOne({
-        where: { device: { id: device.id }, status: 'active' },
-      });
-      if (existing) {
-        this.logger.warn(
-          `Device ${deviceId} already has an active SOS event ${existing.id}`,
-        );
-      }
-
-      const latitude = parseOptionalNumber(json.latitude) ?? null;
-      const longitude = parseOptionalNumber(json.longitude) ?? null;
-      const triggerNotes = parseTriggerNotes(json);
-      const assignedStation = await this.assignNearestStation(
-        latitude,
-        longitude,
-      );
-
-      const sos = this.sosRepo.create({
-        device,
-        status: 'active',
-        eventType: 'sos_started',
-        latitude,
-        longitude,
+      await this.startSosFromDevice(device, {
+        latitude: parseOptionalNumber(json.latitude) ?? null,
+        longitude: parseOptionalNumber(json.longitude) ?? null,
         altitudeM: parseAltitudeM(json) ?? null,
         speedKmph: parseOptionalNumber(json.speedKmph) ?? null,
         satellites: parseOptionalNumber(json.satellites) ?? null,
-        triggerNotes,
-        assignedStation: assignedStation ?? undefined,
+        triggerNotes: parseTriggerNotes(json),
+        connectionType,
+        recordedAt: parseRecordedAt(json),
       });
-      const saved = await this.sosRepo.save(sos);
-
-      const ping = await this.createLocationPing(device, json, saved);
-      this.trackingGateway.emitSosEvent({
-        id: saved.id,
-        deviceId,
-        deviceImei: device.imei,
-        eventType: 'sos_started',
-        status: 'active',
-        latitude: saved.latitude ?? undefined,
-        longitude: saved.longitude ?? undefined,
-        altitudeM: saved.altitudeM ?? undefined,
-        speedKmph: saved.speedKmph ?? undefined,
-        satellites: saved.satellites ?? undefined,
-        triggerNotes: saved.triggerNotes ?? undefined,
-        assignedStationId: assignedStation?.id,
-        assignedStationName: assignedStation?.name,
-        startedAt: saved.startedAt.toISOString(),
-        latestPing: ping
-          ? {
-              latitude: ping.latitude,
-              longitude: ping.longitude,
-              recordedAt: ping.recordedAt.toISOString(),
-            }
-          : null,
-      });
-      this.logger.log(
-        `SOS started for device ${deviceId} (${saved.id})` +
-          (connectionType ? ` via ${connectionType}` : ''),
-      );
     } else if (eventType === 'sos_stopped') {
       const activeSos = await this.sosRepo.findOne({
         where: { device: { id: device.id }, status: 'active' },
@@ -363,6 +346,219 @@ export class TrackingService implements TrackingIngestService {
         where: { device: { id: device.id }, status: 'active' },
       }) ?? null
     );
+  }
+
+  /**
+   * Shared SOS creation path used by MQTT ingest and JWT REST POST /sos.
+   * Downstream reads (admin/police/guardian) and Socket.IO emits are identical.
+   */
+  async startSosFromDevice(
+    device: Device,
+    input: StartSosInput,
+  ): Promise<SosCreateResult> {
+    await this.deviceRepo.update(device.id, {
+      lastSeenAt: new Date(),
+      isOnline: true,
+    });
+
+    const existing = await this.sosRepo.findOne({
+      where: { device: { id: device.id }, status: 'active' },
+    });
+    if (existing) {
+      this.logger.warn(
+        `Device ${device.imei} already has an active SOS event ${existing.id}`,
+      );
+    }
+
+    const latitude = input.latitude ?? null;
+    const longitude = input.longitude ?? null;
+    const assignedStation = await this.assignNearestStation(
+      latitude,
+      longitude,
+    );
+
+    const sos = this.sosRepo.create({
+      device,
+      status: 'active',
+      eventType: 'sos_started',
+      latitude,
+      longitude,
+      altitudeM: input.altitudeM ?? null,
+      speedKmph: input.speedKmph ?? null,
+      satellites: input.satellites ?? null,
+      triggerNotes: input.triggerNotes ?? null,
+      assignedStation: assignedStation ?? undefined,
+    });
+    const saved = await this.sosRepo.save(sos);
+
+    const pingJson: Record<string, unknown> = {
+      latitude: latitude ?? undefined,
+      longitude: longitude ?? undefined,
+      altitudeM: input.altitudeM ?? undefined,
+      speedKmph: input.speedKmph ?? undefined,
+      satellites: input.satellites ?? undefined,
+      ...(input.recordedAt
+        ? { timestamp: input.recordedAt.toISOString() }
+        : {}),
+    };
+    const ping = await this.createLocationPing(device, pingJson, saved);
+
+    this.trackingGateway.emitSosEvent({
+      id: saved.id,
+      deviceId: device.imei,
+      deviceImei: device.imei,
+      eventType: 'sos_started',
+      status: 'active',
+      latitude: saved.latitude ?? undefined,
+      longitude: saved.longitude ?? undefined,
+      altitudeM: saved.altitudeM ?? undefined,
+      speedKmph: saved.speedKmph ?? undefined,
+      satellites: saved.satellites ?? undefined,
+      triggerNotes: saved.triggerNotes ?? undefined,
+      assignedStationId: assignedStation?.id,
+      assignedStationName: assignedStation?.name,
+      startedAt: saved.startedAt.toISOString(),
+      latestPing: ping
+        ? {
+            latitude: ping.latitude,
+            longitude: ping.longitude,
+            recordedAt: ping.recordedAt.toISOString(),
+          }
+        : null,
+    });
+
+    this.logger.log(
+      `SOS started for device ${device.imei} (${saved.id})` +
+        (input.connectionType ? ` via ${input.connectionType}` : ''),
+    );
+
+    return {
+      id: saved.id,
+      status: 'active',
+      startedAt: saved.startedAt.toISOString(),
+      assignedStationId: assignedStation?.id,
+      latitude: saved.latitude ?? null,
+      longitude: saved.longitude ?? null,
+    };
+  }
+
+  /** Resolve the caller's wearable, or create a phone-* virtual device. */
+  async resolveDeviceForUser(userId: string): Promise<Device> {
+    const owned = await this.deviceRepo.findOne({
+      where: { user: { id: userId } },
+      relations: ['user'],
+    });
+    if (owned) {
+      return owned;
+    }
+
+    const imei = `phone-${userId}`;
+    let device = await this.deviceRepo.findOne({
+      where: { imei },
+      relations: ['user'],
+    });
+
+    if (device) {
+      if (!device.user || device.user.id !== userId) {
+        device.user = { id: userId } as User;
+        device = await this.deviceRepo.save(device);
+      }
+      return device;
+    }
+
+    device = this.deviceRepo.create({
+      imei,
+      label: `Phone ${userId.slice(0, 8)}`,
+      user: { id: userId } as User,
+      isOnline: true,
+      lastSeenAt: new Date(),
+    });
+    return this.deviceRepo.save(device);
+  }
+
+  async startSosForUser(
+    userId: string,
+    input: StartSosInput,
+  ): Promise<SosCreateResult> {
+    const device = await this.resolveDeviceForUser(userId);
+    return this.startSosFromDevice(device, {
+      ...input,
+      connectionType: input.connectionType ?? 'app',
+    });
+  }
+
+  async appendSosLocationForActor(
+    sosId: string,
+    input: AppendSosLocationInput,
+    actor: { userId: string; role: string },
+  ): Promise<{
+    id: string;
+    latitude: number;
+    longitude: number;
+    recordedAt: string;
+  }> {
+    const sos = await this.sosRepo.findOne({
+      where: { id: sosId },
+      relations: ['device', 'device.user'],
+    });
+
+    if (!sos) {
+      throw new NotFoundException('SOS event not found');
+    }
+
+    if (sos.status !== 'active') {
+      throw new ForbiddenException('SOS event is not active');
+    }
+
+    const isElevated = ELEVATED_SOS_ROLES.has(actor.role);
+    const ownerId = sos.device?.user?.id;
+    if (!isElevated && ownerId !== actor.userId) {
+      throw new ForbiddenException('You do not own this SOS event');
+    }
+
+    const device = sos.device;
+    const payload = await this.ingestTelemetry({
+      deviceId: device.imei,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      altitudeM: input.altitudeM ?? undefined,
+      speedKmph: input.speedKmph ?? undefined,
+      satellites: input.satellites ?? undefined,
+      recordedAt: input.recordedAt,
+      nmeaSentences: [],
+    });
+
+    if (!payload) {
+      throw new ForbiddenException('Invalid location coordinates');
+    }
+
+    if (this.shouldEmitSosLocation(sos.id)) {
+      this.trackingGateway.emitSosEvent({
+        id: sos.id,
+        deviceId: device.imei,
+        deviceImei: device.imei,
+        eventType: 'sos_location',
+        status: 'active',
+        latitude: sos.latitude ?? undefined,
+        longitude: sos.longitude ?? undefined,
+        altitudeM: sos.altitudeM ?? undefined,
+        speedKmph: sos.speedKmph ?? undefined,
+        satellites: sos.satellites ?? undefined,
+        startedAt: sos.startedAt.toISOString(),
+        latestPing: {
+          latitude: payload.latitude,
+          longitude: payload.longitude,
+          recordedAt: payload.recordedAt,
+        },
+      });
+    }
+
+    return {
+      id: sos.id,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+      recordedAt: payload.recordedAt,
+    };
   }
 
   private shouldEmitSosLocation(sosEventId: string): boolean {

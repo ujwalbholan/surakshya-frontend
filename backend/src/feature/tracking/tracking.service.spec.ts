@@ -525,5 +525,102 @@ describe('TrackingService', () => {
       });
       expect(pingRepo.save).toHaveBeenCalled();
     });
+
+    it('should create SOS via REST path with identical socket emit to MQTT', async () => {
+      const phoneDevice: Device = {
+        ...mockDevice,
+        id: 'dev-phone',
+        imei: 'phone-user-1',
+        user: { id: 'user-1' } as Device['user'],
+      };
+      deviceRepo.findOne.mockResolvedValue(phoneDevice);
+      sosRepo.findOne.mockResolvedValue(null);
+      stationRepo.find.mockResolvedValue([]);
+
+      const sos = makeSos({
+        id: 'sos-rest-1',
+        device: phoneDevice,
+        latitude: 27.7,
+        longitude: 85.3,
+      });
+      sosRepo.create.mockImplementation((data) => data as SosEvent);
+      sosRepo.save.mockResolvedValue(sos);
+
+      const result = await service.startSosForUser('user-1', {
+        latitude: 27.7,
+        longitude: 85.3,
+        triggerNotes: 'source=app_button',
+        connectionType: 'app',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'sos-rest-1',
+          status: 'active',
+          latitude: 27.7,
+          longitude: 85.3,
+        }),
+      );
+      expect(gateway.emitSosEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'sos-rest-1',
+          deviceId: 'phone-user-1',
+          eventType: 'sos_started',
+          status: 'active',
+        }),
+      );
+    });
+
+    it('should append location for SOS owner via REST path', async () => {
+      const phoneDevice: Device = {
+        ...mockDevice,
+        id: 'dev-phone',
+        imei: 'phone-user-1',
+        user: { id: 'user-1' } as Device['user'],
+      };
+      const activeSos = makeSos({ device: phoneDevice });
+      sosRepo.findOne.mockResolvedValue(activeSos);
+      deviceRepo.findOne.mockResolvedValue(phoneDevice);
+
+      const ping = makePing({ latitude: 27.71, longitude: 85.31 });
+      pingRepo.create.mockReturnValue(ping);
+      pingRepo.save.mockResolvedValue(ping);
+
+      const result = await service.appendSosLocationForActor(
+        'sos-1',
+        { latitude: 27.71, longitude: 85.31 },
+        { userId: 'user-1', role: 'USER' },
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'sos-1',
+          latitude: 27.71,
+          longitude: 85.31,
+        }),
+      );
+      expect(gateway.emitSosEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'sos_location',
+          status: 'active',
+        }),
+      );
+    });
+
+    it('should reject location append for non-owner USER', async () => {
+      const phoneDevice: Device = {
+        ...mockDevice,
+        user: { id: 'user-1' } as Device['user'],
+      };
+      sosRepo.findOne.mockResolvedValue(makeSos({ device: phoneDevice }));
+
+      await expect(
+        service.appendSosLocationForActor(
+          'sos-1',
+          { latitude: 27.71, longitude: 85.31 },
+          { userId: 'user-other', role: 'USER' },
+        ),
+      ).rejects.toThrow('You do not own this SOS event');
+    });
   });
 });
