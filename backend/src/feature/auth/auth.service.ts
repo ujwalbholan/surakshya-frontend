@@ -146,6 +146,42 @@ export class AuthService {
     };
   }
 
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.userService.findOneByIdForAuth(userId);
+    if (!user?.password_hash) {
+      throw new BadRequestException(
+        'Unable to change password for this account',
+      );
+    }
+
+    const matches = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!matches) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    if (currentPassword === newPassword) {
+      throw new BadRequestException(
+        'New password must be different from the current password',
+      );
+    }
+
+    if (newPassword.trim().length < 8) {
+      throw new BadRequestException(
+        'New password must be at least 8 characters',
+      );
+    }
+
+    await this.userService.updatePassword(user.email, newPassword);
+
+    return {
+      message: 'Password changed successfully',
+    };
+  }
+
   async logout(userId: string, sessionId: string): Promise<void> {
     await this.tokenService.revokedRefreshToken(userId, sessionId);
   }

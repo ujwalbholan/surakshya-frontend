@@ -18,6 +18,8 @@ import {
   RegisterDto,
   ResetPasswordDto,
   VerifyResetOtpDto,
+  ChangePasswordDto,
+  RefreshTokenDto,
 } from './dto/auth.dto';
 import type { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/utils/guard/jwt-auth.guard';
@@ -50,6 +52,7 @@ export class AuthController {
         message: result.message,
         requiresPasswordChange: true,
         challengeToken: result.challengeToken,
+        role: 'role' in result ? result.role : undefined,
       };
     }
 
@@ -58,6 +61,7 @@ export class AuthController {
         message: result.message,
         requiresActivationOtp: true,
         challengeToken: result.challengeToken,
+        role: 'role' in result ? result.role : undefined,
       };
     }
 
@@ -126,14 +130,22 @@ export class AuthController {
     });
   }
 
-  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description:
+      'Accepts refresh_token cookie (web) or refreshToken in the JSON body (mobile).',
+  })
+  @ApiBody({ type: RefreshTokenDto, required: false })
   @Post('refresh')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
+    @Body() body: RefreshTokenDto = {},
   ) {
-    const refreshToken = this.getCookie(req, 'refresh_token');
+    const fromBody =
+      typeof body.refreshToken === 'string' ? body.refreshToken.trim() : '';
+    const refreshToken = fromBody || this.getCookie(req, 'refresh_token');
 
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token is missing');
@@ -142,6 +154,26 @@ export class AuthController {
     const tokens = await this.authService.refresh(refreshToken);
 
     this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
+  }
+
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Change password for the authenticated user' })
+  @ApiBody({ type: ChangePasswordDto })
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  changePassword(@Req() req: Request, @Body() dto: ChangePasswordDto) {
+    const user = req.user as { userId: string };
+    return this.authService.changePassword(
+      user.userId,
+      dto.currentPassword,
+      dto.newPassword,
+    );
   }
 
   @ApiBearerAuth()

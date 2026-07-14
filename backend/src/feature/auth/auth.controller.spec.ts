@@ -49,7 +49,7 @@ describe('AuthController', () => {
       sessionId: 'new-session-id',
     });
 
-    await controller.refresh(request, response);
+    const result = await controller.refresh(request, response, {});
 
     expect(refresh).toHaveBeenCalledWith('old-refresh-token');
     expect(cookie).toHaveBeenCalledWith(
@@ -62,14 +62,40 @@ describe('AuthController', () => {
       'new-refresh-token',
       expect.objectContaining({ httpOnly: true }),
     );
+    expect(result).toEqual({
+      accessToken: 'new-access-token',
+      refreshToken: 'new-refresh-token',
+    });
   });
 
-  it('should reject refresh requests without a refresh cookie', async () => {
+  it('should refresh using body refreshToken for mobile clients', async () => {
+    const cookie = jest.fn();
+    const request = { cookies: {} } as unknown as Request;
+    const response = { cookie } as unknown as Response;
+
+    refresh.mockResolvedValue({
+      accessToken: 'body-access-token',
+      refreshToken: 'body-refresh-token',
+      sessionId: 'session-id',
+    });
+
+    const result = await controller.refresh(request, response, {
+      refreshToken: 'mobile-refresh-token',
+    });
+
+    expect(refresh).toHaveBeenCalledWith('mobile-refresh-token');
+    expect(result).toEqual({
+      accessToken: 'body-access-token',
+      refreshToken: 'body-refresh-token',
+    });
+  });
+
+  it('should reject refresh requests without a refresh cookie or body', async () => {
     const request = { cookies: {} } as Request;
     const response = { cookie: jest.fn() } as unknown as Response;
 
-    await expect(controller.refresh(request, response)).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      controller.refresh(request, response, {}),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

@@ -177,6 +177,7 @@ export class TrackingService implements TrackingIngestService {
         id: activeSos.id,
         deviceId,
         deviceImei: device.imei,
+        ...this.sosOwnerFields(device),
         eventType: 'sos_stopped',
         status: 'resolved',
         startedAt: activeSos.startedAt.toISOString(),
@@ -210,7 +211,10 @@ export class TrackingService implements TrackingIngestService {
       return;
     }
 
-    const device = await this.deviceRepo.findOne({ where: { imei: deviceId } });
+    const device = await this.deviceRepo.findOne({
+      where: { imei: deviceId },
+      relations: ['user'],
+    });
     if (!device) {
       return;
     }
@@ -230,6 +234,7 @@ export class TrackingService implements TrackingIngestService {
       id: activeSos.id,
       deviceId,
       deviceImei: device.imei,
+      ...this.sosOwnerFields(device),
       eventType: 'sos_location',
       status: 'active',
       latitude: activeSos.latitude ?? undefined,
@@ -281,6 +286,7 @@ export class TrackingService implements TrackingIngestService {
       id: `emergency-call-${deviceId}-${Date.now()}`,
       deviceId,
       deviceImei: device.imei,
+      ...this.sosOwnerFields(device),
       eventType: 'emergency_call',
       status: 'active',
       latitude: latitude ?? undefined,
@@ -344,8 +350,52 @@ export class TrackingService implements TrackingIngestService {
     return (
       this.sosRepo.findOne({
         where: { device: { id: device.id }, status: 'active' },
+        order: { startedAt: 'DESC' },
       }) ?? null
     );
+  }
+
+  /**
+   * Active SOS for the device assigned to this citizen (band or phone-* virtual).
+   */
+  async getActiveSosForUser(userId: string): Promise<{
+    id: string;
+    status: string;
+    startedAt: string;
+    latitude: number | null;
+    longitude: number | null;
+    imei: string;
+    label: string | null;
+  } | null> {
+    const devices = await this.deviceRepo.find({
+      where: { user: { id: userId } },
+      relations: ['user'],
+      order: { lastSeenAt: 'DESC' },
+      take: 5,
+    });
+    if (devices.length === 0) {
+      return null;
+    }
+
+    for (const device of devices) {
+      const sos = await this.sosRepo.findOne({
+        where: { device: { id: device.id }, status: 'active' },
+        order: { startedAt: 'DESC' },
+      });
+      if (sos) {
+        return {
+          id: sos.id,
+          status: sos.status,
+          startedAt: sos.startedAt.toISOString(),
+          latitude: sos.latitude ?? null,
+          longitude: sos.longitude ?? null,
+          imei: device.imei,
+          label: device.label ?? null,
+        };
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -407,6 +457,7 @@ export class TrackingService implements TrackingIngestService {
       id: saved.id,
       deviceId: device.imei,
       deviceImei: device.imei,
+      ...this.sosOwnerFields(device),
       eventType: 'sos_started',
       status: 'active',
       latitude: saved.latitude ?? undefined,
@@ -537,6 +588,7 @@ export class TrackingService implements TrackingIngestService {
         id: sos.id,
         deviceId: device.imei,
         deviceImei: device.imei,
+        ...this.sosOwnerFields(device),
         eventType: 'sos_location',
         status: 'active',
         latitude: sos.latitude ?? undefined,
@@ -674,7 +726,10 @@ export class TrackingService implements TrackingIngestService {
   }
 
   private async findOrCreateDevice(deviceId: string): Promise<Device> {
-    let device = await this.deviceRepo.findOne({ where: { imei: deviceId } });
+    let device = await this.deviceRepo.findOne({
+      where: { imei: deviceId },
+      relations: ['user'],
+    });
 
     if (!device) {
       device = this.deviceRepo.create({ imei: deviceId, label: deviceId });
@@ -683,6 +738,19 @@ export class TrackingService implements TrackingIngestService {
     }
 
     return device;
+  }
+
+  /** Owner fields for Socket.IO SOS payloads (keeps police UI off device IMEI fallback). */
+  private sosOwnerFields(device: Device): {
+    userId: string | null;
+    label: string | null;
+    citizenName: string | null;
+  } {
+    return {
+      userId: device.user?.id ?? null,
+      label: device.label ?? null,
+      citizenName: device.user?.full_name ?? null,
+    };
   }
 }
 

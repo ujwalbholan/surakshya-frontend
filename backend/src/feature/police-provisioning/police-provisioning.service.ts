@@ -416,6 +416,7 @@ export class PoliceProvisioningService {
         message: 'Password change required before activation',
         requiresPasswordChange: true,
         challengeToken,
+        role: 'POLICE' as const,
       };
     }
 
@@ -439,6 +440,7 @@ export class PoliceProvisioningService {
           'Account activation incomplete. Enter the OTP sent to your email.',
         requiresActivationOtp: true,
         challengeToken,
+        role: 'POLICE' as const,
       };
     }
 

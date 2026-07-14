@@ -158,7 +158,7 @@ export class PoliceService {
 
     const saved = await this.sosRepo.findOne({
       where: { id },
-      relations: ['device', 'assignedStation'],
+      relations: ['device', 'device.user', 'assignedStation'],
     });
     if (!saved) throw new NotFoundException('SOS event not found');
 
@@ -166,6 +166,9 @@ export class PoliceService {
       id: saved.id,
       deviceId: saved.device.imei,
       deviceImei: saved.device.imei,
+      userId: saved.device.user?.id ?? null,
+      label: saved.device.label ?? null,
+      citizenName: saved.device.user?.full_name ?? null,
       eventType: 'sos_resolved',
       status: 'resolved',
       latitude: saved.latitude ?? undefined,

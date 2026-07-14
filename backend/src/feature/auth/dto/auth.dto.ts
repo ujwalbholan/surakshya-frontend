@@ -6,6 +6,7 @@ import {
   MinLength,
   MaxLength,
   IsNotEmpty,
+  IsOptional,
 } from 'class-validator';
 
 export enum Role {
@@ -60,6 +61,16 @@ export class TokenDto {
   accessToken!: string;
 }
 
+export class RefreshTokenDto {
+  @ApiProperty({
+    required: false,
+    description: 'Required for mobile clients that cannot send httpOnly cookies',
+  })
+  @IsOptional()
+  @IsString()
+  refreshToken?: string;
+}
+
 export class ForgotPasswordDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
@@ -96,4 +107,16 @@ export class ResetPasswordDto {
   @IsString()
   @IsNotEmpty()
   resetToken!: string;
+}
+
+export class ChangePasswordDto {
+  @ApiProperty({ example: 'currentPassword123' })
+  @IsString()
+  @IsNotEmpty()
+  currentPassword!: string;
+
+  @ApiProperty({ example: 'newPassword123', minLength: 8 })
+  @IsString()
+  @MinLength(8, { message: 'New password must be at least 8 characters' })
+  newPassword!: string;
 }

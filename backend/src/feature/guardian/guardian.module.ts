@@ -10,6 +10,7 @@ import { GuardianService } from './guardian.service';
 import { GuardianController } from './guardian.controller';
 import { GuardianWardController } from './guardian-ward.controller';
 import { GuardianSetupController } from './guardian-setup.controller';
+import { GuardianActivationController } from './guardian-activation.controller';
 import { RolesGuard } from 'src/utils/guard/roles.guard';
 import { NotificationModule } from '../notification/notification.module';
 import { RedisService } from 'src/config/redis/redis.service';
@@ -30,6 +31,7 @@ import { RedisService } from 'src/config/redis/redis.service';
     GuardianController,
     GuardianWardController,
     GuardianSetupController,
+    GuardianActivationController,
   ],
   providers: [GuardianService, RolesGuard, RedisService],
   exports: [GuardianService],

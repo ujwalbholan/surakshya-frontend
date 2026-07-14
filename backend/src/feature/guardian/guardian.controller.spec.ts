@@ -11,6 +11,7 @@ describe('GuardianController', () => {
   const mockGuardianService = {
     addGuardian: jest.fn(),
     getMyGuardians: jest.fn(),
+    updateLinkedGuardianPhone: jest.fn(),
   };
 
   const userId = '550e8400-e29b-41d4-a716-446655440000';
@@ -76,6 +77,27 @@ describe('GuardianController', () => {
       page: 1,
       limit: 20,
     });
+    expect(result).toEqual(expected);
+  });
+
+  it('should update a linked guardian phone', async () => {
+    const req = { user: { userId } } as unknown as Request;
+    const guardianId = '660e8400-e29b-41d4-a716-446655440001';
+    const dto = { phone: '9842183759' };
+    const expected = {
+      message: 'Guardian phone updated successfully',
+      guardian: { id: guardianId, phone: '9842183759' },
+    };
+
+    service.updateLinkedGuardianPhone.mockResolvedValue(expected as any);
+
+    const result = await controller.updateGuardianPhone(req, guardianId, dto);
+
+    expect(service.updateLinkedGuardianPhone).toHaveBeenCalledWith(
+      userId,
+      guardianId,
+      dto.phone,
+    );
     expect(result).toEqual(expected);
   });
 });

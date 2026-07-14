@@ -7,6 +7,7 @@ import { DeleteResult, Repository, UpdateResult } from 'typeorm';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { TokenService } from 'src/utils/token/token.service';
 import { PoliceProvisioningService } from 'src/feature/police-provisioning/police-provisioning.service';
+import { GuardianService } from 'src/feature/guardian/guardian.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
@@ -32,6 +33,9 @@ describe('UserService', () => {
   };
   const mockPoliceProvisioningService = {
     evaluatePoliceLogin: jest.fn(),
+  };
+  const mockGuardianService = {
+    evaluateGuardianLogin: jest.fn(),
   };
 
   const makeUser = (overrides: Partial<User> = {}): User => ({
@@ -63,6 +67,10 @@ describe('UserService', () => {
         {
           provide: PoliceProvisioningService,
           useValue: mockPoliceProvisioningService,
+        },
+        {
+          provide: GuardianService,
+          useValue: mockGuardianService,
         },
       ],
     }).compile();

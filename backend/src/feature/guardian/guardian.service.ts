@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
@@ -9,7 +11,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { randomBytes, randomInt } from 'node:crypto';
+import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { User } from 'src/feature/user/entities/user.entity';
 import { GuardianLink } from './entities/guardian-link.entity';
 import { GuardianRequest } from './entities/guardian-request.entity';
@@ -22,6 +24,18 @@ import { AddWardDto } from './dto/add-ward.dto';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { NotificationService } from '../notification/notification.service';
 import { RedisService } from 'src/config/redis/redis.service';
+import {
+  GUARDIAN_ACTIVATION_CHALLENGE_TTL_SECONDS,
+  GUARDIAN_ACTIVATION_MAX_OTP_SENDS_PER_HOUR,
+  GUARDIAN_ACTIVATION_MAX_OTP_VERIFY_ATTEMPTS,
+  GUARDIAN_ACTIVATION_OTP_TTL_SECONDS,
+  GUARDIAN_ACTIVATION_PASSWORD_MIN_LENGTH,
+  GUARDIAN_TEMP_PASSWORD_TTL_HOURS,
+  GuardianLoginChallengeResult,
+  guardianActivationChallengeKey,
+  guardianActivationOtpKey,
+  guardianActivationOtpVerifyKey,
+} from './guardian-activation.types';
 
 @Injectable()
 export class GuardianService {
@@ -72,16 +86,23 @@ export class GuardianService {
 
     const password = this.generatePassword();
     const passwordHash = await bcrypt.hash(password, 12);
+    const expiresAt = new Date(
+      Date.now() + GUARDIAN_TEMP_PASSWORD_TTL_HOURS * 60 * 60 * 1000,
+    );
 
     guardian = await this.userRepository.save(
       this.userRepository.create({
         full_name: dto.full_name.trim(),
         email,
         phone,
-        password_hash: passwordHash,
+        password_hash: null as unknown as string,
         role: Role.GUARDIAN,
-        is_active: true,
+        is_active: false,
         phone_verified: false,
+        must_change_password: true,
+        temp_password_hash: passwordHash,
+        temp_password_expires_at: expiresAt,
+        temp_password_resend_count: 0,
       }),
     );
 
@@ -106,7 +127,7 @@ export class GuardianService {
 
     return {
       message:
-        'Guardian request sent. An email with login credentials has been sent to the guardian.',
+        'Guardian request sent. An email with a temporary password has been sent. The guardian must log in, change their password, and verify their phone before accessing the account.',
       request_id: request.id,
       guardian: this.toPublicUser(guardian),
     };
@@ -368,6 +389,208 @@ export class GuardianService {
     return { message: 'Request rejected successfully' };
   }
 
+  /**
+   * Login gate for GUARDIAN — mirrors police activation.
+   * Returns a challenge payload, or null to continue normal JWT login.
+   */
+  async evaluateGuardianLogin(
+    user: User,
+    password: string,
+  ): Promise<GuardianLoginChallengeResult | null> {
+    if (user.role !== Role.GUARDIAN) {
+      return null;
+    }
+
+    if (user.must_change_password) {
+      if (
+        user.temp_password_expires_at &&
+        user.temp_password_expires_at < new Date()
+      ) {
+        throw new UnauthorizedException(
+          'Your temporary password has expired. Ask the linked user to invite you again.',
+        );
+      }
+
+      if (!user.temp_password_hash) {
+        throw new UnauthorizedException('Invalid Password');
+      }
+
+      const tempMatches = await bcrypt.compare(
+        password,
+        user.temp_password_hash,
+      );
+      if (!tempMatches) {
+        throw new UnauthorizedException('Invalid Password');
+      }
+
+      const challengeToken = await this.issueActivationChallenge(user.id);
+      return {
+        message: 'Password change required before activation',
+        requiresPasswordChange: true,
+        challengeToken,
+        role: 'GUARDIAN',
+      };
+    }
+
+    if (!user.is_active || !user.phone_verified) {
+      if (!user.password_hash) {
+        throw new UnauthorizedException(
+          'Please complete account activation before logging in.',
+        );
+      }
+
+      const passwordMatches = await bcrypt.compare(password, user.password_hash);
+      if (!passwordMatches) {
+        throw new UnauthorizedException('Invalid Password');
+      }
+
+      const challengeToken = await this.issueActivationChallenge(user.id);
+      await this.sendActivationOtp(challengeToken, user);
+
+      return {
+        message:
+          'Account activation incomplete. Enter the OTP sent to your phone.',
+        requiresActivationOtp: true,
+        challengeToken,
+        role: 'GUARDIAN',
+      };
+    }
+
+    return null;
+  }
+
+  async completeGuardianActivation(challengeToken: string, newPassword: string) {
+    const userId = await this.resolveChallengeToken(challengeToken);
+    const user = await this.getActivatingGuardian(userId);
+
+    if (newPassword.trim().length < GUARDIAN_ACTIVATION_PASSWORD_MIN_LENGTH) {
+      throw new BadRequestException(
+        `Password must be at least ${GUARDIAN_ACTIVATION_PASSWORD_MIN_LENGTH} characters`,
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await this.userRepository.update(
+      { id: user.id },
+      {
+        password_hash: passwordHash,
+        temp_password_hash: null,
+        temp_password_expires_at: null,
+        must_change_password: false,
+      },
+    );
+
+    await this.sendActivationOtp(challengeToken, user);
+
+    return {
+      message: 'Password updated. OTP sent to your registered phone number.',
+      otpSent: true,
+    };
+  }
+
+  async verifyGuardianActivationOtp(challengeToken: string, otp: string) {
+    const userId = await this.resolveChallengeToken(challengeToken);
+    await this.getActivatingGuardian(userId);
+
+    const verifyKey = guardianActivationOtpVerifyKey(challengeToken);
+    const attemptCount = await this.redisService.incr(
+      verifyKey,
+      GUARDIAN_ACTIVATION_OTP_TTL_SECONDS,
+    );
+
+    if (attemptCount > GUARDIAN_ACTIVATION_MAX_OTP_VERIFY_ATTEMPTS) {
+      throw new HttpException(
+        'Too many verification attempts. Please log in again to restart activation.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    const otpKey = guardianActivationOtpKey(challengeToken);
+    const hashedOtp = await this.redisService.get(otpKey);
+
+    if (!hashedOtp) {
+      throw new BadRequestException('OTP expired or invalid');
+    }
+
+    const isValid = await bcrypt.compare(otp.trim(), hashedOtp);
+    if (!isValid) {
+      throw new BadRequestException('OTP expired or invalid');
+    }
+
+    await this.userRepository.update(
+      { id: userId },
+      {
+        phone_verified: true,
+        is_active: true,
+      },
+    );
+
+    await this.redisService.del(guardianActivationChallengeKey(challengeToken));
+    await this.redisService.del(otpKey);
+    await this.redisService.del(verifyKey);
+
+    return {
+      message:
+        'Account activated successfully. You can now log in with your new password.',
+    };
+  }
+
+  private async issueActivationChallenge(userId: string): Promise<string> {
+    const challengeToken = randomUUID();
+    await this.redisService.set(
+      guardianActivationChallengeKey(challengeToken),
+      userId,
+      GUARDIAN_ACTIVATION_CHALLENGE_TTL_SECONDS,
+    );
+    return challengeToken;
+  }
+
+  private async resolveChallengeToken(challengeToken: string): Promise<string> {
+    const key = guardianActivationChallengeKey(challengeToken);
+    const userId = await this.redisService.get(key);
+    if (!userId) {
+      throw new UnauthorizedException(
+        'Activation session expired. Please sign in again with your temporary or new password.',
+      );
+    }
+    return userId;
+  }
+
+  private async getActivatingGuardian(userId: string): Promise<User> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user || user.role !== Role.GUARDIAN) {
+      throw new UnauthorizedException('Invalid activation session');
+    }
+    return user;
+  }
+
+  private async sendActivationOtp(challengeToken: string, user: User) {
+    const sendCount = await this.redisService.incr(
+      `guardian:activation:otp:sends:${challengeToken}`,
+      3600,
+    );
+
+    if (sendCount > GUARDIAN_ACTIVATION_MAX_OTP_SENDS_PER_HOUR) {
+      throw new HttpException(
+        'Too many OTP requests. Please try again later.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    const otp = randomInt(100000, 999999).toString();
+    const hashOtp = await bcrypt.hash(otp, 12);
+
+    await this.redisService.set(
+      guardianActivationOtpKey(challengeToken),
+      hashOtp,
+      GUARDIAN_ACTIVATION_OTP_TTL_SECONDS,
+    );
+    await this.redisService.del(guardianActivationOtpVerifyKey(challengeToken));
+
+    await this.sendOtpSms(user.phone, user.full_name, otp);
+  }
+
   async sendOtp(email: string) {
     const user = await this.userRepository.findOne({
       where: { email, role: Role.GUARDIAN },
@@ -464,6 +687,51 @@ export class GuardianService {
       page: options.page,
       limit: options.limit,
       totalPages: Math.ceil(total / options.limit),
+    };
+  }
+
+  async updateLinkedGuardianPhone(
+    childUserId: string,
+    guardianUserId: string,
+    phoneRaw: string,
+  ) {
+    const link = await this.guardianLinkRepository.findOne({
+      where: {
+        child_user_id: childUserId,
+        guardian_user_id: guardianUserId,
+      },
+      relations: ['guardian'],
+    });
+
+    if (!link) {
+      throw new ForbiddenException('You are not linked to this guardian');
+    }
+
+    const phone = this.normalizePhone(phoneRaw);
+    if (link.guardian.phone === phone) {
+      return {
+        message: 'Phone number unchanged',
+        guardian: this.toPublicUser(link.guardian),
+      };
+    }
+
+    const existing = await this.userRepository.findOne({ where: { phone } });
+    if (existing && existing.id !== guardianUserId) {
+      throw new BadRequestException('Phone number already in use');
+    }
+
+    await this.userRepository.update(
+      { id: guardianUserId },
+      { phone, phone_verified: false },
+    );
+
+    const updated = await this.userRepository.findOneByOrFail({
+      id: guardianUserId,
+    });
+
+    return {
+      message: 'Guardian phone updated successfully',
+      guardian: this.toPublicUser(updated),
     };
   }
 
@@ -579,16 +847,22 @@ export class GuardianService {
       await this.notificationService.sendEmail({
         to: email,
         subject: 'You have been added as a Guardian on Surakshya',
-        text: `Hello ${name},\n\n${childName} has added you as their guardian on Surakshya.\n\nYour login credentials:\nEmail: ${email}\nPassword: ${password}\n\nLog in to the Surakshya app with these credentials and accept the link request.\n\nThank you,\nSurakshya Team`,
+        text: `Hello ${name},\n\n${childName} has added you as their guardian on Surakshya.\n\nYour temporary login credentials:\nEmail: ${email}\nTemporary password: ${password}\n\n1. Open the Surakshya app or website and sign in with these credentials.\n2. You will be asked to set a new password.\n3. Verify the OTP sent to your phone.\n4. Sign in again with your new password and accept the link request.\n\nThis temporary password expires in ${GUARDIAN_TEMP_PASSWORD_TTL_HOURS} hours.\n\nThank you,\nSurakshya Team`,
         html: `
           <div style="font-family: Arial, sans-serif;">
             <h2>Guardian Invitation</h2>
             <p>Hello ${name},</p>
             <p><strong>${childName}</strong> has added you as their guardian on <strong>Surakshya</strong>.</p>
-            <h3>Your Login Credentials</h3>
+            <h3>Temporary Login Credentials</h3>
             <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Password:</strong> ${password}</p>
-            <p>Open the Surakshya mobile app, sign in with the credentials above, and tap <strong>Accept</strong> on the link request.</p>
+            <p><strong>Temporary password:</strong> ${password}</p>
+            <ol>
+              <li>Sign in with the temporary password</li>
+              <li>Choose a new permanent password</li>
+              <li>Verify the OTP sent to your phone</li>
+              <li>Sign in again and accept the link request</li>
+            </ol>
+            <p>This temporary password expires in ${GUARDIAN_TEMP_PASSWORD_TTL_HOURS} hours.</p>
             <p>Thank you,<br/>Surakshya Team</p>
           </div>
         `,

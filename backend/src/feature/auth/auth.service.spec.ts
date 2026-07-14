@@ -7,8 +7,14 @@ import { WelcomeEmailService } from 'src/feature/notification/email/welcome.emai
 import { UserService } from 'src/feature/user/user.service';
 import { PoliceProvisioningService } from 'src/feature/police-provisioning/police-provisioning.service';
 import { TokenService } from 'src/utils/token/token.service';
+import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { Role } from './dto/auth.dto';
+
+jest.mock('bcrypt', () => ({
+  hash: jest.fn(),
+  compare: jest.fn(),
+}));
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -37,6 +43,7 @@ describe('AuthService', () => {
           useValue: {
             register: jest.fn(),
             findOneByEmail: jest.fn(),
+            findOneByIdForAuth: jest.fn(),
             updatePassword: jest.fn(),
             login: jest.fn(),
           },
@@ -234,6 +241,29 @@ describe('AuthService', () => {
     expect(result).toEqual({
       message: 'Password reset successfully',
     });
+  });
+
+  it('should change password for authenticated user', async () => {
+    userService.findOneByIdForAuth.mockResolvedValue({
+      id: 'user-id',
+      email: 'user@test.com',
+      password_hash: 'hashed-current',
+    } as never);
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+    userService.updatePassword.mockResolvedValue(undefined);
+
+    const result = await service.changePassword(
+      'user-id',
+      'current-password',
+      'new-password-123',
+    );
+
+    expect(userService.findOneByIdForAuth).toHaveBeenCalledWith('user-id');
+    expect(userService.updatePassword).toHaveBeenCalledWith(
+      'user@test.com',
+      'new-password-123',
+    );
+    expect(result).toEqual({ message: 'Password changed successfully' });
   });
 
   it('should delegate police activation password change', async () => {

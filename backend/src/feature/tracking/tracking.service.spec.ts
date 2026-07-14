@@ -137,6 +137,7 @@ describe('TrackingService', () => {
 
       expect(deviceRepo.findOne).toHaveBeenCalledWith({
         where: { imei: 'wearable-001' },
+        relations: ['user'],
       });
       expect(deviceRepo.create).toHaveBeenCalled();
       expect(pingRepo.save).toHaveBeenCalled();
@@ -522,6 +523,7 @@ describe('TrackingService', () => {
 
       expect(deviceRepo.findOne).toHaveBeenCalledWith({
         where: { imei: 'wearable-001' },
+        relations: ['user'],
       });
       expect(pingRepo.save).toHaveBeenCalled();
     });

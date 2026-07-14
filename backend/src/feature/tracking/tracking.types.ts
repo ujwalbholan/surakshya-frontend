@@ -14,6 +14,10 @@ export interface SosEventPayload {
   id: string;
   deviceId: string;
   deviceImei?: string;
+  /** Linked citizen account, when the band is assigned. */
+  userId?: string | null;
+  label?: string | null;
+  citizenName?: string | null;
   eventType: string;
   status: string;
   latitude?: number;

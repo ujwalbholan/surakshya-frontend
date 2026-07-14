@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   ParseUUIDPipe,
   Post,
@@ -29,6 +30,18 @@ type AuthUser = { userId: string; role: string };
 @Controller('sos')
 export class SosController {
   constructor(private readonly trackingService: TrackingService) {}
+
+  @ApiOperation({
+    summary: "Get the authenticated user's active SOS (if any)",
+    description:
+      'Looks up the device assigned to this user and returns the latest active SOS event.',
+  })
+  @Roles('USER', 'ADMIN', 'SUPER_ADMIN')
+  @Get('active')
+  getActive(@Req() req: Request) {
+    const user = req.user as AuthUser;
+    return this.trackingService.getActiveSosForUser(user.userId);
+  }
 
   @ApiOperation({
     summary: 'Create an SOS event (citizen app / phone GPS)',

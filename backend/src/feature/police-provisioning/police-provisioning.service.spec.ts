@@ -344,6 +344,7 @@ describe('PoliceProvisioningService', () => {
         message: 'Password change required before activation',
         requiresPasswordChange: true,
         challengeToken: expect.any(String) as string,
+        role: 'POLICE',
       });
       expect(redisService.set).toHaveBeenCalledWith(
         expect.stringContaining('police:activation:challenge:'),
@@ -383,6 +384,7 @@ describe('PoliceProvisioningService', () => {
           'Account activation incomplete. Enter the OTP sent to your email.',
         requiresActivationOtp: true,
         challengeToken: expect.any(String) as string,
+        role: 'POLICE',
       });
       expect(otpEmailService.sendPasswordResetOtp).toHaveBeenCalled();
     });

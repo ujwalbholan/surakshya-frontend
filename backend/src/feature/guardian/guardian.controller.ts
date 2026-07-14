@@ -5,6 +5,8 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -13,12 +15,14 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { GuardianService } from './guardian.service';
 import { CreateGuardianDto } from './dto/create-guardian.dto';
+import { UpdateGuardianPhoneDto } from './dto/update-guardian-phone.dto';
 import { JwtAuthGuard } from 'src/utils/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/utils/guard/roles.guard';
 import { Roles } from 'src/decorators/roles.decorators';
@@ -54,6 +58,23 @@ export class GuardianController {
       page: page ?? 1,
       limit: limit ?? 20,
     });
+  }
+
+  @ApiOperation({ summary: 'Update phone number for a linked guardian' })
+  @ApiParam({ name: 'guardianId', type: 'string', format: 'uuid' })
+  @Roles('USER')
+  @Patch(':guardianId/phone')
+  updateGuardianPhone(
+    @Req() req: Request,
+    @Param('guardianId', ParseUUIDPipe) guardianId: string,
+    @Body() dto: UpdateGuardianPhoneDto,
+  ) {
+    const user = req.user as { userId: string };
+    return this.guardianService.updateLinkedGuardianPhone(
+      user.userId,
+      guardianId,
+      dto.phone,
+    );
   }
 
   @ApiOperation({ summary: 'Get my incoming guardian requests' })

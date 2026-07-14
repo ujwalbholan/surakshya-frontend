@@ -17,6 +17,7 @@ import { GuardianService } from './guardian.service';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { NotificationService } from '../notification/notification.service';
 import { RedisService } from 'src/config/redis/redis.service';
+import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -31,6 +32,7 @@ describe('GuardianService', () => {
   let deviceRepo: jest.Mocked<Repository<Device>>;
   let sosRepo: jest.Mocked<Repository<SosEvent>>;
   let pingRepo: jest.Mocked<Repository<LocationPing>>;
+  let redisService: jest.Mocked<RedisService>;
 
   const userId = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -43,6 +45,13 @@ describe('GuardianService', () => {
     role: Role.USER,
     is_active: true,
     phone_verified: false,
+    must_change_password: false,
+    temp_password_hash: null,
+    temp_password_expires_at: null,
+    temp_password_resend_count: 0,
+    temp_password_last_resend_at: null,
+    police_account_status: null,
+    station_id: null,
     created_at: new Date(),
     updated_at: new Date(),
     ...overrides,
@@ -88,6 +97,7 @@ describe('GuardianService', () => {
           provide: getRepositoryToken(User),
           useValue: {
             findOneBy: jest.fn(),
+            findOneByOrFail: jest.fn(),
             findOne: jest.fn(),
             save: jest.fn(),
             create: jest.fn(),
@@ -145,6 +155,7 @@ describe('GuardianService', () => {
             set: jest.fn(),
             get: jest.fn(),
             del: jest.fn(),
+            incr: jest.fn(),
             getClient: jest.fn().mockReturnValue({
               scan: jest.fn().mockResolvedValue(['0', []]),
             }),
@@ -160,6 +171,7 @@ describe('GuardianService', () => {
     deviceRepo = module.get(getRepositoryToken(Device));
     sosRepo = module.get(getRepositoryToken(SosEvent));
     pingRepo = module.get(getRepositoryToken(LocationPing));
+    redisService = module.get(RedisService);
   });
 
   describe('addGuardian', () => {
@@ -196,6 +208,8 @@ describe('GuardianService', () => {
         id: 'guardian-id',
         full_name: dto.full_name,
         role: Role.GUARDIAN,
+        is_active: false,
+        must_change_password: true,
       });
       userRepo.create.mockReturnValue(guardianUser);
       userRepo.save.mockResolvedValue(guardianUser);
@@ -204,9 +218,60 @@ describe('GuardianService', () => {
 
       const result = await service.addGuardian(userId, dto);
 
-      expect(result.message).toContain('Guardian request sent');
+      expect(result.message).toContain('temporary password');
+      expect(userRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          role: Role.GUARDIAN,
+          is_active: false,
+          must_change_password: true,
+          phone_verified: false,
+        }),
+      );
       expect(userRepo.save).toHaveBeenCalled();
       expect(requestRepo.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('evaluateGuardianLogin', () => {
+    it('returns password-change challenge for temp password login', async () => {
+      const guardian = mockUser({
+        id: 'guardian-id',
+        role: Role.GUARDIAN,
+        must_change_password: true,
+        temp_password_hash: 'hashed-temp',
+        temp_password_expires_at: new Date(Date.now() + 60_000),
+        is_active: false,
+        phone_verified: false,
+        password_hash: null as unknown as string,
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValueOnce(true);
+      redisService.set.mockResolvedValue('OK' as any);
+
+      const result = await service.evaluateGuardianLogin(
+        guardian,
+        'temp-password',
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          requiresPasswordChange: true,
+          role: 'GUARDIAN',
+          challengeToken: expect.any(String),
+        }),
+      );
+    });
+
+    it('returns null when guardian is fully activated', async () => {
+      const guardian = mockUser({
+        role: Role.GUARDIAN,
+        must_change_password: false,
+        is_active: true,
+        phone_verified: true,
+      });
+
+      await expect(
+        service.evaluateGuardianLogin(guardian, 'password'),
+      ).resolves.toBeNull();
     });
   });
 
@@ -220,6 +285,54 @@ describe('GuardianService', () => {
       expect(result.guardians).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(result.guardians[0].full_name).toBe('Guardian');
+    });
+  });
+
+  describe('updateLinkedGuardianPhone', () => {
+    const guardianId = 'guardian-id';
+
+    it('should throw if child is not linked to guardian', async () => {
+      linkRepo.findOne.mockResolvedValue(null);
+      await expect(
+        service.updateLinkedGuardianPhone(userId, guardianId, '9842183759'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should reject phone already used by another account', async () => {
+      linkRepo.findOne.mockResolvedValue(mockGuardianLink());
+      userRepo.findOne.mockResolvedValue(
+        mockUser({ id: 'other-user', phone: '9842183759' }),
+      );
+
+      await expect(
+        service.updateLinkedGuardianPhone(userId, guardianId, '9842183759'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should update linked guardian phone', async () => {
+      const link = mockGuardianLink();
+      const updated = mockUser({
+        id: guardianId,
+        full_name: 'Guardian',
+        role: Role.GUARDIAN,
+        phone: '9842183759',
+      });
+      linkRepo.findOne.mockResolvedValue(link);
+      userRepo.findOne.mockResolvedValue(null);
+      userRepo.update.mockResolvedValue({ affected: 1 } as any);
+      userRepo.findOneByOrFail.mockResolvedValue(updated);
+
+      const result = await service.updateLinkedGuardianPhone(
+        userId,
+        guardianId,
+        '+9779842183759',
+      );
+
+      expect(userRepo.update).toHaveBeenCalledWith(
+        { id: guardianId },
+        { phone: '9842183759', phone_verified: false },
+      );
+      expect(result.guardian.phone).toBe('9842183759');
     });
   });
 

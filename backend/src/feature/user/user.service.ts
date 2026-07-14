@@ -13,6 +13,7 @@ import { LoginDto, Role } from 'src/feature/auth/dto/auth.dto';
 import { TokenService } from 'src/utils/token/token.service';
 import { safeUser } from 'src/utils/safe-user';
 import { PoliceProvisioningService } from 'src/feature/police-provisioning/police-provisioning.service';
+import { GuardianService } from 'src/feature/guardian/guardian.service';
 
 @Injectable()
 export class UserService {
@@ -20,6 +21,7 @@ export class UserService {
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly tokenService: TokenService,
     private readonly policeProvisioningService: PoliceProvisioningService,
+    private readonly guardianService: GuardianService,
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<User> {
@@ -72,6 +74,25 @@ export class UserService {
 
       if (policeLoginResult) {
         return policeLoginResult;
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        loginDto.password,
+        user.password_hash,
+      );
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid Password');
+      }
+    } else if (user.role === Role.GUARDIAN) {
+      const guardianLoginResult =
+        await this.guardianService.evaluateGuardianLogin(
+          user,
+          loginDto.password,
+        );
+
+      if (guardianLoginResult) {
+        return guardianLoginResult;
       }
 
       const isPasswordValid = await bcrypt.compare(
@@ -144,6 +165,10 @@ export class UserService {
         email: email,
       },
     });
+  }
+
+  async findOneByIdForAuth(id: string): Promise<User | null> {
+    return this.userRepository.findOneBy({ id });
   }
 
   async update(
