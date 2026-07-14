@@ -25,7 +25,7 @@ export default function CraftSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Left - Text */}
           <div className="flex flex-col gap-6 lg:gap-8 order-2 lg:order-1">
-            <p className="section-label" data-aos="fade-up">
+            <p className="section-label" data-reveal="fade-up">
               Craft
             </p>
             <TextReveal
@@ -37,8 +37,8 @@ export default function CraftSection() {
             </TextReveal>
             <p
               className="text-base lg:text-lg text-muted-foreground leading-relaxed max-w-lg"
-              data-aos="fade-left"
-              data-aos-delay="200"
+              data-reveal="fade-left"
+              data-reveal-delay="200"
             >
               Built with aerospace-grade materials and Bluetooth 5.0 BLE, our band 
               communicates instantly with your phone. Lightweight, waterproof (IPX4), 
@@ -46,16 +46,16 @@ export default function CraftSection() {
             </p>
             <div
               className="h-px w-16 bg-primary mt-2"
-              data-aos="fade-up"
-              data-aos-delay="300"
+              data-reveal="fade-up"
+              data-reveal-delay="300"
             />
           </div>
 
           {/* Right - Image */}
           <div
             className="relative aspect-[4/5] overflow-hidden order-1 lg:order-2"
-            data-aos="fade-right"
-            data-aos-duration="1000"
+            data-reveal="fade-right"
+            data-reveal-duration="1000"
           >
             <Image
               src="/images/craft.jpg"

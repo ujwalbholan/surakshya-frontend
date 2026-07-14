@@ -1,8 +1,17 @@
 "use client"
 
 import * as React from "react"
-import { Player } from "@remotion/player"
-import { PerspectiveMarquee } from "@/components/ui/remotion-perspective-marquee"
+
+const ITEMS = [
+  "Suraksha",
+  "Safety",
+  "Tracking",
+  "Alerts",
+  "SOS",
+  "Protection",
+  "Support",
+  "Confidence",
+]
 
 function usePrefersDark() {
   const [isDark, setIsDark] = React.useState(false)
@@ -18,33 +27,43 @@ function usePrefersDark() {
   return isDark
 }
 
-function PerspectiveMarqueeScene({ isDark }: { isDark: boolean }) {
+function MarqueeTrack({
+  items,
+  color,
+  fontSize,
+}: {
+  items: string[]
+  color: string
+  fontSize: number
+}) {
+  const pad = fontSize * 0.9
+
   return (
-    <PerspectiveMarquee
-      items={[
-        "Suraksha",
-        "Safety",
-        "Tracking",
-        "Alerts",
-        "SOS",
-        "Protection",
-        "Support",
-        "Confidence",
-      ]}
-      rotateY={-28}
-      rotateX={8}
-      perspective={1200}
-      pixelsPerFrame={2}
-      background={isDark ? "#050505" : "#fafafa"}
-      fadeColor={isDark ? "#050505" : "#fafafa"}
-      color={isDark ? "#fafafa" : "#171717"}
-      fontSize={80}
-    />
+    <div className="perspective-marquee-track" aria-hidden>
+      {items.map((item) => (
+        <span
+          key={item}
+          className="perspective-marquee-item"
+          style={{
+            color,
+            fontSize,
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            paddingRight: pad,
+          }}
+        >
+          {item}
+        </span>
+      ))}
+    </div>
   )
 }
 
 export default function PerspectiveMarqueeSection() {
   const isDark = usePrefersDark()
+  const bg = isDark ? "#050505" : "#fafafa"
+  const fade = isDark ? "#050505" : "#fafafa"
+  const color = isDark ? "#fafafa" : "#171717"
 
   return (
     <section id="partners-marquee" className="relative border-y border-[#222222]">
@@ -53,21 +72,38 @@ export default function PerspectiveMarqueeSection() {
       </div>
       <div
         className="relative w-full overflow-hidden"
-        style={{ height: "50vh", minHeight: "320px", maxHeight: "520px" }}
+        style={{
+          height: "50vh",
+          minHeight: 320,
+          maxHeight: 520,
+          background: bg,
+          perspective: "1200px",
+        }}
       >
-        <Player
-          component={PerspectiveMarqueeScene}
-          inputProps={{ isDark }}
-          acknowledgeRemotionLicense
-          durationInFrames={240}
-          fps={30}
-          compositionWidth={1280}
-          compositionHeight={720}
-          style={{ width: "100%", height: "100%" }}
-          controls={false}
-          autoPlay
-          loop
-          clickToPlay={false}
+        <div
+          className="flex h-full w-full items-center justify-start"
+          style={{
+            transform: "rotateX(8deg) rotateY(-28deg)",
+            transformStyle: "preserve-3d",
+          }}
+        >
+          <div className="perspective-marquee-rail">
+            <MarqueeTrack items={ITEMS} color={color} fontSize={80} />
+            <MarqueeTrack items={ITEMS} color={color} fontSize={80} />
+          </div>
+        </div>
+
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(90deg, ${fade} 0%, transparent 18%, transparent 82%, ${fade} 100%)`,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(180deg, ${fade} 0%, transparent 25%, transparent 75%, ${fade} 100%)`,
+          }}
         />
       </div>
     </section>

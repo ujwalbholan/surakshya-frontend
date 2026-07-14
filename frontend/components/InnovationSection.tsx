@@ -27,7 +27,7 @@ export default function InnovationSection() {
     <section id="innovation" className="relative py-24 lg:py-40 px-6 lg:px-10">
       <Crosshairs />
       <div className="mx-auto max-w-4xl text-center">
-        <p className="section-label mb-6" data-aos="fade-up">
+        <p className="section-label mb-6" data-reveal="fade-up">
           Innovation
         </p>
         <TextReveal
@@ -39,8 +39,8 @@ export default function InnovationSection() {
         </TextReveal>
         <p
           className="mt-6 lg:mt-8 text-base lg:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto"
-          data-aos="fade-up"
-          data-aos-delay="200"
+          data-reveal="fade-up"
+          data-reveal-delay="200"
         >
           A single tap on the Suraksha band instantly sends your live GPS location 
           to your family and emergency contacts. No phone in hand required. 
@@ -53,8 +53,8 @@ export default function InnovationSection() {
             <div
               key={feature.label}
               className="feature-pill flex items-center gap-3 px-6 py-3.5 border border-dark-border bg-secondary/50 text-foreground/80 text-sm tracking-wider uppercase cursor-default"
-              data-aos="zoom-in"
-              data-aos-delay={feature.delay}
+              data-reveal="zoom-in"
+              data-reveal-delay={feature.delay}
             >
               <feature.icon className="w-4 h-4 text-primary flex-shrink-0" />
               <span>{feature.label}</span>

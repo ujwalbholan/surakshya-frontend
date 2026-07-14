@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { motion } from "framer-motion"
 import {
   ChevronsUpDown,
   LogOut,
@@ -31,41 +30,6 @@ import { fetchActiveSosCount } from "@/lib/api/admin-live"
 import { getVisibleAdminNavGroups, isAdminNavActive } from "@/lib/admin/nav-config"
 import { useInterval } from "@/hooks/use-interval"
 
-const sidebarVariants = {
-  open: { width: "15rem" },
-  closed: { width: "3.05rem" },
-}
-
-const contentVariants = {
-  open: { display: "block", opacity: 1 },
-  closed: { display: "block", opacity: 1 },
-}
-
-const labelVariants = {
-  open: {
-    x: 0,
-    opacity: 1,
-    transition: { x: { stiffness: 1000, velocity: -100 } },
-  },
-  closed: {
-    x: -20,
-    opacity: 0,
-    transition: { x: { stiffness: 100 } },
-  },
-}
-
-const transitionProps = {
-  type: "tween" as const,
-  ease: "easeOut" as const,
-  duration: 0.2,
-}
-
-const staggerVariants = {
-  open: {
-    transition: { staggerChildren: 0.03, delayChildren: 0.02 },
-  },
-}
-
 interface NavLinkProps {
   href: string
   icon: LucideIcon
@@ -73,6 +37,30 @@ interface NavLinkProps {
   isCollapsed: boolean
   isActive: boolean
   trailing?: React.ReactNode
+}
+
+function SidebarLabel({
+  isCollapsed,
+  className,
+  children,
+}: {
+  isCollapsed: boolean
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <span
+      className={cn(
+        "flex min-w-0 items-center overflow-hidden transition-all duration-200 ease-out",
+        isCollapsed
+          ? "max-w-0 -translate-x-5 opacity-0"
+          : "max-w-[12rem] translate-x-0 opacity-100",
+        className
+      )}
+    >
+      {children}
+    </span>
+  )
 }
 
 function NavLink({
@@ -94,14 +82,12 @@ function NavLink({
       )}
     >
       <Icon className="h-4 w-4 shrink-0" />
-      <motion.li variants={labelVariants} className="flex min-w-0 flex-1 items-center">
-        {!isCollapsed && (
-          <div className="ml-2 flex min-w-0 flex-1 items-center gap-2">
-            <p className="truncate text-sm font-medium">{label}</p>
-            {trailing}
-          </div>
-        )}
-      </motion.li>
+      <SidebarLabel isCollapsed={isCollapsed} className="flex-1">
+        <div className="ml-2 flex min-w-0 flex-1 items-center gap-2">
+          <p className="truncate text-sm font-medium">{label}</p>
+          {trailing}
+        </div>
+      </SidebarLabel>
       {isCollapsed && trailing}
     </Link>
   )
@@ -132,20 +118,14 @@ export default function AdminSessionSidebar() {
   const navGroups = getVisibleAdminNavGroups(session?.role)
 
   return (
-    <motion.div
-      className="fixed left-0 z-40 hidden h-full shrink-0 border-r border-white/5 lg:block"
-      initial={isCollapsed ? "closed" : "open"}
-      animate={isCollapsed ? "closed" : "open"}
-      variants={sidebarVariants}
-      transition={transitionProps}
+    <div
+      className="fixed left-0 z-40 hidden h-full shrink-0 overflow-hidden border-r border-white/5 transition-[width] duration-200 ease-out lg:block"
+      style={{ width: isCollapsed ? "3.05rem" : "15rem" }}
       onMouseEnter={() => setIsCollapsed(false)}
       onMouseLeave={() => setIsCollapsed(true)}
     >
-      <motion.div
-        className="relative z-40 flex h-full shrink-0 flex-col bg-[#0A0A0A] text-white/45 transition-all"
-        variants={contentVariants}
-      >
-        <motion.ul variants={staggerVariants} className="flex h-full flex-col">
+      <div className="relative z-40 flex h-full w-full shrink-0 flex-col bg-[#0A0A0A] text-white/45">
+        <ul className="flex h-full flex-col">
           <div className="flex grow flex-col items-center">
             {/* Header */}
             <div className="flex h-[54px] w-full shrink-0 border-b border-white/5 p-2">
@@ -158,17 +138,13 @@ export default function AdminSessionSidebar() {
                       className="flex w-fit items-center gap-2 px-2 text-white/70 hover:bg-white/5 hover:text-white"
                     >
                       <SurakshaShieldLogo size={16} variant="mono" />
-                      <motion.li variants={labelVariants} className="flex w-fit items-center gap-2">
-                        {!isCollapsed && (
-                          <>
-                            <div className="text-left">
-                              <p className="text-sm font-medium text-white">Suraksha</p>
-                              <p className="text-[10px] text-white/40">Super Admin</p>
-                            </div>
-                            <ChevronsUpDown className="h-4 w-4 text-white/30" />
-                          </>
-                        )}
-                      </motion.li>
+                      <SidebarLabel isCollapsed={isCollapsed} className="w-fit gap-2">
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-white">Suraksha</p>
+                          <p className="text-[10px] text-white/40">Super Admin</p>
+                        </div>
+                        <ChevronsUpDown className="h-4 w-4 shrink-0 text-white/30" />
+                      </SidebarLabel>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -240,11 +216,9 @@ export default function AdminSessionSidebar() {
                   )}
                 >
                   <Settings className="h-4 w-4 shrink-0" />
-                  <motion.li variants={labelVariants}>
-                    {!isCollapsed && (
-                      <p className="ml-2 text-sm font-medium">Settings</p>
-                    )}
-                  </motion.li>
+                  <SidebarLabel isCollapsed={isCollapsed}>
+                    <p className="ml-2 text-sm font-medium">Settings</p>
+                  </SidebarLabel>
                 </Link>
 
                 <DropdownMenu modal={false}>
@@ -255,19 +229,15 @@ export default function AdminSessionSidebar() {
                           {initials}
                         </AvatarFallback>
                       </Avatar>
-                      <motion.li
-                        variants={labelVariants}
-                        className="flex w-full items-center gap-2"
+                      <SidebarLabel
+                        isCollapsed={isCollapsed}
+                        className="w-full gap-2"
                       >
-                        {!isCollapsed && (
-                          <>
-                            <p className="truncate text-sm font-medium text-white">
-                              {session?.full_name ?? "Admin"}
-                            </p>
-                            <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-white/30" />
-                          </>
-                        )}
-                      </motion.li>
+                        <p className="truncate text-sm font-medium text-white">
+                          {session?.full_name ?? "Admin"}
+                        </p>
+                        <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-white/30" />
+                      </SidebarLabel>
                     </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -308,8 +278,8 @@ export default function AdminSessionSidebar() {
               </div>
             </div>
           </div>
-        </motion.ul>
-      </motion.div>
-    </motion.div>
+        </ul>
+      </div>
+    </div>
   )
 }

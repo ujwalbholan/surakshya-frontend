@@ -307,7 +307,7 @@ export default function ProductShowcase() {
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           {/* Left: 3D Canvas */}
-          <div className="relative w-full aspect-square max-w-lg mx-auto lg:mx-0" data-aos="fade-right">
+          <div className="relative w-full aspect-square max-w-lg mx-auto lg:mx-0" data-reveal="fade-right">
             <canvas
               ref={canvasRef}
               className="w-full h-full band-glow"
@@ -315,7 +315,7 @@ export default function ProductShowcase() {
           </div>
 
           {/* Right: Content */}
-          <div className="flex flex-col" data-aos="fade-left">
+          <div className="flex flex-col" data-reveal="fade-left">
             <p className="section-label mb-4">Evolution</p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-[#FAFAFA] uppercase mb-6">
               Suraksha Band
@@ -339,8 +339,8 @@ export default function ProductShowcase() {
         {/* Feature Tabs */}
         <div
           className="mt-12 lg:mt-16 flex flex-wrap items-center justify-center gap-1 border-b border-[#222222]"
-          data-aos="fade-up"
-          data-aos-delay="400"
+          data-reveal="fade-up"
+          data-reveal-delay="400"
         >
           {tabs.map((tab) => (
             <TabTooltip key={tab.id} tab={tab} />

@@ -106,9 +106,33 @@ html {
   background: #C0392B;
 }
 
-/* AOS custom overrides for premium feel */
-[data-aos] {
-  transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+/* CSS perspective marquee (replaced Remotion Player) */
+@keyframes perspective-marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.perspective-marquee-rail {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  animation: perspective-marquee-scroll 40s linear infinite;
+  will-change: transform;
+}
+
+.perspective-marquee-track {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.perspective-marquee-item {
+  display: inline-block;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* Section label style */

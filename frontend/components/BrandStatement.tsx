@@ -30,7 +30,7 @@ export default function BrandStatement() {
         {/* Italic brand name */}
         <p
           className="text-2xl sm:text-3xl lg:text-4xl italic font-light text-[#FAFAFA]/90 mb-8"
-          data-aos="fade-up"
+          data-reveal="fade-up"
         >
           Suraksha
         </p>
@@ -45,7 +45,7 @@ export default function BrandStatement() {
         </TextReveal>
 
         {/* White rounded pill button */}
-        <div className="mt-12" data-aos="fade-up" data-aos-delay="400">
+        <div className="mt-12" data-reveal="fade-up" data-reveal-delay="400">
           <a
             href="#philosophy"
             className="inline-flex items-center justify-center px-10 py-4 bg-[#FAFAFA] text-[#0A0A0A] text-sm font-medium tracking-[0.15em] uppercase rounded-full transition-all duration-300 hover:bg-[#FAFAFA]/90 hover:scale-105"

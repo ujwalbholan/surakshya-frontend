@@ -13,8 +13,8 @@ export default function PhilosophySection() {
           {/* Left - Image */}
           <div
             className="relative aspect-[4/5] overflow-hidden"
-            data-aos="fade-right"
-            data-aos-duration="1000"
+            data-reveal="fade-right"
+            data-reveal-duration="1000"
           >
             <Image
               src="/images/philosophy.jpg"
@@ -29,7 +29,7 @@ export default function PhilosophySection() {
 
           {/* Right - Text */}
           <div className="flex flex-col gap-6 lg:gap-8">
-            <p className="section-label" data-aos="fade-up">
+            <p className="section-label" data-reveal="fade-up">
               Philosophy
             </p>
             <TextReveal
@@ -41,8 +41,8 @@ export default function PhilosophySection() {
             </TextReveal>
             <p
               className="text-base lg:text-lg text-muted-foreground leading-relaxed max-w-lg"
-              data-aos="fade-up"
-              data-aos-delay="200"
+              data-reveal="fade-up"
+              data-reveal-delay="200"
             >
               Every detail of Suraksha is built around one purpose — keeping women safe. 
               From the IoT band to the live GPS tracking, every component is engineered with 
@@ -50,8 +50,8 @@ export default function PhilosophySection() {
             </p>
             <div
               className="h-px w-16 bg-primary mt-2"
-              data-aos="fade-up"
-              data-aos-delay="300"
+              data-reveal="fade-up"
+              data-reveal-delay="300"
             />
           </div>
         </div>

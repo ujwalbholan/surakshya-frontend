@@ -1,4 +1,4 @@
-import AOSProvider from "@/components/AOSProvider"
+import GSAPScrollProvider from "@/components/GSAPScrollProvider"
 import Navbar from "@/components/Navbar"
 import HeroSection from "@/components/hero/HeroSection"
 import PhilosophySection from "@/components/PhilosophySection"
@@ -14,7 +14,7 @@ import Footer from "@/components/Footer"
 
 export default function Home() {
   return (
-    <AOSProvider>
+    <GSAPScrollProvider>
       <main className="min-h-screen bg-background text-foreground overflow-x-hidden">
         <Navbar />
         <HeroSection />
@@ -29,6 +29,6 @@ export default function Home() {
         <Newsletter />
         <Footer />
       </main>
-    </AOSProvider>
+    </GSAPScrollProvider>
   )
 }

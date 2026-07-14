@@ -31,7 +31,7 @@ export default function SocialWall() {
       <Crosshairs />
       <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="text-center mb-12 lg:mb-20" data-aos="fade-up">
+        <div className="text-center mb-12 lg:mb-20" data-reveal="fade-up">
           <p className="section-label mb-4">#StayWithSuraksha</p>
           <TextReveal
             as="h2"
@@ -48,8 +48,8 @@ export default function SocialWall() {
             <div
               key={item.name}
               className="group relative bg-card border border-dark-border overflow-hidden transition-all duration-500 hover:border-primary/30"
-              data-aos="fade-up"
-              data-aos-delay={item.delay}
+              data-reveal="fade-up"
+              data-reveal-delay={item.delay}
             >
               {/* Image */}
               <div className="relative aspect-[3/4] overflow-hidden">

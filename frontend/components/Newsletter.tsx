@@ -54,7 +54,7 @@ export default function Newsletter() {
         <div className="relative z-10 text-center px-6 py-16 max-w-2xl mx-auto">
           <h3
             className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#FAFAFA] uppercase mb-3"
-            data-aos="fade-up"
+            data-reveal="fade-up"
           >
             Subscribe to
             <br />
@@ -63,8 +63,8 @@ export default function Newsletter() {
 
           <p
             className="text-sm sm:text-base text-[#FAFAFA]/80 mb-10"
-            data-aos="fade-up"
-            data-aos-delay="100"
+            data-reveal="fade-up"
+            data-reveal-delay="100"
           >
             Stay informed with the latest from Suraksha.
           </p>
@@ -72,8 +72,8 @@ export default function Newsletter() {
           <form
             onSubmit={handleSubmit}
             className="flex flex-col gap-5"
-            data-aos="fade-up"
-            data-aos-delay="200"
+            data-reveal="fade-up"
+            data-reveal-delay="200"
           >
             {/* Glassmorphism pill input + white pill button */}
             <div className="flex items-center gap-3">
