@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react"
 import toast from "react-hot-toast"
+import { downloadReportPdf } from "@/lib/reports/export"
 import {
   BarChart,
   Bar,
@@ -228,6 +229,33 @@ export default function ReportsDashboard() {
     a.click()
     URL.revokeObjectURL(url)
     toast.success("CSV exported")
+  }
+
+  const exportPdf = () => {
+    downloadReportPdf({
+      title: "Suraksha Province Report",
+      subtitle: `Range: ${range}`,
+      filename: `suraksha-province-report-${range.replace(" ", "-")}.pdf`,
+      columns: [
+        "Province",
+        "Total SOS",
+        "Resolved",
+        "Rate %",
+        "Avg Response",
+        "Units",
+        "Coverage",
+      ],
+      rows: tableData.map((row) => [
+        row.province,
+        row.totalSos,
+        row.resolved,
+        row.resolutionRate,
+        `${row.avgResponse} min`,
+        row.units,
+        row.coverage,
+      ]),
+    })
+    toast.success("PDF exported")
   }
 
   return (
@@ -464,7 +492,7 @@ export default function ReportsDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => toast("PDF export coming soon")}
+              onClick={exportPdf}
               className="admin-btn-ghost inline-flex items-center gap-2 text-xs"
             >
               <Download className="h-3.5 w-3.5" />

@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import toast from "react-hot-toast"
 import { BarChart3, Download, FileSpreadsheet, MapPin, TrendingUp } from "lucide-react"
 import { Panel, SectionHeader, StatCard } from "@/components/dashboard/shared"
 import {
@@ -9,6 +10,7 @@ import {
   fetchPoliceReportSummary,
 } from "@/lib/api/police"
 import type { ReportMetric } from "@/lib/dashboard/operations-data"
+import { downloadCsv, downloadReportPdf } from "@/lib/reports/export"
 
 const EVIDENCE_TYPE_LABELS: Record<string, string> = {
   audio: "Audio recordings",
@@ -122,6 +124,29 @@ export default function ReportsView() {
     [monthlySosStats]
   )
 
+  const exportCsv = () => {
+    const lines = [
+      "District,Alerts,Share %",
+      ...districtBreakdown.map((d) => `${d.district},${d.alerts},${d.share}`),
+      "",
+      "Metric,Value",
+      ...reportMetrics.map((m) => `"${m.label}","${m.value} (${m.period})"`),
+    ]
+    downloadCsv("police-ops-report.csv", lines.join("\n"))
+    toast.success("CSV exported")
+  }
+
+  const exportPdf = () => {
+    downloadReportPdf({
+      title: "Nepal Police — Suraksha Ops Report",
+      subtitle: "Last 30 days",
+      filename: "police-ops-report.pdf",
+      columns: ["District", "Alerts", "Share %"],
+      rows: districtBreakdown.map((d) => [d.district, d.alerts, d.share]),
+    })
+    toast.success("PDF exported")
+  }
+
   if (loading) {
     return <p className="text-sm text-[#666]">Loading reports…</p>
   }
@@ -146,6 +171,7 @@ export default function ReportsView() {
           <div className="flex gap-2">
             <button
               type="button"
+              onClick={exportCsv}
               className="flex items-center gap-2 rounded border border-[#333] px-4 py-2 text-[10px] uppercase tracking-wider text-[#888] hover:text-[#FAFAFA]"
             >
               <FileSpreadsheet className="h-3.5 w-3.5" />
@@ -153,6 +179,7 @@ export default function ReportsView() {
             </button>
             <button
               type="button"
+              onClick={exportPdf}
               className="flex items-center gap-2 rounded border border-[#C0392B] bg-[#C0392B]/10 px-4 py-2 text-[10px] uppercase tracking-wider text-[#E74C3C] hover:bg-[#C0392B]/20"
             >
               <Download className="h-3.5 w-3.5" />
@@ -242,25 +269,9 @@ export default function ReportsView() {
         </Panel>
 
         <Panel title="Scheduled reports" icon={Download}>
-          <ul className="space-y-3 text-sm">
-            {[
-              { name: "Daily SOS summary", schedule: "Every day · 06:00 NPT", format: "PDF + email" },
-              { name: "Weekly provincial brief", schedule: "Monday · 08:00 NPT", format: "PDF" },
-              { name: "Monthly HQ dashboard", schedule: "1st of month", format: "CSV + PDF" },
-              { name: "Quarterly audit trail", schedule: "Jan, Apr, Jul, Oct", format: "Encrypted archive" },
-            ].map((r) => (
-              <li
-                key={r.name}
-                className="flex items-center justify-between rounded border border-[#222] bg-[#0a0a0a] px-3 py-2.5"
-              >
-                <div>
-                  <p className="text-[#FAFAFA]">{r.name}</p>
-                  <p className="text-xs text-[#666]">{r.schedule}</p>
-                </div>
-                <span className="font-mono text-[10px] text-[#888]">{r.format}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="text-sm text-[#666]">
+            No scheduled reports yet. Automated scheduling is coming soon.
+          </p>
         </Panel>
       </div>
     </>
