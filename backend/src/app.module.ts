@@ -31,6 +31,7 @@ import { DispatchModule } from './feature/dispatch/dispatch.module';
 import { ApiKeysModule } from './feature/api-keys/api-keys.module';
 import { RolesMatrixModule } from './feature/roles-matrix/roles-matrix.module';
 import { AdminSettingsModule } from './feature/admin-settings/admin-settings.module';
+import { BroadcastModule } from './feature/broadcast/broadcast.module';
 import { RedisModule } from './config/redis/redis.module';
 import { RedisThrottlerStorage } from './config/redis/redis-throttler.service';
 
@@ -103,6 +104,7 @@ const isProduction = process.env.NODE_ENV === 'production';
     ApiKeysModule,
     RolesMatrixModule,
     AdminSettingsModule,
+    BroadcastModule,
   ],
   controllers: [AppController],
   providers: [

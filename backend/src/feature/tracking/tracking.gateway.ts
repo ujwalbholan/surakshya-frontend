@@ -88,6 +88,17 @@ export class TrackingGateway
     }
   }
 
+  emitAdminBroadcast(payload: {
+    id: string;
+    message: string;
+    priority: 'normal' | 'high';
+    stationId?: string | null;
+    createdAt: string;
+  }) {
+    this.server.to('police-ops').emit('admin_broadcast', payload);
+    this.server.to('sos_all').emit('admin_broadcast', payload);
+  }
+
   @SubscribeMessage('subscribe_all_sos')
   handleSubscribeAllSos(@ConnectedSocket() client: Socket) {
     const role = client.data.role as string | undefined;

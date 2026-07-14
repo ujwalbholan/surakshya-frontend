@@ -48,6 +48,7 @@ import {
   type AdminUserRecord,
 } from "@/lib/api/admin-auth"
 import { fetchAdminSosEvents } from "@/lib/api/admin-sos"
+import { sendAdminBroadcast } from "@/lib/api/admin-broadcast"
 import { sortSosAlerts } from "@/lib/admin/sos-data"
 import { loadAdminSosAlerts } from "@/lib/admin/sos-mappers"
 import type { AdminSosAlert } from "@/lib/admin/sos-types"
@@ -241,10 +242,30 @@ export default function DashboardPage() {
     toast.success("Report exported")
   }
 
-  const handleBroadcast = () => {
-    toast.success("Alert broadcast queued")
-    setBroadcastOpen(false)
-    setBroadcastMsg("")
+  const handleBroadcast = async () => {
+    const message = broadcastMsg.trim()
+    if (!message) {
+      toast.error("Enter a broadcast message")
+      return
+    }
+    try {
+      const result = await sendAdminBroadcast({
+        message,
+        priority: "high",
+        send_email: true,
+      })
+      if (result.error || !result.data) {
+        toast.error(result.error ?? "Broadcast failed")
+        return
+      }
+      toast.success(
+        `Broadcast delivered to ${result.data.recipients} officers via ${result.data.delivered_via.join(", ")}`,
+      )
+      setBroadcastOpen(false)
+      setBroadcastMsg("")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Broadcast failed")
+    }
   }
 
   return (
