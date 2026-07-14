@@ -123,8 +123,8 @@ export class AddAdminPhase41738800010000 implements MigrationInterface {
     );
 
     const settings: Array<[string, string]> = [
-      ['platform_name', JSON.stringify('Suraksha')],
-      ['support_email', JSON.stringify('support@suraksha.com.np')],
+      ['platform_name', JSON.stringify('Surakshya')],
+      ['support_email', JSON.stringify('support@surakshya.com.np')],
       ['language', JSON.stringify('English')],
       ['session_timeout', JSON.stringify('30 min')],
       ['api_url', JSON.stringify('https://surakshya.onrender.com')],

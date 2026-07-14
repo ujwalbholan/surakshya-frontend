@@ -5,5 +5,5 @@ export const MQTT_BROKER_URL =
 export const MQTT_TOPICS = [
   'device/+/telemetry', // e.g. device/wearable-001/telemetry
   'device/+', // e.g. device/wearable-001
-  'surakshawatch/+/events', // SOS events
+  'surakshyawatch/+/events', // SOS events
 ];

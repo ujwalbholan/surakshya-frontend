@@ -579,7 +579,7 @@ export class GuardianService {
       await this.notificationService.sendEmail({
         to: email,
         subject: 'You have been added as a Guardian on Surakshya',
-        text: `Hello ${name},\n\n${childName} has added you as their guardian on Surakshya.\n\nYour login credentials:\nEmail: ${email}\nPassword: ${password}\n\nLog in to the Suraksha app with these credentials and accept the link request.\n\nThank you,\nSurakshya Team`,
+        text: `Hello ${name},\n\n${childName} has added you as their guardian on Surakshya.\n\nYour login credentials:\nEmail: ${email}\nPassword: ${password}\n\nLog in to the Surakshya app with these credentials and accept the link request.\n\nThank you,\nSurakshya Team`,
         html: `
           <div style="font-family: Arial, sans-serif;">
             <h2>Guardian Invitation</h2>
@@ -588,7 +588,7 @@ export class GuardianService {
             <h3>Your Login Credentials</h3>
             <p><strong>Email:</strong> ${email}</p>
             <p><strong>Password:</strong> ${password}</p>
-            <p>Open the Suraksha mobile app, sign in with the credentials above, and tap <strong>Accept</strong> on the link request.</p>
+            <p>Open the Surakshya mobile app, sign in with the credentials above, and tap <strong>Accept</strong> on the link request.</p>
             <p>Thank you,<br/>Surakshya Team</p>
           </div>
         `,

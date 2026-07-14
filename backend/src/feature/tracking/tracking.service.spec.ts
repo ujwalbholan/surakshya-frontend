@@ -220,7 +220,7 @@ describe('TrackingService', () => {
       sosRepo.save.mockResolvedValue(sos);
 
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify({
           deviceId: 'wearable-001',
           eventType: 'sos_started',
@@ -250,7 +250,7 @@ describe('TrackingService', () => {
       sosRepo.save.mockResolvedValue(sos);
 
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify({
           deviceId: 'wearable-001',
           eventType: 'sos_started',
@@ -300,7 +300,7 @@ describe('TrackingService', () => {
       sosRepo.save.mockResolvedValue(sos);
 
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify({
           deviceId: 'wearable-001',
           eventType: 'sos_started',
@@ -332,7 +332,7 @@ describe('TrackingService', () => {
       sosRepo.save.mockResolvedValue(sos);
 
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify({
           deviceId: 'wearable-001',
           eventType: 'sos_started',
@@ -362,7 +362,7 @@ describe('TrackingService', () => {
       pingRepo.save.mockResolvedValue(ping);
 
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify({
           deviceId: 'wearable-001',
           eventType: 'sos_location',
@@ -408,11 +408,11 @@ describe('TrackingService', () => {
       };
 
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify(payload),
       );
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify(payload),
       );
 
@@ -431,7 +431,7 @@ describe('TrackingService', () => {
       });
 
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify({
           deviceId: 'wearable-001',
           eventType: 'sos_stopped',
@@ -466,7 +466,7 @@ describe('TrackingService', () => {
       });
 
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify({
           deviceId: 'wearable-001',
           eventType: 'sos_stopped',
@@ -481,7 +481,7 @@ describe('TrackingService', () => {
       deviceRepo.findOne.mockResolvedValue(mockDevice);
 
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify({
           deviceId: 'wearable-001',
           eventType: 'emergency_call',
@@ -513,7 +513,7 @@ describe('TrackingService', () => {
       pingRepo.save.mockResolvedValue(ping);
 
       await service.ingestMqttMessage(
-        'surakshawatch/wearable-001/events',
+        'surakshyawatch/wearable-001/events',
         JSON.stringify({
           latitude: 27.7172,
           longitude: 85.324,

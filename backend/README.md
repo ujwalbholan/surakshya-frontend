@@ -515,7 +515,7 @@ The API uses NestJS URI versioning with **version-neutral v1** as the default. A
 
 - **Current contract (v1):** unversioned paths and `/v1/...` aliases resolve to the same handlers.
 - **Breaking changes:** must ship as a new version (e.g. `/v2/auth/login`) — never mutate response shapes or auth flows on existing v1 routes.
-- **New clients:** may adopt explicit `/v1/...` prefixes; mobile app currently calls `/auth/login` per `suraksha-app/lib/services/ams_api_service.dart`.
+- **New clients:** may adopt explicit `/v1/...` prefixes; mobile app currently calls `/auth/login` per `surakshya-app/lib/services/ams_api_service.dart`.
 
 ---
 

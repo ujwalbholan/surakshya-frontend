@@ -6,7 +6,7 @@ const SERIAL_PORT = process.env.SERIAL_PORT ?? '/dev/cu.usbserial-0001';
 const MQTT_URL = process.env.MQTT_BROKER_URL ?? 'mqtt://localhost:1883';
 const DEVICE_ID = process.env.SERIAL_DEVICE_ID ?? 'wearable-001';
 const TOPIC_TELEMETRY = `device/${DEVICE_ID}/telemetry`;
-const TOPIC_SOS = `surakshawatch/${DEVICE_ID}/events`;
+const TOPIC_SOS = `surakshyawatch/${DEVICE_ID}/events`;
 
 const mqttClient = mqtt.connect(MQTT_URL);
 mqttClient.on('connect', () =>

@@ -64,7 +64,7 @@ export class BroadcastService {
         try {
           await this.notificationService.sendEmail({
             to: officer.email,
-            subject: `[Suraksha] ${priority === 'high' ? 'Urgent' : 'Admin'} broadcast`,
+            subject: `[Surakshya] ${priority === 'high' ? 'Urgent' : 'Admin'} broadcast`,
             text: dto.message,
             html: `<p>${dto.message.replace(/</g, '&lt;')}</p>`,
           });

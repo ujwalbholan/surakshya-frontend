@@ -11,8 +11,8 @@ export const ADMIN_SETTING_KEYS = [
 export type AdminSettingKey = (typeof ADMIN_SETTING_KEYS)[number];
 
 export const ADMIN_SETTINGS_DEFAULTS: Record<AdminSettingKey, unknown> = {
-  platform_name: 'Suraksha',
-  support_email: 'support@suraksha.com.np',
+  platform_name: 'Surakshya',
+  support_email: 'support@surakshya.com.np',
   language: 'English',
   session_timeout: '30 min',
   api_url: 'https://surakshya.onrender.com',

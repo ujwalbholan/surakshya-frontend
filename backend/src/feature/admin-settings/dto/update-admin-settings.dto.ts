@@ -51,13 +51,13 @@ class NotificationsSettingsDto {
 }
 
 export class UpdateAdminSettingsDto {
-  @ApiPropertyOptional({ example: 'Suraksha' })
+  @ApiPropertyOptional({ example: 'Surakshya' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   platform_name?: string;
 
-  @ApiPropertyOptional({ example: 'support@suraksha.com.np' })
+  @ApiPropertyOptional({ example: 'support@surakshya.com.np' })
   @IsOptional()
   @IsString()
   @MaxLength(255)
