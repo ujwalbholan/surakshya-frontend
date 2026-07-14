@@ -17,7 +17,7 @@ export function useTokenRefresh() {
         method: "POST",
       })
 
-      if (status === 401 || (error && status !== 204)) {
+      if (status === 401 || (error && status !== 200 && status !== 204)) {
         clearAdminSession()
         toast.error("Session expired. Please sign in again.")
         router.push("/admin/login")

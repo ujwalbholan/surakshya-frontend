@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import Image from "next/image"
 import { AlertTriangle, ChevronRight, Clock, MapPin, Shield, Watch } from "lucide-react"
 import VictimProfilePanel from "@/components/dashboard/VictimProfilePanel"
+import RelativeTime from "@/components/dashboard/RelativeTime"
 import { Panel, StatCard } from "@/components/dashboard/shared"
 import type { DashboardStat, SosAlert } from "@/lib/dashboard/police-types"
 import { cn } from "@/lib/utils"
@@ -46,7 +47,9 @@ function AlertRow({
         </div>
       </td>
       <td className="hidden px-4 py-3 text-sm text-[#ccc] md:table-cell">{alert.location}</td>
-      <td className="px-4 py-3 text-xs text-[#888]">{alert.triggeredAt}</td>
+      <td className="px-4 py-3 text-xs text-[#888]">
+        <RelativeTime iso={alert.startedAtIso} fallback={alert.triggeredAt} />
+      </td>
       <td className="px-4 py-3">
         <span className={cn("rounded border px-2 py-0.5 text-[10px] uppercase", statusStyles[alert.status])}>
           {alert.status}

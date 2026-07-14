@@ -25,7 +25,7 @@ import {
   usePoliceSosSocket,
 } from "@/hooks/usePoliceSosSocket"
 import type { DashboardStat, SosAlert } from "@/lib/dashboard/police-types"
-import { mapSosEventToAlert } from "@/lib/dashboard/sos-mappers"
+import { mapSosEventToAlert, mergeSosAlertState } from "@/lib/dashboard/sos-mappers"
 import { NAV_ITEMS, VIEW_TITLES, type DashboardView } from "@/lib/dashboard/nav"
 import { cn } from "@/lib/utils"
 
@@ -164,7 +164,12 @@ export default function PoliceDashboard() {
         fetchActiveSosEvents(),
       ])
       const alerts = events.data.map((event) => mapSosEventToAlert(event))
-      setSosAlerts(alerts)
+      setSosAlerts((prev) => {
+        const byId = new Map(prev.map((a) => [a.id, a]))
+        return alerts.map((incoming) =>
+          mergeSosAlertState(byId.get(incoming.id), incoming)
+        )
+      })
       setDashboardStats([
         {
           label: "Active SOS",

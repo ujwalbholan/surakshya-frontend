@@ -5,6 +5,7 @@ export const relationLabels: Record<FamilyRelation, string> = {
   mother: "Mother",
   brother: "Brother",
   sister: "Sister",
+  guardian: "Guardian",
 }
 
 export function mapsUrl(lat: number, lng: number) {

@@ -21,6 +21,7 @@ import {
   fetchUserGuardians,
   fetchUserInfo,
 } from "@/lib/api/police"
+import RelativeTime from "@/components/dashboard/RelativeTime"
 import { cn } from "@/lib/utils"
 
 interface VictimProfilePanelProps {
@@ -61,7 +62,43 @@ export default function VictimProfilePanel({
   const [resolveError, setResolveError] = useState<string | null>(null)
 
   useEffect(() => {
-    setEnriched(alert)
+    // Seed from parent, but never drop contacts/profile already loaded for this alert.
+    setEnriched((prev) => {
+      if (prev.id === alert.id) {
+        return {
+          ...alert,
+          victim: {
+            ...alert.victim,
+            fullName:
+              alert.victim.fullName.startsWith("Device ") && prev.victim.fullName
+                ? prev.victim.fullName
+                : alert.victim.fullName || prev.victim.fullName,
+            phone:
+              alert.victim.phone !== "—" ? alert.victim.phone : prev.victim.phone,
+            bloodType:
+              alert.victim.bloodType !== "—"
+                ? alert.victim.bloodType
+                : prev.victim.bloodType,
+            emergencyContacts:
+              alert.victim.emergencyContacts.length > 0
+                ? alert.victim.emergencyContacts
+                : prev.victim.emergencyContacts,
+          },
+          liveLocation: {
+            ...alert.liveLocation,
+            address:
+              alert.liveLocation.address === "Live GPS coordinates" ||
+              alert.liveLocation.address === alert.ward
+                ? prev.liveLocation.address || "Live GPS lock"
+                : alert.liveLocation.address,
+          },
+        }
+      }
+      return alert
+    })
+  }, [alert])
+
+  useEffect(() => {
     if (!alert.userId && !alert.deviceId) return
 
     let cancelled = false
@@ -69,22 +106,22 @@ export default function VictimProfilePanel({
 
     async function load() {
       try {
-        let next = { ...alert }
+        let nextBase = alert
 
         if (alert.userId) {
           const [user, guardiansRes] = await Promise.all([
             fetchUserInfo(alert.userId),
             fetchUserGuardians(alert.userId),
           ])
-          next = {
-            ...next,
+          nextBase = {
+            ...nextBase,
             citizen: user.full_name,
             victim: {
-              ...next.victim,
+              ...nextBase.victim,
               fullName: user.full_name,
               phone: user.phone,
-              emergencyContacts: guardiansRes.guardians.map((g, i) => ({
-                relation: (["father", "mother", "brother"] as const)[i % 3],
+              emergencyContacts: guardiansRes.guardians.map((g) => ({
+                relation: "guardian" as const,
                 name: g.full_name,
                 phone: g.phone,
               })),
@@ -95,12 +132,12 @@ export default function VictimProfilePanel({
         if (alert.deviceId) {
           const location = await fetchDeviceLocation(alert.deviceId)
           if (location.lastLocation) {
-            next = {
-              ...next,
+            nextBase = {
+              ...nextBase,
               liveLocation: {
                 lat: location.lastLocation.latitude,
                 lng: location.lastLocation.longitude,
-                address: location.device.label ?? "Device location",
+                address: "Live GPS lock",
                 lastUpdated: new Date(
                   location.lastLocation.recordedAt
                 ).toLocaleString(),
@@ -111,9 +148,25 @@ export default function VictimProfilePanel({
           }
         }
 
-        if (!cancelled) setEnriched(next)
+        if (!cancelled) {
+          setEnriched((prev) =>
+            prev.id === nextBase.id
+              ? {
+                  ...prev,
+                  ...nextBase,
+                  victim: {
+                    ...nextBase.victim,
+                    emergencyContacts:
+                      nextBase.victim.emergencyContacts.length > 0
+                        ? nextBase.victim.emergencyContacts
+                        : prev.victim.emergencyContacts,
+                  },
+                }
+              : nextBase
+          )
+        }
       } catch {
-        if (!cancelled) setEnriched(alert)
+        // Keep whatever profile we already have.
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -123,7 +176,9 @@ export default function VictimProfilePanel({
     return () => {
       cancelled = true
     }
-  }, [alert])
+    // Re-fetch profile only when the victim/device identity changes — not on every GPS tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [alert.id, alert.userId, alert.deviceId])
 
   const { victim, liveLocation } = enriched
   const mapsLink = mapsUrl(liveLocation.lat, liveLocation.lng)
@@ -161,7 +216,11 @@ export default function VictimProfilePanel({
               Wristband double-tap SOS
             </p>
             <p className="font-mono text-[10px] text-[#666]">
-              {enriched.id} · {enriched.triggeredAt}
+              {enriched.id} ·{" "}
+              <RelativeTime
+                iso={enriched.startedAtIso}
+                fallback={enriched.triggeredAt}
+              />
             </p>
           </div>
         </div>

@@ -3,8 +3,8 @@ import { getAccessToken } from "@/lib/auth/session"
 import type {
   LoginRequest,
   LoginResult,
-  PoliceActivationPasswordResponse,
-  PoliceActivationVerifyResponse,
+  ActivationPasswordResponse,
+  ActivationVerifyResponse,
 } from "./types"
 
 export function loginUser(payload: LoginRequest) {
@@ -18,7 +18,7 @@ export function setPoliceActivationPassword(
   challengeToken: string,
   newPassword: string
 ) {
-  return surakshyaPublicRequest<PoliceActivationPasswordResponse>(
+  return surakshyaPublicRequest<ActivationPasswordResponse>(
     "/police/activation/set-password",
     {
       method: "POST",
@@ -28,8 +28,34 @@ export function setPoliceActivationPassword(
 }
 
 export function verifyPoliceActivationOtp(challengeToken: string, otp: string) {
-  return surakshyaPublicRequest<PoliceActivationVerifyResponse>(
+  return surakshyaPublicRequest<ActivationVerifyResponse>(
     "/police/activation/verify-otp",
+    {
+      method: "POST",
+      body: JSON.stringify({ challengeToken, otp }),
+    }
+  )
+}
+
+export function setGuardianActivationPassword(
+  challengeToken: string,
+  newPassword: string
+) {
+  return surakshyaPublicRequest<ActivationPasswordResponse>(
+    "/guardian/activation/set-password",
+    {
+      method: "POST",
+      body: JSON.stringify({ challengeToken, newPassword }),
+    }
+  )
+}
+
+export function verifyGuardianActivationOtp(
+  challengeToken: string,
+  otp: string
+) {
+  return surakshyaPublicRequest<ActivationVerifyResponse>(
+    "/guardian/activation/verify-otp",
     {
       method: "POST",
       body: JSON.stringify({ challengeToken, otp }),

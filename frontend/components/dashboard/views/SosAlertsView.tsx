@@ -12,6 +12,7 @@ import {
   Clock,
 } from "lucide-react"
 import VictimProfilePanel from "@/components/dashboard/VictimProfilePanel"
+import RelativeTime from "@/components/dashboard/RelativeTime"
 import { Panel, SectionHeader, StatCard, StatusPill } from "@/components/dashboard/shared"
 import { type AlertStatus, type SosAlert } from "@/lib/dashboard/police-types"
 import { cn } from "@/lib/utils"
@@ -143,7 +144,8 @@ export default function SosAlertsView({
                       </StatusPill>
                     </div>
                     <p className="mt-0.5 text-xs text-[#888]">
-                      {alert.id} · {alert.district} · {alert.triggeredAt}
+                      {alert.id} · {alert.district} ·{" "}
+                      <RelativeTime iso={alert.startedAtIso} fallback={alert.triggeredAt} />
                     </p>
                     <p className="mt-1 flex items-center gap-1 text-[10px] text-[#C0392B]">
                       <Watch className="h-3 w-3" /> Double-tap · Blood {alert.victim.bloodType}

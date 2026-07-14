@@ -5,10 +5,12 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginUser } from "@/lib/api/auth";
 import { isApiError } from "@/lib/api/client";
-import { isPoliceLoginChallenge } from "@/lib/api/types";
+import { isLoginChallenge } from "@/lib/api/types";
 import { saveAuthSession, getRedirectForRole } from "@/lib/auth/session";
 import { savePoliceActivationSession } from "@/lib/auth/police-activation-session";
+import { saveGuardianActivationSession } from "@/lib/auth/guardian-activation-session";
 import { labelStyle, inputBaseStyle } from "@/lib/customCss/customCss";
+
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -25,9 +27,12 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered") === "1";
   const activated = searchParams.get("activated") === "1";
+  const guardianSetup = searchParams.get("guardianSetup") === "1";
   const nextPath = searchParams.get("next");
   const successMessage = activated
     ? "Account activated. Sign in with your new password."
+    : guardianSetup
+    ? "Sign in with the temporary password from your invite email to activate your guardian account."
     : registered
     ? "Account created. Sign in with your email and password."
     : null;
@@ -63,12 +68,27 @@ export default function LoginPage() {
     try {
       const data = await loginUser({ email: email.trim(), password });
 
-      if (isPoliceLoginChallenge(data)) {
+      if (isLoginChallenge(data)) {
+        const startAtOtp =
+          "requiresActivationOtp" in data && data.requiresActivationOtp;
+        if (data.role === "GUARDIAN") {
+          saveGuardianActivationSession({
+            challengeToken: data.challengeToken,
+            email: email.trim(),
+            startAtOtp,
+          });
+          setPanelFadingOut(true);
+          setFlashVisible(true);
+          setTimeout(() => {
+            router.push("/guardian/activate");
+          }, 520);
+          return;
+        }
+
         savePoliceActivationSession({
           challengeToken: data.challengeToken,
           email: email.trim(),
-          startAtOtp:
-            "requiresActivationOtp" in data && data.requiresActivationOtp,
+          startAtOtp,
         });
         setPanelFadingOut(true);
         setFlashVisible(true);

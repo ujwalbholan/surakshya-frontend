@@ -7,16 +7,19 @@ import {
   type SocketConnectionStatus,
 } from "@/lib/api/socket"
 import type { PoliceSosEventSummary, SosSocketEvent } from "@/lib/api/types"
-import { mapSosEventToAlert } from "@/lib/dashboard/sos-mappers"
+import {
+  mapSosEventToAlert,
+  mergeSosAlertState,
+} from "@/lib/dashboard/sos-mappers"
 import type { SosAlert } from "@/lib/dashboard/police-types"
 
 function socketPayloadToSummary(payload: SosSocketEvent): PoliceSosEventSummary {
   return {
     id: payload.id,
     deviceId: payload.deviceId,
-    userId: null,
+    userId: payload.userId ?? null,
     imei: payload.deviceImei ?? payload.deviceId,
-    label: null,
+    label: payload.label ?? null,
     status: payload.status,
     eventType: payload.eventType,
     latitude: payload.latitude ?? null,
@@ -57,12 +60,12 @@ export function applySosSocketEvent(
   }
 
   const summary = socketPayloadToSummary(payload)
-  const mapped = mapSosEventToAlert(summary)
+  const mapped = mapSosEventToAlert(summary, payload.citizenName ?? undefined)
   const existingIdx = alerts.findIndex((a) => a.id === id)
 
   if (existingIdx >= 0) {
     const next = [...alerts]
-    next[existingIdx] = { ...next[existingIdx], ...mapped }
+    next[existingIdx] = mergeSosAlertState(alerts[existingIdx], mapped)
     return next
   }
 

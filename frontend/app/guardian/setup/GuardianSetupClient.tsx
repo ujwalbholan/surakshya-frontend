@@ -1,26 +1,24 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
-import GuardianSetupWizard from "@/components/guardian/GuardianSetupWizard"
 
+/** Legacy email-first setup — guardians now activate via login + /guardian/activate. */
 export default function GuardianSetupClient() {
-  const searchParams = useSearchParams()
-  const [initialEmail, setInitialEmail] = useState<string | undefined>(undefined)
+  const router = useRouter()
 
   useEffect(() => {
-    const value = searchParams.get("email")
-    setInitialEmail(value?.trim() ?? "")
-  }, [searchParams])
+    router.replace("/login?guardianSetup=1")
+  }, [router])
 
-  if (initialEmail === undefined) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#080808]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#2563eb]" />
-      </div>
-    )
-  }
-
-  return <GuardianSetupWizard initialEmail={initialEmail} />
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#080808] px-4 text-center">
+      <Loader2 className="h-8 w-8 animate-spin text-[#C0392B]" />
+      <p className="mt-4 max-w-sm text-sm text-[#888]">
+        Guardian setup now starts at login. Sign in with your temporary password
+        to change it and verify your phone.
+      </p>
+    </div>
+  )
 }

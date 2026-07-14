@@ -30,43 +30,64 @@ export interface LoginResponse {
   refreshToken: string
 }
 
-/** First login with admin-issued temporary password. */
-export interface PolicePasswordChallengeResponse {
+/** First login with temporary password (police or guardian). */
+export interface PasswordChallengeResponse {
   message: string
   requiresPasswordChange: true
   challengeToken: string
+  role?: "POLICE" | "GUARDIAN"
 }
 
-/** Password already changed; email OTP still required to activate. */
-export interface PoliceOtpResumeResponse {
+/** Password already changed; OTP still required to activate. */
+export interface OtpResumeResponse {
   message: string
   requiresActivationOtp: true
   challengeToken: string
+  role?: "POLICE" | "GUARDIAN"
 }
 
-export type PoliceLoginChallengeResponse =
-  | PolicePasswordChallengeResponse
-  | PoliceOtpResumeResponse
+export type LoginChallengeResponse =
+  | PasswordChallengeResponse
+  | OtpResumeResponse
 
-export type LoginResult = LoginResponse | PoliceLoginChallengeResponse
+/** @deprecated Prefer LoginChallengeResponse */
+export type PolicePasswordChallengeResponse = PasswordChallengeResponse
+/** @deprecated Prefer LoginChallengeResponse */
+export type PoliceOtpResumeResponse = OtpResumeResponse
+/** @deprecated Prefer LoginChallengeResponse */
+export type PoliceLoginChallengeResponse = LoginChallengeResponse
 
-export function isPoliceLoginChallenge(
+export type LoginResult = LoginResponse | LoginChallengeResponse
+
+export function isLoginChallenge(
   value: LoginResult
-): value is PoliceLoginChallengeResponse {
+): value is LoginChallengeResponse {
   return (
     ("requiresPasswordChange" in value && value.requiresPasswordChange === true) ||
     ("requiresActivationOtp" in value && value.requiresActivationOtp === true)
   )
 }
 
-export interface PoliceActivationPasswordResponse {
+/** @deprecated Prefer isLoginChallenge */
+export function isPoliceLoginChallenge(
+  value: LoginResult
+): value is LoginChallengeResponse {
+  return isLoginChallenge(value)
+}
+
+export interface ActivationPasswordResponse {
   message: string
   otpSent: boolean
 }
 
-export interface PoliceActivationVerifyResponse {
+export interface ActivationVerifyResponse {
   message: string
 }
+
+/** @deprecated Prefer ActivationPasswordResponse */
+export type PoliceActivationPasswordResponse = ActivationPasswordResponse
+/** @deprecated Prefer ActivationVerifyResponse */
+export type PoliceActivationVerifyResponse = ActivationVerifyResponse
 
 export interface PoliceStation {
   id: string
@@ -193,6 +214,9 @@ export interface SosSocketEvent {
   id: string
   deviceId: string
   deviceImei?: string
+  userId?: string | null
+  label?: string | null
+  citizenName?: string | null
   eventType: string
   status: string
   latitude?: number

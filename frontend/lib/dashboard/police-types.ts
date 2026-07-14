@@ -1,6 +1,11 @@
 export type AlertStatus = "critical" | "responding" | "resolved"
 export type AlertPriority = "high" | "medium" | "low"
-export type FamilyRelation = "father" | "mother" | "brother" | "sister"
+export type FamilyRelation =
+  | "father"
+  | "mother"
+  | "brother"
+  | "sister"
+  | "guardian"
 
 export interface EmergencyContact {
   relation: FamilyRelation
@@ -32,7 +37,10 @@ export interface SosAlert {
   ward: string
   location: string
   coordinates: string
+  /** Relative label snapshot — prefer RelativeTime from startedAtIso for live UI. */
   triggeredAt: string
+  /** ISO start time for reactive "x ago" display. */
+  startedAtIso: string
   status: AlertStatus
   priority: AlertPriority
   unit?: string
