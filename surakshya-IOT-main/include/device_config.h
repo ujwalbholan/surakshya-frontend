@@ -4,8 +4,8 @@ static constexpr char DEVICE_ID[] = "wearable-001";
 
 // ESP32 only supports 2.4 GHz WiFi. SSID must match exactly (spaces matter).
 // Scan also shows: HimalayanJavaExpress_2
-static constexpr char WIFI_SSID[] = "HimalayanJavaExpress_2";
-static constexpr char WIFI_PASSWORD[] = "1@Americano";
+static constexpr char WIFI_SSID[] = "Apexing Network";
+static constexpr char WIFI_PASSWORD[] = "W3lcom3@ApexING";
 static constexpr unsigned long WIFI_CONNECT_TIMEOUT_MS = 30000;
 static constexpr unsigned long WIFI_RECONNECT_INTERVAL_MS = 15000;
 static constexpr unsigned long WIFI_SCAN_LOG_INTERVAL_MS = 60000;
@@ -16,12 +16,14 @@ static constexpr char SIM_APN[] = "ncell";
 // Replace with your production broker hostname when deploying.
 static constexpr char MQTT_BROKER_HOST[] = "test.mosquitto.org";
 static constexpr uint16_t MQTT_BROKER_PORT = 1883;
-static constexpr char MQTT_CLIENT_ID[] = "surakshawatch-wearable-001";
+static constexpr char MQTT_CLIENT_ID[] = "surakshyawatch-wearable-001";
 // Must differ from MQTT_CLIENT_ID — same broker rejects duplicate client IDs.
-static constexpr char SIM_MQTT_CLIENT_ID[] = "surakshawatch-wearable-001-sim";
+static constexpr char SIM_MQTT_CLIENT_ID[] = "surakshyawatch-wearable-001-sim";
 static constexpr char MQTT_USERNAME[] = "";
 static constexpr char MQTT_PASSWORD[] = "";
-static constexpr char MQTT_TOPIC[] = "surakshawatch/wearable-001/events";
+static constexpr char MQTT_TOPIC[] = "surakshyawatch/wearable-001/events";
+// Retained backend → device commands (emergency contact phone, etc.).
+static constexpr char MQTT_COMMANDS_TOPIC[] = "surakshyawatch/wearable-001/commands";
 static constexpr size_t MQTT_BUFFER_SIZE = 512;
 static constexpr unsigned long MQTT_RECONNECT_INTERVAL_MS = 5000;
 
@@ -36,6 +38,8 @@ static constexpr int SOS_BUTTON_PIN = 23;
 // hold call for 3s to hang up.
 static constexpr int CALL_BUTTON_PIN = 33;
 static constexpr char EMERGENCY_PHONE_NUMBER[] = "+9779828755846";
+// NVS key (namespace: STEP_PREFS_NAMESPACE) for app-synced dial number.
+static constexpr char EMERGENCY_PHONE_PREFS_KEY[] = "emPhone";
 static constexpr unsigned long EMERGENCY_BUTTON_HOLD_MS = 200;
 static constexpr unsigned long CALL_BUTTON_HANGUP_HOLD_MS = 3000;
 static constexpr unsigned long SIM_DIAL_TIMEOUT_MS = 30000;
@@ -87,8 +91,11 @@ static constexpr unsigned long SOS_LOCATION_SEND_INTERVAL_MS = 8000;
 static constexpr unsigned long SOS_STOP_LONG_PRESS_MS = 5000;
 static constexpr unsigned long MAX_GPS_AGE_MS = 10000;
 
-// MPU-6050 on shared I2C bus (GPIO21 SDA, GPIO22 SCL). AD0 -> GND = 0x68.
+// MPU-6050 on shared I2C bus (GPIO21 SDA, GPIO22 SCL).
+// AD0 -> GND = 0x68 (default). AD0 -> 3V3 = 0x69.
 static constexpr uint8_t MPU6050_I2C_ADDRESS = 0x68;
+static constexpr uint8_t MPU6050_I2C_ADDRESS_ALT = 0x69;
+static constexpr uint32_t MPU_I2C_CLOCK_HZ = 100000;
 static constexpr unsigned long MPU_READ_INTERVAL_MS = 20;
 static constexpr unsigned long MOTION_DISPLAY_INTERVAL_MS = 500;
 static constexpr size_t MOTION_MAG_BUFFER_SIZE = 50;
@@ -99,7 +106,7 @@ static constexpr float STEP_LOWER_THRESHOLD = 0.85f;
 static constexpr unsigned long STEP_MIN_INTERVAL_MS = 300;
 static constexpr unsigned long STEP_MAX_INTERVAL_MS = 2000;
 static constexpr uint32_t STEP_EEPROM_SAVE_EVERY = 100;
-static constexpr char STEP_PREFS_NAMESPACE[] = "suraksha";
+static constexpr char STEP_PREFS_NAMESPACE[] = "surakshya";
 static constexpr char STEP_PREFS_KEY[] = "steps";
 static constexpr char STEP_PREFS_DAY_KEY[] = "stepDay";
 

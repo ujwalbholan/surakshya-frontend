@@ -1,5 +1,3 @@
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
 #include <LiquidCrystal_I2C.h>
 #include <Preferences.h>
 #include <TinyGPSPlus.h>
@@ -16,9 +14,22 @@ enum class StepState { WaitForPeak, WaitForValley };
 
 enum class ActivityLevel { Still, LightMove, Walking, Running, VeryActive };
 
-Adafruit_MPU6050 mpu;
+// Direct Wire driver — Adafruit begin() rejects many GY-521 clones whose
+// WHO_AM_I is not exactly 0x68 (e.g. MPU6500 = 0x70).
+static constexpr uint8_t MPU_REG_SMPLRT_DIV = 0x19;
+static constexpr uint8_t MPU_REG_CONFIG = 0x1A;
+static constexpr uint8_t MPU_REG_GYRO_CONFIG = 0x1B;
+static constexpr uint8_t MPU_REG_ACCEL_CONFIG = 0x1C;
+static constexpr uint8_t MPU_REG_ACCEL_XOUT_H = 0x3B;
+static constexpr uint8_t MPU_REG_PWR_MGMT_1 = 0x6B;
+static constexpr uint8_t MPU_REG_WHO_AM_I = 0x75;
+static constexpr float MPU_ACCEL_LSB_PER_G = 16384.0f;  // ±2g
+static constexpr float MPU_GYRO_LSB_PER_DPS = 131.0f;   // ±250°/s
+
 Preferences stepPrefs;
 bool mpuReady = false;
+uint8_t mpuAddress = MPU6050_I2C_ADDRESS;
+uint8_t mpuWhoAmI = 0;
 
 float ax = 0.0f;
 float ay = 0.0f;
@@ -193,6 +204,114 @@ void resetStepsAtMidnight(bool timeConfigured) {
   }
 }
 
+bool mpuWriteReg(uint8_t reg, uint8_t value) {
+  Wire.beginTransmission(mpuAddress);
+  Wire.write(reg);
+  Wire.write(value);
+  return Wire.endTransmission() == 0;
+}
+
+bool mpuReadBytes(uint8_t reg, uint8_t *buffer, size_t length) {
+  Wire.beginTransmission(mpuAddress);
+  Wire.write(reg);
+  if (Wire.endTransmission(false) != 0) {
+    return false;
+  }
+
+  const size_t got = Wire.requestFrom(mpuAddress, static_cast<uint8_t>(length));
+  if (got != length) {
+    return false;
+  }
+
+  for (size_t i = 0; i < length; i++) {
+    buffer[i] = static_cast<uint8_t>(Wire.read());
+  }
+  return true;
+}
+
+bool mpuReadReg(uint8_t reg, uint8_t &value) {
+  return mpuReadBytes(reg, &value, 1);
+}
+
+bool isAcceptedMpuWhoAmI(uint8_t who) {
+  // Genuine MPU6050 = 0x68. Common modules: MPU6500/9250 clones differ.
+  switch (who) {
+    case 0x68:
+    case 0x70:
+    case 0x71:
+    case 0x72:
+    case 0x73:
+    case 0x98:
+      return true;
+    default:
+      // Still usable if the device ACKed and WHO_AM_I is non-zero/non-0xFF.
+      return who != 0x00 && who != 0xFF;
+  }
+}
+
+void scanI2cBus() {
+  Serial.println("I2C scan (SDA=21, SCL=22):");
+  uint8_t found = 0;
+  for (uint8_t address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    if (Wire.endTransmission() == 0) {
+      Serial.printf("  - 0x%02X\n", address);
+      found++;
+    }
+  }
+  if (found == 0) {
+    Serial.println("  (no devices)");
+  }
+}
+
+bool probeAndConfigureMpu(uint8_t address) {
+  mpuAddress = address;
+
+  Wire.beginTransmission(address);
+  if (Wire.endTransmission() != 0) {
+    return false;
+  }
+
+  uint8_t who = 0;
+  if (!mpuReadReg(MPU_REG_WHO_AM_I, who)) {
+    Serial.printf("MPU @0x%02X: failed to read WHO_AM_I\n", address);
+    return false;
+  }
+
+  Serial.printf("MPU @0x%02X: WHO_AM_I=0x%02X\n", address, who);
+  if (!isAcceptedMpuWhoAmI(who)) {
+    Serial.printf("MPU @0x%02X: unsupported WHO_AM_I\n", address);
+    return false;
+  }
+
+  // Device reset then wake (clear sleep bit). Some modules need a short settle.
+  if (!mpuWriteReg(MPU_REG_PWR_MGMT_1, 0x80)) {
+    return false;
+  }
+  delay(100);
+  if (!mpuWriteReg(MPU_REG_PWR_MGMT_1, 0x00)) {
+    return false;
+  }
+  delay(50);
+
+  // Match previous Adafruit config: ±2g, ±250 dps, DLPF ~21 Hz (CONFIG=0x04).
+  if (!mpuWriteReg(MPU_REG_SMPLRT_DIV, 0x00) ||
+      !mpuWriteReg(MPU_REG_CONFIG, 0x04) ||
+      !mpuWriteReg(MPU_REG_GYRO_CONFIG, 0x00) ||
+      !mpuWriteReg(MPU_REG_ACCEL_CONFIG, 0x00)) {
+    return false;
+  }
+
+  uint8_t sample[6];
+  if (!mpuReadBytes(MPU_REG_ACCEL_XOUT_H, sample, sizeof(sample))) {
+    Serial.printf("MPU @0x%02X: accel read failed after config\n", address);
+    return false;
+  }
+
+  mpuWhoAmI = who;
+  return true;
+}
+
 void readMpu(unsigned long now) {
   if (!mpuReady || now - lastMpuReadAt < MPU_READ_INTERVAL_MS) {
     return;
@@ -200,17 +319,25 @@ void readMpu(unsigned long now) {
 
   lastMpuReadAt = now;
 
-  sensors_event_t accel;
-  sensors_event_t gyro;
-  sensors_event_t temp;
-  mpu.getEvent(&accel, &gyro, &temp);
+  uint8_t raw[14];
+  if (!mpuReadBytes(MPU_REG_ACCEL_XOUT_H, raw, sizeof(raw))) {
+    return;
+  }
 
-  ax = accel.acceleration.x / 9.80665f;
-  ay = accel.acceleration.y / 9.80665f;
-  az = accel.acceleration.z / 9.80665f;
-  gx = gyro.gyro.x * 57.2957795f;
-  gy = gyro.gyro.y * 57.2957795f;
-  gz = gyro.gyro.z * 57.2957795f;
+  const int16_t rawAx = static_cast<int16_t>((raw[0] << 8) | raw[1]);
+  const int16_t rawAy = static_cast<int16_t>((raw[2] << 8) | raw[3]);
+  const int16_t rawAz = static_cast<int16_t>((raw[4] << 8) | raw[5]);
+  // raw[6], raw[7] = temperature
+  const int16_t rawGx = static_cast<int16_t>((raw[8] << 8) | raw[9]);
+  const int16_t rawGy = static_cast<int16_t>((raw[10] << 8) | raw[11]);
+  const int16_t rawGz = static_cast<int16_t>((raw[12] << 8) | raw[13]);
+
+  ax = rawAx / MPU_ACCEL_LSB_PER_G;
+  ay = rawAy / MPU_ACCEL_LSB_PER_G;
+  az = rawAz / MPU_ACCEL_LSB_PER_G;
+  gx = rawGx / MPU_GYRO_LSB_PER_DPS;
+  gy = rawGy / MPU_GYRO_LSB_PER_DPS;
+  gz = rawGz / MPU_GYRO_LSB_PER_DPS;
 
   mag = sqrtf(ax * ax + ay * ay + az * az);
   gyroMag = sqrtf(gx * gx + gy * gy + gz * gz);
@@ -462,19 +589,27 @@ bool initMotion() {
   stepPrefs.begin(STEP_PREFS_NAMESPACE, false);
   loadStepCount();
 
-  if (!mpu.begin(MPU6050_I2C_ADDRESS, &Wire)) {
-    mpuReady = false;
-    return false;
+  Wire.setClock(MPU_I2C_CLOCK_HZ);
+  delay(50);
+  scanI2cBus();
+
+  const uint8_t candidates[] = {MPU6050_I2C_ADDRESS, MPU6050_I2C_ADDRESS_ALT};
+  for (uint8_t address : candidates) {
+    if (probeAndConfigureMpu(address)) {
+      mpuReady = true;
+      lastActiveAt = millis();
+      displayWakeUntil = millis() + DISPLAY_ON_TIME_MS;
+      Serial.printf(
+          "MPU ready at 0x%02X (WHO_AM_I=0x%02X)\n", mpuAddress, mpuWhoAmI);
+      return true;
+    }
   }
 
-  mpu.setAccelerometerRange(MPU6050_RANGE_2_G);
-  mpu.setGyroRange(MPU6050_RANGE_250_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-
-  mpuReady = true;
-  lastActiveAt = millis();
-  displayWakeUntil = millis() + DISPLAY_ON_TIME_MS;
-  return true;
+  mpuReady = false;
+  Serial.println(
+      "MPU init failed: no usable device at 0x68/0x69. "
+      "Check VCC/GND/SDA/SCL (and that the module appears in the I2C scan).");
+  return false;
 }
 
 void motionTick(unsigned long now, const MotionContext &ctx) {

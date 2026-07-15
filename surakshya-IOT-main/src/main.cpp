@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <LiquidCrystal_I2C.h>
+#include <Preferences.h>
 #include <PubSubClient.h>
 #include <TinyGPSPlus.h>
 #include <WiFi.h>
@@ -17,6 +18,10 @@ TinyGPSPlus gps;
 LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, LCD_COLUMNS, LCD_ROWS);
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
+Preferences emergencyPrefs;
+
+// App-synced dial number (empty = use EMERGENCY_PHONE_NUMBER fallback).
+char syncedEmergencyPhone[24] = "";
 
 unsigned long lastBlinkAt = 0;
 unsigned long lastStatusAt = 0;
@@ -317,9 +322,85 @@ const char *getPreferredSosChannel() {
   return "sim";
 }
 
+void loadEmergencyContactFromNvs() {
+  if (!emergencyPrefs.begin(STEP_PREFS_NAMESPACE, true)) {
+    return;
+  }
+  const String stored = emergencyPrefs.getString(EMERGENCY_PHONE_PREFS_KEY, "");
+  emergencyPrefs.end();
+
+  if (stored.length() > 0 && stored.length() < sizeof(syncedEmergencyPhone)) {
+    strncpy(syncedEmergencyPhone, stored.c_str(), sizeof(syncedEmergencyPhone) - 1);
+    syncedEmergencyPhone[sizeof(syncedEmergencyPhone) - 1] = '\0';
+    Serial.printf("Loaded emergency phone from NVS: %s\n", syncedEmergencyPhone);
+  }
+}
+
+void saveEmergencyContactToNvs(const char *phone) {
+  if (!emergencyPrefs.begin(STEP_PREFS_NAMESPACE, false)) {
+    Serial.println("Failed to open NVS for emergency phone.");
+    return;
+  }
+
+  if (phone == nullptr || phone[0] == '\0') {
+    emergencyPrefs.remove(EMERGENCY_PHONE_PREFS_KEY);
+    syncedEmergencyPhone[0] = '\0';
+    Serial.println("Emergency phone cleared from NVS; using firmware fallback.");
+  } else {
+    emergencyPrefs.putString(EMERGENCY_PHONE_PREFS_KEY, phone);
+    strncpy(syncedEmergencyPhone, phone, sizeof(syncedEmergencyPhone) - 1);
+    syncedEmergencyPhone[sizeof(syncedEmergencyPhone) - 1] = '\0';
+    Serial.printf("Saved emergency phone to NVS: %s\n", syncedEmergencyPhone);
+  }
+
+  emergencyPrefs.end();
+}
+
+const char *getEmergencyDialNumber() {
+  if (syncedEmergencyPhone[0] != '\0') {
+    return syncedEmergencyPhone;
+  }
+  return EMERGENCY_PHONE_NUMBER;
+}
+
+void handleMqttCommand(char *topic, byte *payload, unsigned int length) {
+  (void)topic;
+
+  char message[MQTT_BUFFER_SIZE];
+  const size_t copyLen = length < sizeof(message) - 1 ? length : sizeof(message) - 1;
+  memcpy(message, payload, copyLen);
+  message[copyLen] = '\0';
+
+  JsonDocument doc;
+  const DeserializationError err = deserializeJson(doc, message);
+  if (err) {
+    Serial.printf("MQTT command JSON parse failed: %s\n", err.c_str());
+    return;
+  }
+
+  const char *type = doc["type"] | "";
+  if (strcmp(type, "emergency_contact") != 0) {
+    Serial.printf("Ignoring MQTT command type=%s\n", type);
+    return;
+  }
+
+  if (doc["phoneNumber"].isNull() || !doc["phoneNumber"].is<const char *>()) {
+    saveEmergencyContactToNvs(nullptr);
+    return;
+  }
+
+  const char *phone = doc["phoneNumber"];
+  if (strlen(phone) >= sizeof(syncedEmergencyPhone)) {
+    Serial.println("Emergency phone too long; ignored.");
+    return;
+  }
+  saveEmergencyContactToNvs(phone);
+}
+
 void initMqtt() {
   mqttClient.setServer(MQTT_BROKER_HOST, MQTT_BROKER_PORT);
   mqttClient.setBufferSize(MQTT_BUFFER_SIZE);
+  mqttClient.setCallback(handleMqttCommand);
 }
 
 bool formatIsoTimestamp(char *buffer, size_t bufferSize) {
@@ -383,6 +464,11 @@ bool ensureMqttConnected() {
   const bool connected = mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD);
   if (connected) {
     Serial.println("MQTT connected.");
+    if (mqttClient.subscribe(MQTT_COMMANDS_TOPIC, 1)) {
+      Serial.printf("Subscribed to %s\n", MQTT_COMMANDS_TOPIC);
+    } else {
+      Serial.printf("Failed to subscribe to %s\n", MQTT_COMMANDS_TOPIC);
+    }
   } else {
     Serial.printf("MQTT connection failed, state=%d\n", mqttClient.state());
   }
@@ -512,7 +598,7 @@ bool publishEmergencyCallEvent() {
   JsonDocument doc;
   doc["deviceId"] = DEVICE_ID;
   doc["eventType"] = "emergency_call";
-  doc["phoneNumber"] = EMERGENCY_PHONE_NUMBER;
+  doc["phoneNumber"] = getEmergencyDialNumber();
   doc["timestamp"] = timestamp;
 
   if (gps.location.isValid()) {
@@ -585,12 +671,13 @@ bool placeEmergencyCall() {
     return false;
   }
 
+  const char *dialNumber = getEmergencyDialNumber();
   char dialCommand[48];
-  snprintf(dialCommand, sizeof(dialCommand), "ATD%s;", EMERGENCY_PHONE_NUMBER);
+  snprintf(dialCommand, sizeof(dialCommand), "ATD%s;", dialNumber);
 
-  Serial.printf("Placing emergency call to %s\n", EMERGENCY_PHONE_NUMBER);
+  Serial.printf("Placing emergency call to %s\n", dialNumber);
   writeLcdLine(0, "Calling...");
-  writeLcdLine(1, EMERGENCY_PHONE_NUMBER);
+  writeLcdLine(1, dialNumber);
 
   const String response = sendAtCommand(dialCommand, SIM_DIAL_TIMEOUT_MS);
   const bool started = response.indexOf("OK") >= 0 || response.indexOf("CONNECT") >= 0;
@@ -1125,14 +1212,14 @@ void setup() {
   Wire.begin(LCD_SDA_PIN, LCD_SCL_PIN);
   lcd.init();
   lcd.backlight();
-  writeLcdLine(0, "SurakshaWatch");
+  writeLcdLine(0, "SurakshyaWatch");
   writeLcdLine(1, "Starting...");
 
   Serial.println();
-  Serial.println("SurakshaWatch ESP32 bring-up test");
+  Serial.println("SurakshyaWatch ESP32 bring-up test");
   Serial.println("----------------------------------");
   Serial.printf(
-      "SOS button GPIO%d, call button GPIO%d. Hold BOTH ~0.2s to dial %s.\n",
+      "SOS button GPIO%d, call button GPIO%d. Hold BOTH ~0.2s to dial (synced or %s).\n",
       SOS_BUTTON_PIN,
       CALL_BUTTON_PIN,
       EMERGENCY_PHONE_NUMBER);
@@ -1142,15 +1229,17 @@ void setup() {
   Serial.printf("Starting GPS on RX2 GPIO%d, TX2 GPIO%d at %lu baud\n", GPS_RX_PIN, GPS_TX_PIN, GPS_BAUD);
   GpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
   initSimModule();
+  loadEmergencyContactFromNvs();
+  Serial.printf("Emergency dial number: %s\n", getEmergencyDialNumber());
 
   if (initMotion()) {
     Serial.println("MPU-6050 initialized.");
     writeLcdLine(0, "MPU OK");
     writeLcdLine(1, "Motion ready");
   } else {
-    Serial.println("MPU-6050 init failed. Check wiring on D21/D22.");
+    Serial.println("MPU-6050 init failed. See I2C scan above.");
     writeLcdLine(0, "MPU FAIL");
-    writeLcdLine(1, "Check wiring");
+    writeLcdLine(1, "See serial");
   }
   delay(1000);
 

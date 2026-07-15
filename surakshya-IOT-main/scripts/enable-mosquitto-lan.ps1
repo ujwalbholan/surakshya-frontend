@@ -1,6 +1,6 @@
 # Run as Administrator: right-click PowerShell -> Run as administrator, then:
 #   Set-ExecutionPolicy -Scope Process Bypass
-#   & "D:\SurakshaWatch\IoT\scripts\enable-mosquitto-lan.ps1"
+#   & "D:\SurakshyaWatch\IoT\scripts\enable-mosquitto-lan.ps1"
 
 $ErrorActionPreference = "Stop"
 
@@ -32,7 +32,7 @@ if ($mainText -notmatch [regex]::Escape($includeLine)) {
     Add-Content -Path $mainConf -Value "`n$includeLine"
 }
 
-$firewallRuleName = "Mosquitto MQTT 1883 (SurakshaWatch)"
+$firewallRuleName = "Mosquitto MQTT 1883 (SurakshyaWatch)"
 $existingRule = Get-NetFirewallRule -DisplayName $firewallRuleName -ErrorAction SilentlyContinue
 if (-not $existingRule) {
     New-NetFirewallRule -DisplayName $firewallRuleName -Direction Inbound -Protocol TCP -LocalPort 1883 -Action Allow | Out-Null
