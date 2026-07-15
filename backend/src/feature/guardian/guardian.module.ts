@@ -14,6 +14,7 @@ import { GuardianActivationController } from './guardian-activation.controller';
 import { RolesGuard } from 'src/utils/guard/roles.guard';
 import { NotificationModule } from '../notification/notification.module';
 import { RedisService } from 'src/config/redis/redis.service';
+import { MqttModule } from '../mqtt/mqtt.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { RedisService } from 'src/config/redis/redis.service';
       LocationPing,
     ]),
     NotificationModule,
+    MqttModule,
   ],
   controllers: [
     GuardianController,

@@ -228,6 +228,7 @@ export class PoliceService {
     const links = await this.guardianLinkRepo.find({
       where: { child_user_id: userId },
       relations: ['guardian'],
+      order: { is_emergency_contact: 'DESC', created_at: 'DESC' },
     });
 
     return {
@@ -237,6 +238,7 @@ export class PoliceService {
         email: link.guardian.email,
         phone: link.guardian.phone,
         role: link.guardian.role,
+        is_emergency_contact: Boolean(link.is_emergency_contact),
         created_at: link.created_at,
       })),
     };

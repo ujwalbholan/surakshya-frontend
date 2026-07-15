@@ -13,6 +13,7 @@ import { Device } from 'src/feature/device/entities/device.entity';
 import { LocationPing } from 'src/feature/device/entities/location-ping.entity';
 import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
 import { GuardianLink } from 'src/feature/guardian/entities/guardian-link.entity';
+import { GuardianService } from 'src/feature/guardian/guardian.service';
 import { AdminService } from './admin.service';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 
@@ -23,6 +24,7 @@ describe('AdminService', () => {
   let pingRepo: jest.Mocked<Repository<LocationPing>>;
   let sosRepo: jest.Mocked<Repository<SosEvent>>;
   let linkRepo: jest.Mocked<Repository<GuardianLink>>;
+  let guardianService: { syncEmergencyContactToUserDevices: jest.Mock };
 
   const mockUser = (overrides: Partial<User> = {}): User => ({
     id: 'user-1',
@@ -81,6 +83,12 @@ describe('AdminService', () => {
           provide: getRepositoryToken(GuardianLink),
           useValue: { find: jest.fn() },
         },
+        {
+          provide: GuardianService,
+          useValue: {
+            syncEmergencyContactToUserDevices: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
@@ -90,6 +98,7 @@ describe('AdminService', () => {
     pingRepo = module.get(getRepositoryToken(LocationPing));
     sosRepo = module.get(getRepositoryToken(SosEvent));
     linkRepo = module.get(getRepositoryToken(GuardianLink));
+    guardianService = module.get(GuardianService);
   });
 
   describe('getStats', () => {
@@ -302,6 +311,9 @@ describe('AdminService', () => {
       const result = await service.assignDevice('dev-1', 'user-1');
 
       expect(result.user?.id).toBe('user-1');
+      expect(guardianService.syncEmergencyContactToUserDevices).toHaveBeenCalledWith(
+        'user-1',
+      );
     });
 
     it('should reject non-USER role', async () => {

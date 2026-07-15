@@ -7,7 +7,11 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as mqtt from 'mqtt';
 import { TrackingIngestService } from '../tracking/tracking-ingest.interface';
-import { MQTT_BROKER_URL, MQTT_TOPICS } from './mqtt.constants';
+import {
+  deviceCommandsTopic,
+  MQTT_BROKER_URL,
+  MQTT_TOPICS,
+} from './mqtt.constants';
 
 @Injectable()
 export class MqttService implements OnModuleInit, OnModuleDestroy {
@@ -51,6 +55,43 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     this.client.on('reconnect', () => {
       this.logger.warn('Reconnecting to MQTT broker...');
     });
+  }
+
+  /**
+   * Push retained emergency-contact config to a band.
+   * Retained so the device receives it on next MQTT subscribe.
+   */
+  publishEmergencyContactConfig(
+    deviceId: string,
+    phoneNumber: string | null,
+  ): boolean {
+    if (!this.client?.connected) {
+      this.logger.warn(
+        `MQTT not connected; cannot push emergency contact to ${deviceId}`,
+      );
+      return false;
+    }
+
+    const topic = deviceCommandsTopic(deviceId);
+    const payload = JSON.stringify({
+      type: 'emergency_contact',
+      deviceId,
+      phoneNumber,
+      updatedAt: new Date().toISOString(),
+    });
+
+    this.client.publish(topic, payload, { qos: 1, retain: true }, (err) => {
+      if (err) {
+        this.logger.error(
+          `Failed to publish emergency contact to ${topic}: ${err.message}`,
+        );
+        return;
+      }
+      this.logger.log(
+        `Published emergency contact to ${topic}: ${phoneNumber ?? '(cleared)'}`,
+      );
+    });
+    return true;
   }
 
   private handleIncomingMessage(topic: string, payload: string): void {

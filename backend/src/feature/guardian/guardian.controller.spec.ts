@@ -12,6 +12,7 @@ describe('GuardianController', () => {
     addGuardian: jest.fn(),
     getMyGuardians: jest.fn(),
     updateLinkedGuardianPhone: jest.fn(),
+    setEmergencyContact: jest.fn(),
   };
 
   const userId = '550e8400-e29b-41d4-a716-446655440000';
@@ -97,6 +98,30 @@ describe('GuardianController', () => {
       userId,
       guardianId,
       dto.phone,
+    );
+    expect(result).toEqual(expected);
+  });
+
+  it('should set a linked guardian as emergency contact', async () => {
+    const req = { user: { userId } } as unknown as Request;
+    const guardianId = '660e8400-e29b-41d4-a716-446655440001';
+    const dto = { isEmergencyContact: true };
+    const expected = {
+      message: 'Emergency contact updated',
+      guardian: {
+        id: guardianId,
+        is_emergency_contact: true,
+      },
+    };
+
+    service.setEmergencyContact.mockResolvedValue(expected as never);
+
+    const result = await controller.setEmergencyContact(req, guardianId, dto);
+
+    expect(service.setEmergencyContact).toHaveBeenCalledWith(
+      userId,
+      guardianId,
+      true,
     );
     expect(result).toEqual(expected);
   });

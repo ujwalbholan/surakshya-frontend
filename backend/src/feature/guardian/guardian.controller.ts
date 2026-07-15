@@ -23,6 +23,7 @@ import type { Request } from 'express';
 import { GuardianService } from './guardian.service';
 import { CreateGuardianDto } from './dto/create-guardian.dto';
 import { UpdateGuardianPhoneDto } from './dto/update-guardian-phone.dto';
+import { SetGuardianEmergencyContactDto } from './dto/set-guardian-emergency-contact.dto';
 import { JwtAuthGuard } from 'src/utils/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/utils/guard/roles.guard';
 import { Roles } from 'src/decorators/roles.decorators';
@@ -74,6 +75,27 @@ export class GuardianController {
       user.userId,
       guardianId,
       dto.phone,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Set or clear a linked guardian as the SOS emergency contact',
+    description:
+      'Only one emergency contact is allowed per user. Setting one clears any previous selection.',
+  })
+  @ApiParam({ name: 'guardianId', type: 'string', format: 'uuid' })
+  @Roles('USER')
+  @Patch(':guardianId/emergency-contact')
+  setEmergencyContact(
+    @Req() req: Request,
+    @Param('guardianId', ParseUUIDPipe) guardianId: string,
+    @Body() dto: SetGuardianEmergencyContactDto,
+  ) {
+    const user = req.user as { userId: string };
+    return this.guardianService.setEmergencyContact(
+      user.userId,
+      guardianId,
+      dto.isEmergencyContact,
     );
   }
 

@@ -24,6 +24,7 @@ import { AddWardDto } from './dto/add-ward.dto';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { NotificationService } from '../notification/notification.service';
 import { RedisService } from 'src/config/redis/redis.service';
+import { MqttService } from '../mqtt/mqtt.service';
 import {
   GUARDIAN_ACTIVATION_CHALLENGE_TTL_SECONDS,
   GUARDIAN_ACTIVATION_MAX_OTP_SENDS_PER_HOUR,
@@ -56,6 +57,7 @@ export class GuardianService {
     private readonly locationPingRepository: Repository<LocationPing>,
     private readonly notificationService: NotificationService,
     private readonly redisService: RedisService,
+    private readonly mqttService: MqttService,
   ) {}
 
   async addGuardian(childUserId: string, dto: CreateGuardianDto) {
@@ -675,18 +677,70 @@ export class GuardianService {
     const [links, total] = await this.guardianLinkRepository.findAndCount({
       where: { child_user_id: childUserId },
       relations: ['guardian'],
-      order: { created_at: 'DESC' },
+      order: { is_emergency_contact: 'DESC', created_at: 'DESC' },
       skip,
       take: options.limit,
     });
 
     return {
       message: 'Guardians retrieved successfully',
-      guardians: links.map((link) => this.toPublicUser(link.guardian)),
+      guardians: links.map((link) => ({
+        ...this.toPublicUser(link.guardian),
+        is_emergency_contact: Boolean(link.is_emergency_contact),
+      })),
       total,
       page: options.page,
       limit: options.limit,
       totalPages: Math.ceil(total / options.limit),
+    };
+  }
+
+  /**
+   * Designate (or clear) one linked guardian as the SOS emergency contact.
+   * Only one emergency contact is allowed per child.
+   */
+  async setEmergencyContact(
+    childUserId: string,
+    guardianUserId: string,
+    isEmergencyContact: boolean,
+  ) {
+    const link = await this.guardianLinkRepository.findOne({
+      where: {
+        child_user_id: childUserId,
+        guardian_user_id: guardianUserId,
+      },
+      relations: ['guardian'],
+    });
+
+    if (!link) {
+      throw new ForbiddenException('You are not linked to this guardian');
+    }
+
+    if (isEmergencyContact) {
+      await this.guardianLinkRepository.update(
+        { child_user_id: childUserId, is_emergency_contact: true },
+        { is_emergency_contact: false },
+      );
+      link.is_emergency_contact = true;
+      await this.guardianLinkRepository.save(link);
+    } else if (link.is_emergency_contact) {
+      link.is_emergency_contact = false;
+      await this.guardianLinkRepository.save(link);
+    }
+
+    await this.pushEmergencyContactToUserDevices(
+      childUserId,
+      isEmergencyContact ? link.guardian.phone : null,
+    );
+
+    return {
+      message: isEmergencyContact
+        ? 'Emergency contact updated'
+        : 'Emergency contact cleared',
+      guardian: {
+        ...this.toPublicUser(link.guardian),
+        is_emergency_contact: Boolean(link.is_emergency_contact),
+      },
     };
   }
 
@@ -728,6 +782,10 @@ export class GuardianService {
     const updated = await this.userRepository.findOneByOrFail({
       id: guardianUserId,
     });
+
+    if (link.is_emergency_contact) {
+      await this.pushEmergencyContactToUserDevices(childUserId, updated.phone);
+    }
 
     return {
       message: 'Guardian phone updated successfully',
@@ -904,6 +962,24 @@ export class GuardianService {
     return randomBytes(8).toString('hex');
   }
 
+  /**
+   * Re-push the child's current emergency contact to all assigned bands
+   * (e.g. after device assignment).
+   */
+  async syncEmergencyContactToUserDevices(childUserId: string): Promise<void> {
+    const link = await this.guardianLinkRepository.findOne({
+      where: {
+        child_user_id: childUserId,
+        is_emergency_contact: true,
+      },
+      relations: ['guardian'],
+    });
+    await this.pushEmergencyContactToUserDevices(
+      childUserId,
+      link?.guardian?.phone ?? null,
+    );
+  }
+
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
   }
@@ -911,6 +987,37 @@ export class GuardianService {
   private normalizePhone(phone: string): string {
     const trimmed = phone.trim();
     return trimmed.startsWith('+977') ? trimmed.slice(4) : trimmed;
+  }
+
+  /** Format for SIM ATD dialing (+977… for Nepal mobiles). */
+  private toDialablePhone(phone: string | null | undefined): string | null {
+    if (!phone) return null;
+    const digits = phone.trim().replace(/[\s-]/g, '');
+    if (!digits) return null;
+    if (digits.startsWith('+')) return digits;
+    if (digits.startsWith('977') && digits.length >= 12) return `+${digits}`;
+    if (/^9[678]\d{8}$/.test(digits)) return `+977${digits}`;
+    return digits;
+  }
+
+  private async pushEmergencyContactToUserDevices(
+    childUserId: string,
+    phoneRaw: string | null,
+  ): Promise<void> {
+    const devices = await this.deviceRepository.find({
+      where: { user: { id: childUserId } },
+    });
+    if (devices.length === 0) {
+      this.logger.warn(
+        `No devices assigned to user ${childUserId}; emergency contact not pushed to band`,
+      );
+      return;
+    }
+
+    const dialable = this.toDialablePhone(phoneRaw);
+    for (const device of devices) {
+      this.mqttService.publishEmergencyContactConfig(device.imei, dialable);
+    }
   }
 
   private toPublicUser(user: User) {

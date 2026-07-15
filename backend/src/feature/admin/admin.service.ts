@@ -16,6 +16,7 @@ import { Role } from 'src/feature/auth/dto/auth.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { CreateAdminDeviceDto } from './dto/create-admin-device.dto';
+import { GuardianService } from 'src/feature/guardian/guardian.service';
 
 @Injectable()
 export class AdminService {
@@ -30,6 +31,7 @@ export class AdminService {
     private readonly sosRepo: Repository<SosEvent>,
     @InjectRepository(GuardianLink)
     private readonly guardianLinkRepo: Repository<GuardianLink>,
+    private readonly guardianService: GuardianService,
   ) {}
 
   async getStats() {
@@ -244,6 +246,7 @@ export class AdminService {
 
     device.user = user;
     const saved = await this.deviceRepo.save(device);
+    await this.guardianService.syncEmergencyContactToUserDevices(userId);
     return this.formatDevice(saved);
   }
 

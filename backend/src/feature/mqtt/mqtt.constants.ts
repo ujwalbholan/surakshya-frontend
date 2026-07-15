@@ -7,3 +7,8 @@ export const MQTT_TOPICS = [
   'device/+', // e.g. device/wearable-001
   'surakshyawatch/+/events', // SOS events
 ];
+
+/** Downstream config/commands for a specific band (retained). */
+export function deviceCommandsTopic(deviceId: string): string {
+  return `surakshyawatch/${deviceId}/commands`;
+}

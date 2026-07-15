@@ -17,6 +17,7 @@ import { GuardianService } from './guardian.service';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { NotificationService } from '../notification/notification.service';
 import { RedisService } from 'src/config/redis/redis.service';
+import { MqttService } from '../mqtt/mqtt.service';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt', () => ({
@@ -69,6 +70,7 @@ describe('GuardianService', () => {
       full_name: 'Guardian',
       role: Role.GUARDIAN,
     }),
+    is_emergency_contact: false,
     created_at: new Date(),
     ...overrides,
   });
@@ -159,6 +161,12 @@ describe('GuardianService', () => {
             getClient: jest.fn().mockReturnValue({
               scan: jest.fn().mockResolvedValue(['0', []]),
             }),
+          },
+        },
+        {
+          provide: MqttService,
+          useValue: {
+            publishEmergencyContactConfig: jest.fn().mockReturnValue(true),
           },
         },
       ],

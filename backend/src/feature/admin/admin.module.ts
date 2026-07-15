@@ -7,6 +7,7 @@ import { SosEvent } from 'src/feature/device/entities/sos-event.entity';
 import { GuardianLink } from 'src/feature/guardian/entities/guardian-link.entity';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { GuardianModule } from 'src/feature/guardian/guardian.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AdminService } from './admin.service';
       SosEvent,
       GuardianLink,
     ]),
+    GuardianModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],
