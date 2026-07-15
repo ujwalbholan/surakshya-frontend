@@ -122,7 +122,9 @@ export default function VictimProfilePanel({
               phone: user.phone,
               emergencyContacts: guardiansRes.guardians.map((g) => ({
                 relation: "guardian" as const,
-                name: g.full_name,
+                name: g.is_emergency_contact
+                  ? `${g.full_name} (Emergency)`
+                  : g.full_name,
                 phone: g.phone,
               })),
             },

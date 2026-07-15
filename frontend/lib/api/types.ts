@@ -365,6 +365,7 @@ export interface PoliceGuardian {
   email: string
   phone: string
   role: string
+  is_emergency_contact?: boolean
   created_at: string
 }
 
