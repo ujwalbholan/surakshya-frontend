@@ -9,6 +9,7 @@ import { SosEvent } from '../device/entities/sos-event.entity';
 import { PoliceStation } from '../police-stations/entities/police-station.entity';
 import { TrackingService } from './tracking.service';
 import { TrackingGateway } from './tracking.gateway';
+import { MqttService } from '../mqtt/mqtt.service';
 
 describe('TrackingService', () => {
   let service: TrackingService;
@@ -94,6 +95,13 @@ describe('TrackingService', () => {
         {
           provide: TrackingGateway,
           useValue: { emitLocationUpdate: jest.fn(), emitSosEvent: jest.fn() },
+        },
+        {
+          provide: MqttService,
+          useValue: {
+            publishEmergencyContactConfig: jest.fn(),
+            publishSosCancelCommand: jest.fn(),
+          },
         },
       ],
     }).compile();

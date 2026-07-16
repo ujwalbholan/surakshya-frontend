@@ -94,6 +94,38 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     return true;
   }
 
+  /**
+   * Tell a band to stop live SOS tracking (app / ops cancel).
+   * Not retained — only devices currently connected should act on it.
+   */
+  publishSosCancelCommand(deviceId: string, sosId?: string): boolean {
+    if (!this.client?.connected) {
+      this.logger.warn(
+        `MQTT not connected; cannot push SOS cancel to ${deviceId}`,
+      );
+      return false;
+    }
+
+    const topic = deviceCommandsTopic(deviceId);
+    const payload = JSON.stringify({
+      type: 'sos_cancel',
+      deviceId,
+      ...(sosId ? { sosId } : {}),
+      updatedAt: new Date().toISOString(),
+    });
+
+    this.client.publish(topic, payload, { qos: 1, retain: false }, (err) => {
+      if (err) {
+        this.logger.error(
+          `Failed to publish SOS cancel to ${topic}: ${err.message}`,
+        );
+        return;
+      }
+      this.logger.log(`Published SOS cancel to ${topic}`);
+    });
+    return true;
+  }
+
   private handleIncomingMessage(topic: string, payload: string): void {
     void this.trackingIngest
       .ingestMqttMessage(topic, payload)

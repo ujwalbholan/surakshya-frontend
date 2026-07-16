@@ -31,3 +31,7 @@ export const guardianActivationOtpKey = (token: string) =>
 
 export const guardianActivationOtpVerifyKey = (token: string) =>
   `guardian:activation:otp:verify:${token}`;
+
+/** Set after OTP verify when guardian still must choose a permanent password. */
+export const guardianActivationOtpVerifiedKey = (token: string) =>
+  `guardian:activation:otp:verified:${token}`;

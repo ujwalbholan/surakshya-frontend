@@ -5,6 +5,10 @@ import { SetActivationPasswordDto } from '../police-provisioning/dto/set-activat
 import { VerifyActivationOtpDto } from '../police-provisioning/dto/verify-activation-otp.dto';
 import { GuardianService } from './guardian.service';
 
+class GuardianActivationChallengeDto {
+  challengeToken!: string;
+}
+
 @ApiTags('Guardian Activation')
 @Controller('guardian/activation')
 export class GuardianActivationController {
@@ -33,6 +37,17 @@ export class GuardianActivationController {
     return this.guardianService.verifyGuardianActivationOtp(
       dto.challengeToken.trim(),
       dto.otp.trim(),
+    );
+  }
+
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Resend guardian activation OTP to email and phone',
+  })
+  @Post('resend-otp')
+  resendOtp(@Body() dto: GuardianActivationChallengeDto) {
+    return this.guardianService.resendGuardianActivationOtp(
+      dto.challengeToken.trim(),
     );
   }
 }

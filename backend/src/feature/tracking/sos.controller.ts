@@ -69,6 +69,19 @@ export class SosController {
   }
 
   @ApiOperation({
+    summary: 'Cancel an active SOS from the citizen app',
+    description:
+      'Resolves the SOS in the database and sends an MQTT sos_cancel command to the linked wearable.',
+  })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @Roles('USER', 'ADMIN', 'SUPER_ADMIN')
+  @Post(':id/cancel')
+  cancel(@Req() req: Request, @Param('id', ParseUUIDPipe) id: string) {
+    const user = req.user as AuthUser;
+    return this.trackingService.cancelSosForUser(user.userId, id);
+  }
+
+  @ApiOperation({
     summary: 'Append a live location update to an active SOS event',
   })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

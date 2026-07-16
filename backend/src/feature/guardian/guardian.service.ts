@@ -23,6 +23,7 @@ import { CreateGuardianDto } from './dto/create-guardian.dto';
 import { AddWardDto } from './dto/add-ward.dto';
 import { Role } from 'src/feature/auth/dto/auth.dto';
 import { NotificationService } from '../notification/notification.service';
+import { OtpEmailService } from '../notification/email/otp.email';
 import { RedisService } from 'src/config/redis/redis.service';
 import { MqttService } from '../mqtt/mqtt.service';
 import {
@@ -36,6 +37,7 @@ import {
   guardianActivationChallengeKey,
   guardianActivationOtpKey,
   guardianActivationOtpVerifyKey,
+  guardianActivationOtpVerifiedKey,
 } from './guardian-activation.types';
 
 @Injectable()
@@ -56,6 +58,7 @@ export class GuardianService {
     @InjectRepository(LocationPing)
     private readonly locationPingRepository: Repository<LocationPing>,
     private readonly notificationService: NotificationService,
+    private readonly otpEmailService: OtpEmailService,
     private readonly redisService: RedisService,
     private readonly mqttService: MqttService,
   ) {}
@@ -426,8 +429,11 @@ export class GuardianService {
       }
 
       const challengeToken = await this.issueActivationChallenge(user.id);
+      await this.sendActivationOtp(challengeToken, user);
+
       return {
-        message: 'Password change required before activation',
+        message:
+          'Enter the verification code sent to your email and phone, then set a new password.',
         requiresPasswordChange: true,
         challengeToken,
         role: 'GUARDIAN',
@@ -451,7 +457,7 @@ export class GuardianService {
 
       return {
         message:
-          'Account activation incomplete. Enter the OTP sent to your phone.',
+          'Account activation incomplete. Enter the OTP sent to your email and phone.',
         requiresActivationOtp: true,
         challengeToken,
         role: 'GUARDIAN',
@@ -471,6 +477,15 @@ export class GuardianService {
       );
     }
 
+    const otpVerified = await this.redisService.get(
+      guardianActivationOtpVerifiedKey(challengeToken),
+    );
+    if (!otpVerified) {
+      throw new BadRequestException(
+        'Verify the OTP sent to your email and phone before setting a new password.',
+      );
+    }
+
     const passwordHash = await bcrypt.hash(newPassword, 12);
 
     await this.userRepository.update(
@@ -480,20 +495,25 @@ export class GuardianService {
         temp_password_hash: null,
         temp_password_expires_at: null,
         must_change_password: false,
+        phone_verified: true,
+        is_active: true,
       },
     );
 
-    await this.sendActivationOtp(challengeToken, user);
+    await this.redisService.del(guardianActivationChallengeKey(challengeToken));
+    await this.redisService.del(guardianActivationOtpVerifiedKey(challengeToken));
+    await this.redisService.del(guardianActivationOtpKey(challengeToken));
+    await this.redisService.del(guardianActivationOtpVerifyKey(challengeToken));
 
     return {
-      message: 'Password updated. OTP sent to your registered phone number.',
-      otpSent: true,
+      message:
+        'Password updated. You can now sign in with your email and new password.',
     };
   }
 
   async verifyGuardianActivationOtp(challengeToken: string, otp: string) {
     const userId = await this.resolveChallengeToken(challengeToken);
-    await this.getActivatingGuardian(userId);
+    const user = await this.getActivatingGuardian(userId);
 
     const verifyKey = guardianActivationOtpVerifyKey(challengeToken);
     const attemptCount = await this.redisService.incr(
@@ -520,6 +540,23 @@ export class GuardianService {
       throw new BadRequestException('OTP expired or invalid');
     }
 
+    await this.redisService.del(otpKey);
+    await this.redisService.del(verifyKey);
+
+    if (user.must_change_password || !user.password_hash) {
+      await this.redisService.set(
+        guardianActivationOtpVerifiedKey(challengeToken),
+        userId,
+        GUARDIAN_ACTIVATION_CHALLENGE_TTL_SECONDS,
+      );
+
+      return {
+        message: 'OTP verified. Choose your new permanent password.',
+        otpVerified: true,
+        requiresPasswordChange: true,
+      };
+    }
+
     await this.userRepository.update(
       { id: userId },
       {
@@ -529,12 +566,22 @@ export class GuardianService {
     );
 
     await this.redisService.del(guardianActivationChallengeKey(challengeToken));
-    await this.redisService.del(otpKey);
-    await this.redisService.del(verifyKey);
 
     return {
       message:
-        'Account activated successfully. You can now log in with your new password.',
+        'Account activated successfully. You can now log in with your password.',
+      otpVerified: true,
+      requiresPasswordChange: false,
+    };
+  }
+
+  async resendGuardianActivationOtp(challengeToken: string) {
+    const userId = await this.resolveChallengeToken(challengeToken);
+    const user = await this.getActivatingGuardian(userId);
+    await this.sendActivationOtp(challengeToken, user);
+
+    return {
+      message: 'A new verification code was sent to your email and phone.',
     };
   }
 
@@ -589,7 +636,9 @@ export class GuardianService {
       GUARDIAN_ACTIVATION_OTP_TTL_SECONDS,
     );
     await this.redisService.del(guardianActivationOtpVerifyKey(challengeToken));
+    await this.redisService.del(guardianActivationOtpVerifiedKey(challengeToken));
 
+    await this.otpEmailService.sendPasswordResetOtp(user.email, otp);
     await this.sendOtpSms(user.phone, user.full_name, otp);
   }
 

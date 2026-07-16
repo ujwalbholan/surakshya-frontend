@@ -1,14 +1,18 @@
 import {
+  ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Not, Repository } from 'typeorm';
 import { Device } from '../device/entities/device.entity';
 import { LocationPing } from '../device/entities/location-ping.entity';
 import { SosEvent } from '../device/entities/sos-event.entity';
+import { MqttService } from '../mqtt/mqtt.service';
 import { PoliceStation } from '../police-stations/entities/police-station.entity';
 import { User } from '../user/entities/user.entity';
 import {
@@ -69,6 +73,8 @@ export class TrackingService implements TrackingIngestService {
     @InjectRepository(PoliceStation)
     private readonly stationRepo: Repository<PoliceStation>,
     private readonly trackingGateway: TrackingGateway,
+    @Inject(forwardRef(() => MqttService))
+    private readonly mqttService: MqttService,
   ) {}
 
   async ingestMqttMessage(topic: string, payload: string): Promise<void> {
@@ -106,6 +112,11 @@ export class TrackingService implements TrackingIngestService {
 
     if (eventType === 'emergency_call') {
       await this.ingestEmergencyCall(topic, json);
+      return;
+    }
+
+    if (eventType === 'heartbeat' || eventType === 'device_status') {
+      await this.ingestDeviceHeartbeat(topic, json);
       return;
     }
 
@@ -249,6 +260,21 @@ export class TrackingService implements TrackingIngestService {
         recordedAt: payload.recordedAt,
       },
     });
+  }
+
+  async ingestDeviceHeartbeat(topic: string, json: Record<string, unknown>) {
+    const deviceId = this.resolveDeviceId(topic, json);
+    if (!deviceId) {
+      this.logger.warn(`heartbeat missing deviceId on topic ${topic}`);
+      return;
+    }
+
+    const device = await this.findOrCreateDevice(deviceId);
+    await this.deviceRepo.update(device.id, {
+      lastSeenAt: new Date(),
+      isOnline: true,
+    });
+    this.logger.debug(`Heartbeat from device ${deviceId}`);
   }
 
   async ingestEmergencyCall(topic: string, json: Record<string, unknown>) {
@@ -396,6 +422,88 @@ export class TrackingService implements TrackingIngestService {
     }
 
     return null;
+  }
+
+  /**
+   * Citizen cancels their own active SOS from the app.
+   * Resolves the DB event and tells the linked band to stop tracking.
+   */
+  async cancelSosForUser(
+    userId: string,
+    sosId: string,
+  ): Promise<{
+    id: string;
+    status: 'resolved';
+    resolvedAt: string;
+    deviceImei: string;
+  }> {
+    const sos = await this.sosRepo.findOne({
+      where: { id: sosId },
+      relations: ['device', 'device.user', 'assignedStation'],
+    });
+
+    if (!sos) {
+      throw new NotFoundException('SOS event not found');
+    }
+
+    const ownerId = sos.device?.user?.id;
+    if (ownerId !== userId) {
+      throw new ForbiddenException('You do not own this SOS event');
+    }
+
+    if (sos.status !== 'active') {
+      throw new ConflictException('SOS event already resolved');
+    }
+
+    const resolvedAt = new Date();
+    const result = await this.sosRepo.update(
+      { id: sos.id, status: 'active' },
+      {
+        status: 'resolved',
+        resolvedAt,
+        eventType: 'sos_stopped',
+        notes: 'Cancelled by user from app',
+      },
+    );
+
+    if (!result.affected) {
+      throw new ConflictException('SOS event already resolved');
+    }
+
+    this.sosLocationLastEmit.delete(sos.id);
+
+    const deviceImei = sos.device.imei;
+    this.trackingGateway.emitSosEvent({
+      id: sos.id,
+      deviceId: deviceImei,
+      deviceImei,
+      ...this.sosOwnerFields(sos.device),
+      eventType: 'sos_stopped',
+      status: 'resolved',
+      latitude: sos.latitude ?? undefined,
+      longitude: sos.longitude ?? undefined,
+      assignedStationId: sos.assignedStation?.id,
+      assignedStationName: sos.assignedStation?.name,
+      startedAt: sos.startedAt.toISOString(),
+      resolvedAt: resolvedAt.toISOString(),
+      latestPing: null,
+    });
+
+    // Skip virtual phone-* devices — only real wearables listen on commands.
+    if (!deviceImei.startsWith('phone-')) {
+      this.mqttService.publishSosCancelCommand(deviceImei, sos.id);
+    }
+
+    this.logger.log(
+      `SOS ${sos.id} cancelled by user ${userId} (device ${deviceImei})`,
+    );
+
+    return {
+      id: sos.id,
+      status: 'resolved',
+      resolvedAt: resolvedAt.toISOString(),
+      deviceImei,
+    };
   }
 
   /**
