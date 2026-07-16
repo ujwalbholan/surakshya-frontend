@@ -1,9 +1,14 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import * as THREE from "three"
+import { useCallback, useState } from "react"
+import dynamic from "next/dynamic"
 import { useFloating, offset, flip, shift, useHover, useInteractions, useDismiss, FloatingPortal } from "@floating-ui/react"
 import Crosshairs from "@/components/Crosshairs"
+
+const ShowcaseWristband = dynamic(() => import("@/components/showcase/ShowcaseWristband"), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-transparent" aria-hidden="true" />,
+})
 
 const tabs = [
   {
@@ -94,201 +99,8 @@ function TabTooltip({ tab }: { tab: typeof tabs[0] }) {
 }
 
 export default function ProductShowcase() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const scrollRef = useRef(0)
-  const sectionRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const scene = new THREE.Scene()
-    scene.fog = new THREE.Fog(0x040406, 6, 12)
-    const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000)
-    camera.position.set(0, 0.2, 5.8)
-
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: true,
-      alpha: true,
-    })
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.setClearColor(0x000000, 0)
-    renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.0
-    renderer.outputColorSpace = THREE.SRGBColorSpace
-
-    const product = new THREE.Group()
-    scene.add(product)
-
-    // Main bracelet body
-    const bandGeo = new THREE.TorusGeometry(1.38, 0.17, 56, 180)
-    const bandMat = new THREE.MeshPhysicalMaterial({
-      color: 0xc0392b,
-      metalness: 0.95,
-      roughness: 0.18,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.12,
-      sheen: 0.2,
-      sheenColor: new THREE.Color(0x332a2c),
-      emissive: 0x3a0b12,
-      emissiveIntensity: 0.12,
-    })
-    const band = new THREE.Mesh(bandGeo, bandMat)
-    band.rotation.x = Math.PI * 0.4
-    product.add(band)
-
-    // Core glow line
-    const glowGeo = new THREE.TorusGeometry(1.38, 0.02, 16, 128)
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: 0xc0392b,
-      transparent: true,
-      opacity: 0.34,
-    })
-    const glowRing = new THREE.Mesh(glowGeo, glowMat)
-    glowRing.rotation.x = Math.PI * 0.4
-    product.add(glowRing)
-
-    // Halo ring
-    const ring2Geo = new THREE.TorusGeometry(1.56, 0.008, 16, 128)
-    const ring2Mat = new THREE.MeshBasicMaterial({
-      color: 0xc0392b,
-      transparent: true,
-      opacity: 0.16,
-    })
-    const ring2 = new THREE.Mesh(ring2Geo, ring2Mat)
-    ring2.rotation.x = Math.PI * 0.4
-    product.add(ring2)
-
-    // Watch face module
-    const moduleGeo = new THREE.CylinderGeometry(0.57, 0.57, 0.22, 48)
-    const moduleMat = new THREE.MeshPhysicalMaterial({
-      color: 0x1f1f23,
-      metalness: 0.86,
-      roughness: 0.22,
-      clearcoat: 1,
-      clearcoatRoughness: 0.08,
-    })
-    const moduleMesh = new THREE.Mesh(moduleGeo, moduleMat)
-    moduleMesh.rotation.z = Math.PI / 2
-    moduleMesh.rotation.x = Math.PI * 0.4
-    product.add(moduleMesh)
-
-    // Glass top
-    const glassGeo = new THREE.CircleGeometry(0.5, 48)
-    const glassMat = new THREE.MeshPhysicalMaterial({
-      color: 0x162238,
-      transmission: 0.52,
-      thickness: 0.22,
-      ior: 1.45,
-      metalness: 0,
-      roughness: 0.02,
-      transparent: true,
-      opacity: 0.9,
-    })
-    const glass = new THREE.Mesh(glassGeo, glassMat)
-    glass.position.set(0.06, 0.18, 0)
-    glass.rotation.x = Math.PI * 0.4 + Math.PI / 2
-    product.add(glass)
-
-    // Accent LED
-    const ledGeo = new THREE.SphereGeometry(0.03, 20, 20)
-    const ledMat = new THREE.MeshStandardMaterial({
-      color: 0xff365e,
-      emissive: 0xff365e,
-      emissiveIntensity: 2.5,
-      toneMapped: false,
-    })
-    const led = new THREE.Mesh(ledGeo, ledMat)
-    led.position.set(-0.2, 0.22, -0.28)
-    product.add(led)
-
-    // Lights
-    const ambient = new THREE.AmbientLight(0xffffff, 0.22)
-    scene.add(ambient)
-
-    const key = new THREE.SpotLight(0xfff1e8, 2.6, 16, 0.45, 0.6)
-    key.position.set(3.5, 4.2, 4.5)
-    scene.add(key)
-
-    const fill = new THREE.PointLight(0xc0392b, 1.8, 10)
-    fill.position.set(-3.4, -1.5, 2.8)
-    scene.add(fill)
-
-    const rim = new THREE.PointLight(0xff6a8e, 1.1, 12)
-    rim.position.set(0, 3.8, -2.2)
-    scene.add(rim)
-
-    const ice = new THREE.PointLight(0x80c8ff, 0.6, 10)
-    ice.position.set(0.8, -1.8, 3.6)
-    scene.add(ice)
-
-    const handleScroll = () => {
-      if (!sectionRef.current) return
-      const rect = sectionRef.current.getBoundingClientRect()
-      const sectionMiddle = rect.top + rect.height / 2
-      const viewportMiddle = window.innerHeight / 2
-      scrollRef.current = (viewportMiddle - sectionMiddle) / window.innerHeight
-    }
-    window.addEventListener("scroll", handleScroll, { passive: true })
-
-    let animId: number
-    const animate = () => {
-      animId = requestAnimationFrame(animate)
-
-      const scroll = scrollRef.current
-      const speed = 0.003 + Math.abs(scroll) * 0.012
-      const pulse = (Math.sin(performance.now() * 0.0018) + 1) * 0.5
-
-      product.rotation.y += speed
-      product.rotation.x = Math.PI * 0.4 + scroll * 0.18
-      glowRing.rotation.y += speed * 1.06
-      ring2.rotation.y += speed * 0.92
-
-      const zoomScale = 1 + Math.max(0, scroll) * 0.22
-      product.scale.set(zoomScale, zoomScale, zoomScale)
-
-      bandMat.emissiveIntensity = 0.1 + Math.max(0, scroll) * 0.22
-      glowMat.opacity = 0.28 + Math.max(0, scroll) * 0.22 + pulse * 0.08
-      ring2Mat.opacity = 0.12 + Math.max(0, scroll) * 0.1 + pulse * 0.04
-      ledMat.emissiveIntensity = 1.8 + pulse * 1.6
-
-      renderer.render(scene, camera)
-    }
-    animate()
-
-    const handleResize = () => {
-      const w = canvas.clientWidth
-      const h = canvas.clientHeight
-      camera.aspect = w / h
-      camera.updateProjectionMatrix()
-      renderer.setSize(w, h)
-    }
-    window.addEventListener("resize", handleResize)
-
-    return () => {
-      cancelAnimationFrame(animId)
-      window.removeEventListener("scroll", handleScroll)
-      window.removeEventListener("resize", handleResize)
-      renderer.dispose()
-      bandGeo.dispose()
-      bandMat.dispose()
-      glowGeo.dispose()
-      glowMat.dispose()
-      ring2Geo.dispose()
-      ring2Mat.dispose()
-      moduleGeo.dispose()
-      moduleMat.dispose()
-      glassGeo.dispose()
-      glassMat.dispose()
-      ledGeo.dispose()
-      ledMat.dispose()
-    }
-  }, [])
-
   return (
-    <section id="product" ref={sectionRef} className="relative py-24 lg:py-40 px-6 lg:px-10">
+    <section id="product" className="relative py-24 lg:py-40 px-6 lg:px-10">
       <Crosshairs />
 
       {/* Left sidebar section indicators like lightweight.info */}
@@ -306,12 +118,9 @@ export default function ProductShowcase() {
 
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-          {/* Left: 3D Canvas */}
+          {/* Left: Flutter-matched wristband (spin / tumble / float) */}
           <div className="relative w-full aspect-square max-w-lg mx-auto lg:mx-0" data-reveal="fade-right">
-            <canvas
-              ref={canvasRef}
-              className="w-full h-full band-glow"
-            />
+            <ShowcaseWristband />
           </div>
 
           {/* Right: Content */}
