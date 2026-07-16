@@ -10,6 +10,7 @@
 
 #include "device_config.h"
 #include "motion.h"
+#include "serial_log.h"
 #include "sim_mqtt.h"
 
 HardwareSerial GpsSerial(2);
@@ -25,6 +26,7 @@ char syncedEmergencyPhone[24] = "";
 
 unsigned long lastBlinkAt = 0;
 unsigned long lastStatusAt = 0;
+unsigned long lastHeartbeatAt = 0;
 unsigned long lastSimStatusAt = 0;
 unsigned long lastButtonChangeAt = 0;
 unsigned long firstSosClickAt = 0;
@@ -43,6 +45,8 @@ bool stableButtonState = HIGH;
 bool sosCountdownActive = false;
 bool sosTrackingActive = false;
 bool sosBuzzerActive = false;
+bool sosBuzzerToneOn = false;
+unsigned long sosBuzzerPhaseAt = 0;
 bool longPressHandled = false;
 bool simModuleResponsive = false;
 uint8_t sosClickCount = 0;
@@ -51,6 +55,8 @@ bool emergencyCallTriggered = false;
 bool callInProgress = false;
 bool bothButtonsGesture = false;
 unsigned long bothButtonsPressedAt = 0;
+unsigned long bothButtonsBrokenAt = 0;
+unsigned long lastVoiceCallEndedAt = 0;
 unsigned long lastCallButtonChangeAt = 0;
 unsigned long callButtonPressedAt = 0;
 unsigned long firstCallButtonClickAt = 0;
@@ -59,6 +65,14 @@ bool stableCallButtonState = HIGH;
 bool callButtonLongPressHandled = false;
 uint8_t callButtonClickCount = 0;
 unsigned long callHangupHoldStartedAt = 0;
+
+void markVoiceCallEnded(const char *reason);
+bool placeEmergencyCall();
+void hangUpEmergencyCall();
+void triggerEmergencyCall(const char *reason);
+void stopSosTracking();
+void stopSosBuzzer();
+bool publishDeviceHeartbeat();
 
 bool isEmergencyComboActive() {
   return emergencyComboActive || bothButtonsGesture;
@@ -116,26 +130,30 @@ void logNearbyWifiNetworks() {
   WiFi.mode(WIFI_STA);
   delay(250);
 
-  Serial.println("Scanning for nearby WiFi networks...");
+  if (serialLogVerbose()) {
+    Serial.println("Scanning for nearby WiFi networks...");
+  }
   const int networkCount = WiFi.scanNetworks(/*async=*/false, /*show_hidden=*/true);
   if (networkCount <= 0) {
-    Serial.println("No WiFi networks found. Move closer to the router or check the ESP32 antenna.");
+    LOG_EVENT_LN("No WiFi networks found.");
     return;
   }
 
-  Serial.printf("Found %d network(s):\n", networkCount);
-  for (int i = 0; i < networkCount; i++) {
-    const String ssid = WiFi.SSID(i);
-    if (ssid.length() == 0) {
-      continue;
-    }
+  if (serialLogVerbose()) {
+    Serial.printf("Found %d network(s):\n", networkCount);
+    for (int i = 0; i < networkCount; i++) {
+      const String ssid = WiFi.SSID(i);
+      if (ssid.length() == 0) {
+        continue;
+      }
 
-    Serial.printf(
-        "  %s  RSSI=%d dBm  ch=%d  %s\n",
-        ssid.c_str(),
-        WiFi.RSSI(i),
-        WiFi.channel(i),
-        WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "open" : "secured");
+      Serial.printf(
+          "  %s  RSSI=%d dBm  ch=%d  %s\n",
+          ssid.c_str(),
+          WiFi.RSSI(i),
+          WiFi.channel(i),
+          WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "open" : "secured");
+    }
   }
   WiFi.scanDelete();
 }
@@ -182,7 +200,7 @@ bool connectWifi() {
   Serial.println("WiFi connected.");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-  Serial.printf("RSSI: %d dBm, channel: %d\n", WiFi.RSSI(), WiFi.channel());
+  LOG_NORMAL("RSSI: %d dBm, channel: %d\n", WiFi.RSSI(), WiFi.channel());
   writeLcdLine(0, "WiFi Connected");
   writeLcdLine(1, WiFi.localIP().toString().c_str());
   wifiOperationInProgress = false;
@@ -224,7 +242,7 @@ String sendAtCommand(const char *command, unsigned long timeoutMs = SIM_AT_TIMEO
   beginSimAtUse();
   flushSimInput();
 
-  Serial.printf("SIM >> %s\n", command);
+  LOG_VERBOSE("SIM >> %s\n", command);
   SimSerial.print(command);
   SimSerial.print("\r\n");
 
@@ -245,10 +263,12 @@ String sendAtCommand(const char *command, unsigned long timeoutMs = SIM_AT_TIMEO
   }
 
   response.trim();
-  if (response.length() > 0) {
-    Serial.printf("SIM << %s\n", response.c_str());
-  } else {
-    Serial.println("SIM << (no response)");
+  if (serialLogVerbose()) {
+    if (response.length() > 0) {
+      Serial.printf("SIM << %s\n", response.c_str());
+    } else {
+      Serial.println("SIM << (no response)");
+    }
   }
 
   endSimAtUse();
@@ -283,8 +303,27 @@ void readSimSpontaneousMessages() {
     notifySimMqttConnectionLost();
   }
 
-  Serial.print("SIM URC << ");
-  Serial.println(urc);
+  if (serialLogVerbose()) {
+    Serial.print("SIM URC << ");
+    Serial.println(urc);
+  } else if (
+      urc.indexOf("NO CARRIER") >= 0 ||
+      urc.indexOf("BUSY") >= 0 ||
+      urc.indexOf("NO ANSWER") >= 0 ||
+      urc.indexOf("VOICE CALL") >= 0) {
+    LOG_EVENT("SIM: %s\n", urc.c_str());
+  }
+
+  const bool callEndedUrc =
+      urc.indexOf("NO CARRIER") >= 0 ||
+      urc.indexOf("BUSY") >= 0 ||
+      urc.indexOf("NO ANSWER") >= 0 ||
+      urc.indexOf("VOICE CALL: END") >= 0 ||
+      urc.indexOf("+VOICE CALL: END") >= 0;
+
+  if (callEndedUrc && callInProgress) {
+    markVoiceCallEnded("network/remote hangup");
+  }
 }
 
 void initSimModule() {
@@ -379,6 +418,28 @@ void handleMqttCommand(char *topic, byte *payload, unsigned int length) {
   }
 
   const char *type = doc["type"] | "";
+  if (strcmp(type, "sos_cancel") == 0) {
+    Serial.println("MQTT sos_cancel received from app/backend.");
+    if (sosTrackingActive) {
+      stopSosTracking();
+      writeLcdLine(0, "SOS cancelled");
+      writeLcdLine(1, "From app");
+    } else if (sosCountdownActive) {
+      sosCountdownActive = false;
+      sosClickCount = 0;
+      if (sosBuzzerActive) {
+        stopSosBuzzer();
+      }
+      writeLcdLine(0, "SOS aborted");
+      writeLcdLine(1, "From app");
+      Serial.println("SOS countdown aborted by remote cancel.");
+    } else {
+      writeLcdLine(0, "SOS idle");
+      writeLcdLine(1, "Cancel ignored");
+    }
+    return;
+  }
+
   if (strcmp(type, "emergency_contact") != 0) {
     Serial.printf("Ignoring MQTT command type=%s\n", type);
     return;
@@ -459,18 +520,18 @@ bool ensureMqttConnected() {
   }
 
   lastMqttReconnectAttempt = millis();
-  Serial.printf("Connecting to MQTT broker %s:%u ...\n", MQTT_BROKER_HOST, MQTT_BROKER_PORT);
+  LOG_NORMAL("Connecting to MQTT broker %s:%u ...\n", MQTT_BROKER_HOST, MQTT_BROKER_PORT);
 
   const bool connected = mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD);
   if (connected) {
-    Serial.println("MQTT connected.");
+    LOG_EVENT_LN("MQTT connected.");
     if (mqttClient.subscribe(MQTT_COMMANDS_TOPIC, 1)) {
-      Serial.printf("Subscribed to %s\n", MQTT_COMMANDS_TOPIC);
+      LOG_EVENT("Subscribed to %s\n", MQTT_COMMANDS_TOPIC);
     } else {
-      Serial.printf("Failed to subscribe to %s\n", MQTT_COMMANDS_TOPIC);
+      LOG_EVENT("Failed to subscribe to %s\n", MQTT_COMMANDS_TOPIC);
     }
   } else {
-    Serial.printf("MQTT connection failed, state=%d\n", mqttClient.state());
+    LOG_EVENT("MQTT connection failed, state=%d\n", mqttClient.state());
   }
 
   return connected;
@@ -496,6 +557,9 @@ void onWifiConnected() {
   configureTimeFromWifi();
   initMqtt();
   ensureMqttConnected();
+  // Force an immediate online signal for the app band status.
+  lastHeartbeatAt = 0;
+  publishDeviceHeartbeat();
 }
 
 void maintainWifi() {
@@ -512,6 +576,50 @@ void maintainWifi() {
   if (connectWifi()) {
     onWifiConnected();
   }
+}
+
+bool publishDeviceHeartbeat() {
+  if (millis() - lastHeartbeatAt < HEARTBEAT_INTERVAL_MS) {
+    return false;
+  }
+
+  const bool wifiMqtt = mqttClient.connected();
+  const bool simMqtt = isSimMqttConnected();
+  if (!wifiMqtt && !simMqtt) {
+    return false;
+  }
+
+  char timestamp[32];
+  if (!formatIsoTimestamp(timestamp, sizeof(timestamp))) {
+    return false;
+  }
+
+  JsonDocument doc;
+  doc["deviceId"] = DEVICE_ID;
+  doc["eventType"] = "heartbeat";
+  doc["timestamp"] = timestamp;
+  doc["sosActive"] = sosTrackingActive;
+  doc["connectionType"] = wifiMqtt ? "wifi" : "sim";
+
+  char payload[192];
+  const size_t written = serializeJson(doc, payload, sizeof(payload));
+  if (written == 0 || written >= sizeof(payload)) {
+    return false;
+  }
+
+  bool published = false;
+  if (wifiMqtt) {
+    published = mqttClient.publish(MQTT_TOPIC, payload, false);
+  }
+  if (!published && simMqtt) {
+    published = publishSimMqtt(MQTT_TOPIC, payload);
+  }
+
+  if (published) {
+    lastHeartbeatAt = millis();
+    LOG_EVENT_LN("Heartbeat published");
+  }
+  return published;
 }
 
 bool publishSosEvent(const char *eventType, bool sosActive, double latitude, double longitude, bool includeLocation) {
@@ -567,7 +675,8 @@ bool publishSosEvent(const char *eventType, bool sosActive, double latitude, dou
 
       const bool published = mqttClient.publish(MQTT_TOPIC, payload, false);
       if (published) {
-        Serial.printf("MQTT published (wifi) %s -> %s\n", MQTT_TOPIC, payload);
+        LOG_EVENT("MQTT OK (wifi): %s\n", eventType);
+        LOG_VERBOSE("MQTT payload %s -> %s\n", MQTT_TOPIC, payload);
       }
       return published;
     }
@@ -623,7 +732,8 @@ bool publishEmergencyCallEvent() {
 
       const bool published = mqttClient.publish(MQTT_TOPIC, payload, false);
       if (published) {
-        Serial.printf("MQTT published (wifi) %s -> %s\n", MQTT_TOPIC, payload);
+        LOG_EVENT_LN("MQTT OK (wifi): emergency_call");
+        LOG_VERBOSE("MQTT payload %s -> %s\n", MQTT_TOPIC, payload);
       }
       return published;
     }
@@ -631,13 +741,13 @@ bool publishEmergencyCallEvent() {
     return publishSimMqtt(MQTT_TOPIC, payload);
   };
 
-  if (tryPublish(getPreferredSosChannel())) {
+  // Prefer WiFi only — SIM MQTT would block / fight the voice ATD that follows.
+  if (tryPublish("wifi")) {
     return true;
   }
 
-  const char *fallback = strcmp(getPreferredSosChannel(), "sim") == 0 ? "wifi" : "sim";
-  Serial.printf("%s MQTT failed for emergency_call, trying %s...\n", getPreferredSosChannel(), fallback);
-  return tryPublish(fallback);
+  Serial.println("MQTT skipped for emergency_call: WiFi unavailable (voice dial continues).");
+  return false;
 }
 
 bool ensureSimReadyForCall() {
@@ -666,10 +776,45 @@ bool ensureSimReadyForCall() {
   return true;
 }
 
+void resetEmergencyCallGestureState() {
+  bothButtonsPressedAt = 0;
+  bothButtonsBrokenAt = 0;
+  bothButtonsGesture = false;
+  emergencyComboActive = false;
+  emergencyCallTriggered = false;
+  callHangupHoldStartedAt = 0;
+  callButtonClickCount = 0;
+}
+
+void markVoiceCallEnded(const char *reason) {
+  const bool wasInCall = callInProgress;
+  callInProgress = false;
+  lastVoiceCallEndedAt = millis();
+  resetEmergencyCallGestureState();
+
+  if (wasInCall) {
+    Serial.printf("Emergency call ended (%s).\n", reason);
+    writeLcdLine(0, "Call ended");
+    writeLcdLine(1, "");
+  }
+}
+
 bool placeEmergencyCall() {
+  // Voice and SIM MQTT share the modem — MQTT must be down before ATD.
+  if (isSimMqttConnected()) {
+    Serial.println("Disconnecting SIM MQTT before voice call...");
+    disconnectSimMqtt();
+    delay(500);
+  }
+
   if (!ensureSimReadyForCall()) {
     return false;
   }
+
+  // Drop any leftover voice session so the next ATD is clean.
+  sendAtCommand("ATH", 3000);
+  sendAtCommand("AT+CHUP", 3000);
+  delay(300);
 
   const char *dialNumber = getEmergencyDialNumber();
   char dialCommand[48];
@@ -680,16 +825,23 @@ bool placeEmergencyCall() {
   writeLcdLine(1, dialNumber);
 
   const String response = sendAtCommand(dialCommand, SIM_DIAL_TIMEOUT_MS);
-  const bool started = response.indexOf("OK") >= 0 || response.indexOf("CONNECT") >= 0;
+  const bool started =
+      response.indexOf("OK") >= 0 ||
+      response.indexOf("CONNECT") >= 0 ||
+      response.indexOf("VOICE CALL: BEGIN") >= 0;
+
   if (started) {
     callInProgress = true;
+    callHangupHoldStartedAt = 0;
     Serial.println("Emergency call started.");
     writeLcdLine(0, "Call active");
     writeLcdLine(1, "Hold D33 3s");
   } else {
-    Serial.println("Emergency call failed to start.");
+    callInProgress = false;
+    Serial.printf("Emergency call failed to start. SIM said: %s\n", response.c_str());
     writeLcdLine(0, "Call failed");
-    writeLcdLine(1, "Check SIM");
+    writeLcdLine(1, "Try again");
+    lastVoiceCallEndedAt = millis();
   }
 
   return started;
@@ -705,24 +857,24 @@ void hangUpEmergencyCall() {
     sendAtCommand("AT+CHUP", 10000);
   }
 
-  callInProgress = false;
-  callHangupHoldStartedAt = 0;
-  emergencyCallTriggered = false;
-  Serial.println("Emergency call hung up.");
-  writeLcdLine(0, "Call ended");
-  writeLcdLine(1, "");
+  markVoiceCallEnded("local hangup");
 }
 
 void triggerEmergencyCall(const char *reason) {
   if (callInProgress) {
+    Serial.println("Emergency call ignored: a call is already in progress.");
     return;
   }
 
   Serial.println();
   Serial.printf("Emergency call triggered: %s\n", reason);
 
+  // Prefer WiFi for the event so we don't start SIM MQTT right before dialing.
   publishEmergencyCallEvent();
-  placeEmergencyCall();
+
+  if (!placeEmergencyCall()) {
+    resetEmergencyCallGestureState();
+  }
 }
 
 void updateCallHangupHold(unsigned long now) {
@@ -827,33 +979,62 @@ void handleCallButton(unsigned long now) {
 void handleEmergencyCallButtons(unsigned long now) {
   const bool sosPressed = digitalRead(SOS_BUTTON_PIN) == LOW;
   const bool callPressed = digitalRead(CALL_BUTTON_PIN) == LOW;
+  const bool bothPressed = sosPressed && callPressed;
 
-  if (sosPressed && callPressed) {
+  if (bothPressed) {
     if (bothButtonsPressedAt == 0) {
       bothButtonsPressedAt = now;
       Serial.println("Both buttons held. Keep holding to call...");
+      writeLcdLine(0, "Hold to call");
+      writeLcdLine(1, "Keep pressed");
     }
 
+    bothButtonsBrokenAt = 0;
     bothButtonsGesture = true;
     emergencyComboActive = true;
     callButtonClickCount = 0;
+    sosClickCount = 0;
 
-    if (!emergencyCallTriggered && !callInProgress && now - bothButtonsPressedAt >= EMERGENCY_BUTTON_HOLD_MS) {
+    if (!emergencyCallTriggered && !callInProgress &&
+        now - bothButtonsPressedAt >= EMERGENCY_BUTTON_HOLD_MS) {
       emergencyCallTriggered = true;
       triggerEmergencyCall("SOS + call buttons held together");
     }
     return;
   }
 
-  if (!sosPressed && !callPressed) {
-    emergencyComboActive = false;
-
-    if (bothButtonsGesture && !emergencyCallTriggered) {
-      Serial.println("Call not started: hold both buttons a bit longer.");
-      sosClickCount = 0;
+  // Brief drop of one/both buttons: keep gesture alive (bounce + long loop stalls).
+  if (bothButtonsGesture && bothButtonsPressedAt != 0 && !emergencyCallTriggered) {
+    if (bothButtonsBrokenAt == 0) {
+      bothButtonsBrokenAt = now;
     }
 
+    if (now - bothButtonsBrokenAt < EMERGENCY_BUTTON_RELEASE_GRACE_MS) {
+      emergencyComboActive = true;
+      return;
+    }
+
+    // Wall-clock hold succeeded even if we missed mid-hold polls (SIM/I2C stalls).
+    if (!callInProgress && now - bothButtonsPressedAt >= EMERGENCY_BUTTON_HOLD_MS) {
+      emergencyCallTriggered = true;
+      bothButtonsBrokenAt = 0;
+      triggerEmergencyCall("SOS + call buttons held together");
+      return;
+    }
+
+    Serial.println("Call not started: hold both buttons a bit longer.");
+    writeLcdLine(0, "Hold longer");
+    writeLcdLine(1, "Both buttons");
     bothButtonsPressedAt = 0;
+    bothButtonsBrokenAt = 0;
+    bothButtonsGesture = false;
+    emergencyComboActive = false;
+  }
+
+  if (!sosPressed && !callPressed) {
+    emergencyComboActive = false;
+    bothButtonsPressedAt = 0;
+    bothButtonsBrokenAt = 0;
     emergencyCallTriggered = false;
     bothButtonsGesture = false;
     return;
@@ -894,6 +1075,10 @@ bool sendSosEvent(const char *eventType, bool sosActive, double latitude, double
 }
 
 void printSimStatus() {
+  if (!serialLogVerbose()) {
+    return;
+  }
+
   if (isSimAtBusy() || callInProgress) {
     return;
   }
@@ -923,21 +1108,46 @@ void printSimStatus() {
 
 void startSosBuzzer() {
   sosBuzzerActive = true;
+  sosBuzzerToneOn = true;
+  sosBuzzerPhaseAt = millis();
   tone(BUZZER_PIN, BUZZER_FREQUENCY_HZ);
 
-  Serial.println("SOS buzzer started. Short-press SOS button once to silence it.");
+  Serial.println("SOS buzzer started (pulsed). Short-press SOS once to silence.");
   writeLcdLine(0, "SOS buzzer ON");
   writeLcdLine(1, "Press to stop");
 }
 
 void stopSosBuzzer() {
   sosBuzzerActive = false;
+  sosBuzzerToneOn = false;
+  sosBuzzerPhaseAt = 0;
   noTone(BUZZER_PIN);
   digitalWrite(BUZZER_PIN, LOW);
 
   Serial.println("SOS buzzer stopped.");
   writeLcdLine(0, "Buzzer stopped");
   writeLcdLine(1, "Tracking live");
+}
+
+void updateSosBuzzer(unsigned long now) {
+  if (!sosBuzzerActive) {
+    return;
+  }
+
+  const unsigned long phaseMs =
+      sosBuzzerToneOn ? BUZZER_BEEP_ON_MS : BUZZER_BEEP_OFF_MS;
+  if (now - sosBuzzerPhaseAt < phaseMs) {
+    return;
+  }
+
+  sosBuzzerPhaseAt = now;
+  sosBuzzerToneOn = !sosBuzzerToneOn;
+  if (sosBuzzerToneOn) {
+    tone(BUZZER_PIN, BUZZER_FREQUENCY_HZ);
+  } else {
+    noTone(BUZZER_PIN);
+    digitalWrite(BUZZER_PIN, LOW);
+  }
 }
 
 void sendLatestSosGpsLocation() {
@@ -1166,7 +1376,24 @@ void printStatus() {
   Serial.printf("Uptime: %lu ms\n", millis());
   Serial.printf("WiFi: %s\n", WiFi.status() == WL_CONNECTED ? "connected" : "disconnected");
   Serial.printf("MQTT: %s\n", mqttClient.connected() ? "connected" : "disconnected");
+  if (!simModuleResponsive) {
+    Serial.println("SIM: not ready");
+  } else if (callInProgress) {
+    Serial.println("SIM: ready (in call)");
+  } else if (isSimMqttConnected()) {
+    Serial.println("SIM: ready (MQTT connected)");
+  } else if (isSimDataActive()) {
+    Serial.println("SIM: ready (data connected)");
+  } else {
+    Serial.println("SIM: ready");
+  }
   Serial.printf("SIM MQTT: %s\n", isSimMqttConnected() ? "connected" : "disconnected");
+  Serial.printf("Call: %s\n", callInProgress ? "in progress" : "idle");
+  Serial.printf("SOS: %s\n",
+      sosTrackingActive ? "tracking"
+      : sosCountdownActive ? "countdown"
+      : sosBuzzerActive ? "buzzer"
+      : "idle");
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.print("IP: ");
@@ -1210,6 +1437,7 @@ void setup() {
   digitalWrite(BUZZER_PIN, LOW);
 
   Wire.begin(LCD_SDA_PIN, LCD_SCL_PIN);
+  Wire.setClock(MPU_I2C_CLOCK_HZ);
   lcd.init();
   lcd.backlight();
   writeLcdLine(0, "SurakshyaWatch");
@@ -1226,12 +1454,9 @@ void setup() {
   Serial.printf("During SOS: double-click call button to dial; hold call 3s to hang up.\n");
   Serial.printf("SOS: double-click starts tracking, hold 5s stops tracking.\n");
   Serial.printf("SOS buzzer on GPIO%d.\n", BUZZER_PIN);
-  Serial.printf("Starting GPS on RX2 GPIO%d, TX2 GPIO%d at %lu baud\n", GPS_RX_PIN, GPS_TX_PIN, GPS_BAUD);
-  GpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-  initSimModule();
-  loadEmergencyContactFromNvs();
-  Serial.printf("Emergency dial number: %s\n", getEmergencyDialNumber());
 
+  // Init MPU before long SIM/WiFi bring-up so the bus is probed while cold.
+  delay(100);
   if (initMotion()) {
     Serial.println("MPU-6050 initialized.");
     writeLcdLine(0, "MPU OK");
@@ -1239,9 +1464,15 @@ void setup() {
   } else {
     Serial.println("MPU-6050 init failed. See I2C scan above.");
     writeLcdLine(0, "MPU FAIL");
-    writeLcdLine(1, "See serial");
+    writeLcdLine(1, "Will retry");
   }
-  delay(1000);
+  delay(800);
+
+  Serial.printf("Starting GPS on RX2 GPIO%d, TX2 GPIO%d at %lu baud\n", GPS_RX_PIN, GPS_TX_PIN, GPS_BAUD);
+  GpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
+  initSimModule();
+  loadEmergencyContactFromNvs();
+  Serial.printf("Emergency dial number: %s\n", getEmergencyDialNumber());
 
   if (connectWifi()) {
     onWifiConnected();
@@ -1255,13 +1486,16 @@ void loop() {
   handleEmergencyCallButtons(now);
   handleCallButton(now);
   handleSosButton();
+  updateSosBuzzer(now);
 
   blinkLed();
   readGps();
   readSimSpontaneousMessages();
   maintainWifi();
   maintainMqtt();
-  if (!callInProgress) {
+  if (!callInProgress &&
+      (lastVoiceCallEndedAt == 0 ||
+       millis() - lastVoiceCallEndedAt >= SIM_MQTT_AFTER_CALL_COOLDOWN_MS)) {
     maintainSimMqtt();
   }
 
@@ -1269,5 +1503,6 @@ void loop() {
   motionTick(now, motionCtx);
 
   printSimStatus();
+  publishDeviceHeartbeat();
   printStatus();
 }

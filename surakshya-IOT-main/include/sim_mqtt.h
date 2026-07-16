@@ -9,6 +9,7 @@ void endSimAtUse();
 bool publishSimMqtt(const char *topic, const char *payload);
 void disconnectSimMqtt();
 bool isSimMqttConnected();
+bool isSimDataActive();
 void notifySimMqttConnectionLost();
 void maintainSimMqtt();
 void prepareSimForSos();

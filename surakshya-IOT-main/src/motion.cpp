@@ -7,6 +7,7 @@
 
 #include "device_config.h"
 #include "motion.h"
+#include "serial_log.h"
 
 namespace {
 
@@ -71,6 +72,8 @@ unsigned long reminderDisplayUntil = 0;
 bool reminderActive = false;
 unsigned long reminderBuzzUntil = 0;
 bool reminderBuzzing = false;
+unsigned long lastMpuRetryAt = 0;
+bool stepPrefsOpened = false;
 
 int lastStepDay = -1;
 
@@ -214,11 +217,18 @@ bool mpuWriteReg(uint8_t reg, uint8_t value) {
 bool mpuReadBytes(uint8_t reg, uint8_t *buffer, size_t length) {
   Wire.beginTransmission(mpuAddress);
   Wire.write(reg);
+  // Prefer repeated-start; fall back to stop+start (more reliable on some ESP32 cores).
   if (Wire.endTransmission(false) != 0) {
-    return false;
+    Wire.beginTransmission(mpuAddress);
+    Wire.write(reg);
+    if (Wire.endTransmission(true) != 0) {
+      return false;
+    }
   }
 
-  const size_t got = Wire.requestFrom(mpuAddress, static_cast<uint8_t>(length));
+  const size_t got = Wire.requestFrom(
+      static_cast<uint16_t>(mpuAddress),
+      static_cast<size_t>(length));
   if (got != length) {
     return false;
   }
@@ -249,19 +259,42 @@ bool isAcceptedMpuWhoAmI(uint8_t who) {
   }
 }
 
-void scanI2cBus() {
-  Serial.println("I2C scan (SDA=21, SCL=22):");
+bool isLikelyLcdAddress(uint8_t address) {
+  return address == LCD_I2C_ADDRESS || address == 0x3F;
+}
+
+void prepareI2cBus() {
+  // Soft re-init only — avoid GPIO bit-bang recovery on a live LCD+MPU bus.
+  Wire.begin(LCD_SDA_PIN, LCD_SCL_PIN);
+  Wire.setClock(MPU_I2C_CLOCK_HZ);
+#if defined(WIRE_HAS_TIMEOUT)
+  Wire.setTimeOut(100);
+#endif
+  delay(50);
+}
+
+uint8_t scanI2cBus(uint8_t *foundAddresses, uint8_t maxFound, bool verbose) {
+  if (verbose) {
+    Serial.printf("I2C scan (SDA=%d, SCL=%d):\n", LCD_SDA_PIN, LCD_SCL_PIN);
+  }
   uint8_t found = 0;
   for (uint8_t address = 1; address < 127; address++) {
     Wire.beginTransmission(address);
-    if (Wire.endTransmission() == 0) {
-      Serial.printf("  - 0x%02X\n", address);
-      found++;
+    if (Wire.endTransmission() != 0) {
+      continue;
     }
+    if (verbose) {
+      Serial.printf("  - 0x%02X\n", address);
+    }
+    if (foundAddresses != nullptr && found < maxFound) {
+      foundAddresses[found] = address;
+    }
+    found++;
   }
-  if (found == 0) {
+  if (verbose && found == 0) {
     Serial.println("  (no devices)");
   }
+  return found;
 }
 
 bool probeAndConfigureMpu(uint8_t address) {
@@ -286,10 +319,12 @@ bool probeAndConfigureMpu(uint8_t address) {
 
   // Device reset then wake (clear sleep bit). Some modules need a short settle.
   if (!mpuWriteReg(MPU_REG_PWR_MGMT_1, 0x80)) {
+    Serial.printf("MPU @0x%02X: reset write failed\n", address);
     return false;
   }
   delay(100);
   if (!mpuWriteReg(MPU_REG_PWR_MGMT_1, 0x00)) {
+    Serial.printf("MPU @0x%02X: wake write failed\n", address);
     return false;
   }
   delay(50);
@@ -299,6 +334,7 @@ bool probeAndConfigureMpu(uint8_t address) {
       !mpuWriteReg(MPU_REG_CONFIG, 0x04) ||
       !mpuWriteReg(MPU_REG_GYRO_CONFIG, 0x00) ||
       !mpuWriteReg(MPU_REG_ACCEL_CONFIG, 0x00)) {
+    Serial.printf("MPU @0x%02X: config write failed\n", address);
     return false;
   }
 
@@ -310,6 +346,40 @@ bool probeAndConfigureMpu(uint8_t address) {
 
   mpuWhoAmI = who;
   return true;
+}
+
+bool tryConfigureAnyMpu(bool verbose) {
+  uint8_t foundAddresses[16];
+  uint8_t found = 0;
+
+  if (verbose) {
+    found = scanI2cBus(foundAddresses, sizeof(foundAddresses), true);
+  }
+
+  const uint8_t preferred[] = {MPU6050_I2C_ADDRESS, MPU6050_I2C_ADDRESS_ALT};
+  for (uint8_t address : preferred) {
+    if (probeAndConfigureMpu(address)) {
+      return true;
+    }
+  }
+
+  // Boot only: try other non-LCD addresses from the scan.
+  for (uint8_t i = 0; i < found && i < sizeof(foundAddresses); i++) {
+    const uint8_t address = foundAddresses[i];
+    if (isLikelyLcdAddress(address) ||
+        address == MPU6050_I2C_ADDRESS ||
+        address == MPU6050_I2C_ADDRESS_ALT) {
+      continue;
+    }
+    if (verbose) {
+      Serial.printf("Trying I2C device 0x%02X as IMU...\n", address);
+    }
+    if (probeAndConfigureMpu(address)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void readMpu(unsigned long now) {
@@ -586,33 +656,50 @@ void updateMotionDisplay(unsigned long now, const MotionContext &ctx) {
 }  // namespace
 
 bool initMotion() {
-  stepPrefs.begin(STEP_PREFS_NAMESPACE, false);
-  loadStepCount();
+  if (!stepPrefsOpened) {
+    stepPrefs.begin(STEP_PREFS_NAMESPACE, false);
+    loadStepCount();
+    stepPrefsOpened = true;
+  }
 
-  Wire.setClock(MPU_I2C_CLOCK_HZ);
-  delay(50);
-  scanI2cBus();
+  for (uint8_t attempt = 1; attempt <= MPU_BOOT_ATTEMPTS; attempt++) {
+    LOG_VERBOSE("MPU init attempt %u/%u...\n", attempt, MPU_BOOT_ATTEMPTS);
+    prepareI2cBus();
 
-  const uint8_t candidates[] = {MPU6050_I2C_ADDRESS, MPU6050_I2C_ADDRESS_ALT};
-  for (uint8_t address : candidates) {
-    if (probeAndConfigureMpu(address)) {
+    if (tryConfigureAnyMpu(/*verbose=*/serialLogVerbose())) {
       mpuReady = true;
       lastActiveAt = millis();
       displayWakeUntil = millis() + DISPLAY_ON_TIME_MS;
-      Serial.printf(
+      lastMpuRetryAt = millis();
+      LOG_EVENT(
           "MPU ready at 0x%02X (WHO_AM_I=0x%02X)\n", mpuAddress, mpuWhoAmI);
       return true;
     }
+
+    delay(200 * attempt);
   }
 
   mpuReady = false;
-  Serial.println(
-      "MPU init failed: no usable device at 0x68/0x69. "
-      "Check VCC/GND/SDA/SCL (and that the module appears in the I2C scan).");
+  LOG_EVENT_LN(
+      "MPU init failed (will retry quietly in background).");
+  lastMpuRetryAt = millis();
   return false;
 }
 
 void motionTick(unsigned long now, const MotionContext &ctx) {
+  // Quiet probe of 0x68/0x69 only — never full I2C scan (that stalls button polling).
+  if (!mpuReady && now - lastMpuRetryAt >= MPU_RETRY_INTERVAL_MS) {
+    lastMpuRetryAt = now;
+    prepareI2cBus();
+    if (tryConfigureAnyMpu(/*verbose=*/false)) {
+      mpuReady = true;
+      lastActiveAt = now;
+      displayWakeUntil = now + DISPLAY_ON_TIME_MS;
+      LOG_EVENT(
+          "MPU ready at 0x%02X (WHO_AM_I=0x%02X)\n", mpuAddress, mpuWhoAmI);
+    }
+  }
+
   if (!ctx.sosUiActive) {
     readMpu(now);
     updateSteps(now, ctx.timeConfigured);

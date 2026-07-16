@@ -1,6 +1,7 @@
 #include <HardwareSerial.h>
 
 #include "device_config.h"
+#include "serial_log.h"
 #include "sim_mqtt.h"
 
 extern HardwareSerial SimSerial;
@@ -81,15 +82,17 @@ String sendAtCommand(const char *command, unsigned long timeoutMs = SIM_AT_TIMEO
                      const char *expectedUrcPrefix = nullptr) {
   flushSimInput();
 
-  Serial.printf("SIM >> %s\n", command);
+  LOG_VERBOSE("SIM >> %s\n", command);
   SimSerial.print(command);
   SimSerial.print("\r\n");
 
   const String response = readSimResponse(timeoutMs, expectedUrcPrefix);
-  if (response.length() > 0) {
-    Serial.printf("SIM << %s\n", response.c_str());
-  } else {
-    Serial.println("SIM << (no response)");
+  if (serialLogVerbose()) {
+    if (response.length() > 0) {
+      Serial.printf("SIM << %s\n", response.c_str());
+    } else {
+      Serial.println("SIM << (no response)");
+    }
   }
 
   return response;
@@ -99,7 +102,7 @@ bool sendAtWithRawPayload(const char *command, const char *payload, size_t paylo
                           unsigned long timeoutMs) {
   flushSimInput();
 
-  Serial.printf("SIM >> %s\n", command);
+  LOG_VERBOSE("SIM >> %s\n", command);
   SimSerial.print(command);
   SimSerial.print("\r\n");
 
@@ -121,14 +124,14 @@ bool sendAtWithRawPayload(const char *command, const char *payload, size_t paylo
   }
 
   if (!gotPrompt) {
-    Serial.println("SIM << missing prompt");
+    LOG_VERBOSE_LN("SIM << missing prompt");
     return false;
   }
 
   SimSerial.write(reinterpret_cast<const uint8_t *>(payload), payloadLength);
 
   response = readSimResponse(timeoutMs);
-  if (response.length() > 0) {
+  if (serialLogVerbose() && response.length() > 0) {
     Serial.printf("SIM << %s\n", response.c_str());
   }
 
@@ -371,7 +374,7 @@ bool connectSimMqtt() {
     return false;
   }
 
-  Serial.printf("Connecting SIM MQTT to tcp://%s:%u ...\n", MQTT_BROKER_HOST, MQTT_BROKER_PORT);
+  LOG_EVENT("SIM MQTT connecting to %s:%u\n", MQTT_BROKER_HOST, MQTT_BROKER_PORT);
 
   cleanupSimMqttSession();
 
@@ -413,7 +416,7 @@ bool connectSimMqtt() {
   }
 
   simMqttConnected = true;
-  Serial.println("SIM MQTT connected.");
+  LOG_EVENT_LN("SIM MQTT connected.");
   return true;
 }
 
@@ -478,7 +481,8 @@ bool publishSimMqtt(const char *topic, const char *payload) {
       continue;
     }
 
-    Serial.printf("SIM MQTT published %s -> %s\n", topic, payload);
+    LOG_EVENT_LN("SIM MQTT publish OK");
+    LOG_VERBOSE("SIM MQTT published %s -> %s\n", topic, payload);
     return true;
   }
 
@@ -497,6 +501,10 @@ void disconnectSimMqtt() {
 
 bool isSimMqttConnected() {
   return simMqttConnected;
+}
+
+bool isSimDataActive() {
+  return simDataActive;
 }
 
 void notifySimMqttConnectionLost() {

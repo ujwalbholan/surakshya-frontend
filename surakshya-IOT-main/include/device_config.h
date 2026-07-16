@@ -41,17 +41,24 @@ static constexpr char EMERGENCY_PHONE_NUMBER[] = "+9779828755846";
 // NVS key (namespace: STEP_PREFS_NAMESPACE) for app-synced dial number.
 static constexpr char EMERGENCY_PHONE_PREFS_KEY[] = "emPhone";
 static constexpr unsigned long EMERGENCY_BUTTON_HOLD_MS = 200;
+// Ignore brief releases while both-button gesture is active (bounce / poll gaps).
+static constexpr unsigned long EMERGENCY_BUTTON_RELEASE_GRACE_MS = 120;
 static constexpr unsigned long CALL_BUTTON_HANGUP_HOLD_MS = 3000;
+// Keep SIM MQTT off briefly after voice so the next ATD isn't blocked.
+static constexpr unsigned long SIM_MQTT_AFTER_CALL_COOLDOWN_MS = 8000;
 static constexpr unsigned long SIM_DIAL_TIMEOUT_MS = 30000;
 static constexpr unsigned long SIM_DATA_ACTIVATE_TIMEOUT_MS = 30000;
 static constexpr unsigned long SIM_MQTT_START_TIMEOUT_MS = 60000;
 static constexpr unsigned long SIM_MQTT_CONNECT_TIMEOUT_MS = 30000;
 static constexpr int SIM_MQTT_CLIENT_INDEX = 0;
 
-// Piezo buzzer 
+// Piezo buzzer
 // Buzzer + -> GPIO25 / D25, buzzer - -> GND.
 static constexpr int BUZZER_PIN = 25;
 static constexpr unsigned int BUZZER_FREQUENCY_HZ = 200;
+// Pulsed SOS alert (quieter than a continuous tone).
+static constexpr unsigned long BUZZER_BEEP_ON_MS = 180;
+static constexpr unsigned long BUZZER_BEEP_OFF_MS = 420;
 
 // 16x2 I2C LCD 
 static constexpr uint8_t LCD_I2C_ADDRESS = 0x27;
@@ -84,6 +91,13 @@ static constexpr int DAYLIGHT_OFFSET_SECONDS = 0;
 
 static constexpr unsigned long BLINK_INTERVAL_MS = 500;
 static constexpr unsigned long STATUS_INTERVAL_MS = 5000;
+// Keep backend device online while MQTT is connected (app band status).
+static constexpr unsigned long HEARTBEAT_INTERVAL_MS = 30000;
+// Serial monitor verbosity:
+// 0 = quiet events + periodic device status (default)
+// 1 = + light extras
+// 2 = verbose (+ SIM AT echo, SIM status polls)
+static constexpr int SERIAL_LOG_LEVEL = 0;
 static constexpr unsigned long BUTTON_DEBOUNCE_MS = 50;
 static constexpr unsigned long SOS_DOUBLE_CLICK_WINDOW_MS = 2000;
 static constexpr unsigned long SOS_SEND_DELAY_MS = 12000;
@@ -97,6 +111,9 @@ static constexpr uint8_t MPU6050_I2C_ADDRESS = 0x68;
 static constexpr uint8_t MPU6050_I2C_ADDRESS_ALT = 0x69;
 static constexpr uint32_t MPU_I2C_CLOCK_HZ = 100000;
 static constexpr unsigned long MPU_READ_INTERVAL_MS = 20;
+// Retry bring-up if the first probe after LCD/SIM boot fails.
+static constexpr unsigned long MPU_RETRY_INTERVAL_MS = 15000;
+static constexpr uint8_t MPU_BOOT_ATTEMPTS = 5;
 static constexpr unsigned long MOTION_DISPLAY_INTERVAL_MS = 500;
 static constexpr size_t MOTION_MAG_BUFFER_SIZE = 50;
 
