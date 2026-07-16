@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Bebas_Neue, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Suspense } from 'react'
 import SplashScreen from '@/components/SplashScreen'
@@ -8,6 +8,12 @@ import './globals.css'
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+})
+
+const bebasNeue = Bebas_Neue({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-bebas',
 })
 
 export const metadata: Metadata = {
@@ -28,10 +34,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
+    <html lang="en" className={`${inter.variable} ${bebasNeue.variable}`} data-scroll-behavior="smooth">
       <body className="font-sans antialiased bg-background text-foreground overflow-hidden" style={{ background: '#000000', color: '#ffffff' }}>
         {/* Critical: prevent white flash (FOUC) before CSS loads */}
-        <style dangerouslySetInnerHTML={{ __html: 'html,body{background:#000000!important;color:#ffffff}' }} />
+        <style dangerouslySetInnerHTML={{ __html: 'html,body{background:#000000!important;color:#ffffff}#hero{background:#000000!important}' }} />
         <Suspense fallback={null}>
           <SplashScreen />
         </Suspense>

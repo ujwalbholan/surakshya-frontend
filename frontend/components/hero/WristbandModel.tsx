@@ -10,7 +10,7 @@ import React, {
   useMemo,
 } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
-import { useGLTF, Environment, useProgress } from "@react-three/drei"
+import { useGLTF, useProgress } from "@react-three/drei"
 import * as THREE from "three"
 import { useGSAP } from "@gsap/react"
 import gsap from "gsap"
@@ -341,9 +341,9 @@ function SceneContent({
       {/* Red point — hot spot on band, reinforces crimson theme */}
       <pointLight position={[-1, -1, 2]} intensity={0.4} color="#ff2222" decay={2} />
 
-      {/* IBL — physically correct reflections on metallic surface */}
-      <Environment preset="night" />
-
+      {/* Local lights only — skip remote HDR Environment (drei night preset
+          fetches ~1.7MB from githack; stalls the R3F Suspense tree offline /
+          on slow networks and leaves the hero looking empty in next dev). */}
       <ModelContent groupRef={groupRef} />
     </>
   )
@@ -384,21 +384,35 @@ const WristbandModel = forwardRef<WristbandModelRef, object>(
       return () => window.removeEventListener("mousemove", handleMouseMove)
     }, [isMobile, reducedMotion, handleMouseMove])
 
-    // Entry animations
+    // Entry animations — always land at opacity 1 (reduced-motion included).
     useGSAP(() => {
-      if (reducedMotion) return
+      if (!canvasWrapperRef.current) return
 
-      // 1. Fade in canvas wrapper
-      if (canvasWrapperRef.current) {
-        gsap.fromTo(
-          canvasWrapperRef.current,
-          { opacity: 0 },
-          { opacity: 1, duration: ANIM.CANVAS_FADE_DUR, ease: "power2.out", delay: ANIM.CANVAS_FADE_DELAY }
-        )
+      if (reducedMotion) {
+        gsap.set(canvasWrapperRef.current, { opacity: 1 })
+        return
       }
 
-      // 2. Scale in 3D group — polls until Three.js has populated the ref
-      //    (groupRef is null until the Canvas/SceneContent first renders)
+      gsap.fromTo(
+        canvasWrapperRef.current,
+        { opacity: 0 },
+        {
+          opacity: 1,
+          duration: ANIM.CANVAS_FADE_DUR,
+          ease: "power2.out",
+          delay: ANIM.CANVAS_FADE_DELAY,
+        }
+      )
+
+      // Safety: if GSAP is interrupted (Strict Mode remount / tab background),
+      // force the canvas visible so the hero never stays blank.
+      const safety = window.setTimeout(() => {
+        if (canvasWrapperRef.current) {
+          gsap.set(canvasWrapperRef.current, { opacity: 1 })
+        }
+      }, (ANIM.CANVAS_FADE_DELAY + ANIM.CANVAS_FADE_DUR + 0.5) * 1000)
+
+      // Scale in 3D group — polls until Three.js has populated the ref
       const poll = setInterval(() => {
         if (!groupRef.current) return
         clearInterval(poll)
@@ -409,26 +423,30 @@ const WristbandModel = forwardRef<WristbandModelRef, object>(
           {
             x: 1.28, y: 1.28, z: 1.28,
             duration: ANIM.ENTRY_DURATION,
-            ease: "expo.out",   // expo.out = fast settle, premium feel
+            ease: "expo.out",
             delay: ANIM.ENTRY_DELAY,
           }
         )
       }, 50)
 
-      return () => clearInterval(poll)
+      return () => {
+        clearInterval(poll)
+        window.clearTimeout(safety)
+      }
     }, [reducedMotion])
 
     return (
       <div
         ref={canvasWrapperRef}
-        data-canvas-wrapper          // targeted by useHeroScroll scroll-fade
-        aria-hidden="true"           // decorative — skip for screen readers
+        data-canvas-wrapper
+        aria-hidden="true"
         style={{
           position: "absolute",
           inset: 0,
           width: "100%",
           height: "100%",
-          opacity: 0,                // GSAP animates to 1
+          // Visible immediately under reduced motion; otherwise GSAP fades in.
+          opacity: reducedMotion ? 1 : 0,
           background: "#000000",
         }}
       >

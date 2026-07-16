@@ -165,12 +165,23 @@ function BottomFade() {
 }
 
 function HeroText() {
-  const [visible, setVisible] = useState(false)
+  // Start visible so SSR / first paint never white-on-black blank.
+  // Mount effect only drives the progressive fade-in motion.
+  const [animated, setAnimated] = useState(false)
 
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 200)
-    return () => clearTimeout(t)
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (reduce) {
+      setAnimated(true)
+      return
+    }
+    const t = requestAnimationFrame(() => setAnimated(true))
+    return () => cancelAnimationFrame(t)
   }, [])
+
+  const motionReady = animated
 
   return (
     <div
@@ -199,7 +210,7 @@ function HeroText() {
           display: "flex",
           alignItems: "center",
           gap: 10,
-          opacity: visible ? 0.38 : 0,
+          opacity: motionReady ? 0.38 : 0,
           transition: "opacity 1.2s ease 1.2s",
         }}
       >
@@ -217,13 +228,13 @@ function HeroText() {
         </span>
       </div>
 
-      {/* Main heading */}
+      {/* Main heading — always readable; motion is progressive enhancement */}
       <div
         style={{
           maxWidth: 560,
-          opacity: visible ? 1 : 0,
-          transform: visible ? "translateY(0)" : "translateY(18px)",
-          transition: "opacity 1s ease 0.3s, transform 1s ease 0.3s",
+          opacity: 1,
+          transform: motionReady ? "translateY(0)" : "translateY(18px)",
+          transition: "transform 1s ease 0.15s",
         }}
       >
         {/* Eyebrow */}
@@ -259,7 +270,7 @@ function HeroText() {
         <h1
           style={{
             margin: 0,
-            fontFamily: "'Bebas Neue', 'Impact', 'Arial Black', sans-serif",
+            fontFamily: "var(--font-bebas), 'Bebas Neue', 'Impact', 'Arial Black', sans-serif",
             fontSize: "clamp(52px, 8vw, 96px)",
             lineHeight: 0.92,
             letterSpacing: "-0.01em",
@@ -288,8 +299,7 @@ function HeroText() {
             lineHeight: 1.65,
             color: "rgba(255,255,255,0.45)",
             letterSpacing: "0.01em",
-            opacity: visible ? 1 : 0,
-            transition: "opacity 1s ease 0.7s",
+            opacity: 1,
           }}
         >
           Military-grade SOS, real-time GPS, and an AI co-pilot engineered for
@@ -302,8 +312,7 @@ function HeroText() {
             display: "flex",
             gap: 28,
             marginTop: 28,
-            opacity: visible ? 1 : 0,
-            transition: "opacity 1s ease 1s",
+            opacity: 1,
           }}
         >
           {[
@@ -314,7 +323,7 @@ function HeroText() {
             <div key={stat.label}>
               <div
                 style={{
-                  fontFamily: "'Bebas Neue', 'Impact', sans-serif",
+                  fontFamily: "var(--font-bebas), 'Bebas Neue', 'Impact', sans-serif",
                   fontSize: 28,
                   lineHeight: 1,
                   color: "#ff3344",
@@ -350,7 +359,7 @@ function HeroText() {
           flexDirection: "column",
           alignItems: "flex-end",
           gap: 6,
-          opacity: visible ? 0.45 : 0,
+          opacity: 0.45,
           transition: "opacity 1.2s ease 1.4s",
         }}
       >
@@ -387,8 +396,7 @@ function HeroText() {
           height: "28vh",
           background:
             "linear-gradient(to bottom, transparent, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.08) 70%, transparent)",
-          opacity: visible ? 1 : 0,
-          transition: "opacity 1.5s ease 1.6s",
+          opacity: 1,
         }}
       />
     </div>
