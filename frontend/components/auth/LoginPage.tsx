@@ -70,7 +70,8 @@ export default function LoginPage() {
 
       if (isLoginChallenge(data)) {
         const startAtOtp =
-          "requiresActivationOtp" in data && data.requiresActivationOtp;
+          ("requiresActivationOtp" in data && data.requiresActivationOtp) ||
+          ("requiresPasswordChange" in data && data.requiresPasswordChange);
         if (data.role === "GUARDIAN") {
           saveGuardianActivationSession({
             challengeToken: data.challengeToken,

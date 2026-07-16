@@ -82,6 +82,8 @@ export interface ActivationPasswordResponse {
 
 export interface ActivationVerifyResponse {
   message: string
+  otpVerified?: boolean
+  requiresPasswordChange?: boolean
 }
 
 /** @deprecated Prefer ActivationPasswordResponse */

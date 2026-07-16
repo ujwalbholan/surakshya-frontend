@@ -16,13 +16,13 @@ import {
 
 const MIN_PASSWORD_LENGTH = 8
 
-type Step = "password" | "otp" | "done"
+type Step = "otp" | "password" | "done"
 
 export default function GuardianActivateWizard() {
   const router = useRouter()
   const [session, setSession] = useState<GuardianActivationSession | null>(null)
   const [ready, setReady] = useState(false)
-  const [step, setStep] = useState<Step>("password")
+  const [step, setStep] = useState<Step>("otp")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [otp, setOtp] = useState("")
@@ -35,10 +35,45 @@ export default function GuardianActivateWizard() {
     setSession(stored)
     if (stored?.startAtOtp) {
       setStep("otp")
-      setInfo("We sent a verification code to your phone. Enter it below.")
+      setInfo(
+        "We sent a verification code to your email and phone. Enter it below."
+      )
     }
     setReady(true)
   }, [])
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!session || loading) return
+    setError(null)
+
+    if (!/^\d{4,6}$/.test(otp.trim())) {
+      setError("Enter the 4–6 digit code from your email or phone.")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const result = await verifyGuardianActivationOtp(
+        session.challengeToken,
+        otp.trim()
+      )
+      if (result.requiresPasswordChange) {
+        setInfo(result.message)
+        setStep("password")
+      } else {
+        clearGuardianActivationSession()
+        setStep("done")
+        setTimeout(() => {
+          router.push("/login?activated=1")
+        }, 1800)
+      }
+    } catch (err) {
+      setError(isApiError(err) ? err.message : "Verification failed")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -61,38 +96,17 @@ export default function GuardianActivateWizard() {
         password
       )
       setInfo(result.message)
-      setStep("otp")
-    } catch (err) {
-      setError(
-        isApiError(err)
-          ? err.message
-          : "Could not update password. Sign in again to restart activation."
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!session || loading) return
-    setError(null)
-
-    if (!/^\d{4,6}$/.test(otp.trim())) {
-      setError("Enter the 4–6 digit code from your phone.")
-      return
-    }
-
-    setLoading(true)
-    try {
-      await verifyGuardianActivationOtp(session.challengeToken, otp.trim())
       clearGuardianActivationSession()
       setStep("done")
       setTimeout(() => {
         router.push("/login?activated=1")
       }, 1800)
     } catch (err) {
-      setError(isApiError(err) ? err.message : "Verification failed")
+      setError(
+        isApiError(err)
+          ? err.message
+          : "Could not update password. Sign in again to restart activation."
+      )
     } finally {
       setLoading(false)
     }
@@ -127,7 +141,7 @@ export default function GuardianActivateWizard() {
     )
   }
 
-  const stepNumber = step === "password" ? 1 : step === "otp" ? 2 : 3
+  const stepNumber = step === "otp" ? 1 : step === "password" ? 2 : 3
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#080808] px-4 py-12">
@@ -166,11 +180,54 @@ export default function GuardianActivateWizard() {
           </p>
         )}
 
+        {step === "otp" && (
+          <form onSubmit={handleOtpSubmit} className="space-y-4">
+            <p className="text-sm text-[#888]">
+              Enter the verification code sent to your registered email and
+              phone number.
+            </p>
+            <div>
+              <label className="mb-1 block text-[10px] uppercase tracking-wider text-[#666]">
+                Phone OTP
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={otp}
+                onChange={(e) =>
+                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                }
+                className="w-full rounded border border-[#333] bg-[#080808] px-3 py-2.5 text-center font-mono text-lg tracking-[0.3em] text-[#FAFAFA] outline-none focus:border-[#C0392B]"
+                placeholder="••••••"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded bg-[#C0392B] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Verify code
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearGuardianActivationSession()
+                router.push("/login")
+              }}
+              className="w-full text-center text-xs text-[#666] underline"
+            >
+              Back to login
+            </button>
+          </form>
+        )}
+
         {step === "password" && (
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <p className="text-sm text-[#888]">
-              You signed in with a temporary password. Choose a new permanent
-              password, then verify your phone.
+              OTP verified. Choose a new permanent password for your guardian
+              account.
             </p>
             <div>
               <label className="mb-1 block text-[10px] uppercase tracking-wider text-[#666]">
@@ -202,49 +259,7 @@ export default function GuardianActivateWizard() {
               className="flex w-full items-center justify-center gap-2 rounded bg-[#C0392B] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Continue
-            </button>
-          </form>
-        )}
-
-        {step === "otp" && (
-          <form onSubmit={handleOtpSubmit} className="space-y-4">
-            <p className="text-sm text-[#888]">
-              Enter the verification code sent to your registered phone number.
-            </p>
-            <div>
-              <label className="mb-1 block text-[10px] uppercase tracking-wider text-[#666]">
-                Phone OTP
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={otp}
-                onChange={(e) =>
-                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                }
-                className="w-full rounded border border-[#333] bg-[#080808] px-3 py-2.5 text-center font-mono text-lg tracking-[0.3em] text-[#FAFAFA] outline-none focus:border-[#C0392B]"
-                placeholder="••••••"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded bg-[#C0392B] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Verify and activate
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                clearGuardianActivationSession()
-                router.push("/login")
-              }}
-              className="w-full text-center text-xs text-[#666] underline"
-            >
-              Back to login
+              Save password
             </button>
           </form>
         )}
