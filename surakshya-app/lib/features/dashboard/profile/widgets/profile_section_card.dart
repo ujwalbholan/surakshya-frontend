@@ -102,9 +102,10 @@ class ProfileSettingsCard extends StatelessWidget {
       );
 }
 
-/// Crimson-tinted circular leading icon for Profile list rows (D9).
+/// Circular leading icon for Profile list rows: black glyph on an
+/// off-white circle, so crimson stays reserved for the card borders.
 class ProfileRowIcon extends StatelessWidget {
-  const ProfileRowIcon(this.icon, {super.key, this.color = surakshaCrimson});
+  const ProfileRowIcon(this.icon, {super.key, this.color = surakshaOnLight});
 
   final IconData icon;
   final Color color;
@@ -114,9 +115,9 @@ class ProfileRowIcon extends StatelessWidget {
         width: kProfileRowIconCircleSize,
         height: kProfileRowIconCircleSize,
         alignment: Alignment.center,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
-          color: color.withValues(alpha: kProfileRowIconBgAlpha),
+          color: surakshaLightSurfaceAlt,
         ),
         child: Icon(icon, size: kProfileRowIconSize, color: color),
       );

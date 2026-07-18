@@ -61,6 +61,9 @@ const Color surakshaOnLightMuted = Color(0xFF5C5C5C);
 /// Hairline dividers on [surakshaLightSurface].
 const Color surakshaOnLightDivider = Color(0xFFE2DEDA);
 
+/// Slightly darker white than [surakshaLightSurface] for icon circles.
+const Color surakshaLightSurfaceAlt = Color(0xFFE9E9E9);
+
 const Color dashboardBg = Color(0xFF060606);
 const Color dashboardCard = Color(0xFF0E0E0E);
 const Color dashboardBorder = Color(0xFF1C1C1C);
