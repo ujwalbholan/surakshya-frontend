@@ -25,6 +25,13 @@ const double kSheetHandleBottomGap = S.md;
 /// Content inset above the safe area / keyboard.
 const double kSheetPaddingBottom = S.lg;
 
+/// Uniform action-button height across sheets (D8).
+const double kSheetButtonHeight = 48.0;
+
+/// Fill opacity for a disabled crimson action button — dimmed but still
+/// clearly a button (D6).
+const double kSheetDisabledButtonAlpha = 0.45;
+
 /// Shared modal bottom sheet: consistent background, corner radius, drag
 /// handle, and safe-area/keyboard-aware padding (D1).
 Future<T?> showAppBottomSheet<T>({

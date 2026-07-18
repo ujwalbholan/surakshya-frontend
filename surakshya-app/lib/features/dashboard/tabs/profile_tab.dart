@@ -1,6 +1,7 @@
 library profile_tab;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
@@ -368,6 +369,11 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
       isScrollControlled: true,
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setSheetState) {
+          bool inputsValid() {
+            final age = int.tryParse(ageController.text.trim());
+            return age != null && age >= 1 && age <= 120 && bloodType != null;
+          }
+
           Future<void> save() async {
             final age = int.tryParse(ageController.text.trim());
             if (age == null || age < 1 || age > 120 || bloodType == null) {
@@ -416,16 +422,32 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
               const SizedBox(height: S.lg),
               TextField(
                 controller: ageController,
+                enabled: !saving,
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                maxLength: 3,
+                textInputAction: TextInputAction.done,
+                onChanged: (_) => setSheetState(() {}),
                 decoration: const InputDecoration(
                   labelText: 'Age',
                   hintText: 'e.g. 25',
+                  counterText: '',
+                  prefixIcon: Icon(
+                    Icons.medical_information_outlined,
+                    color: surakshaSubtle,
+                  ),
                 ),
               ),
               const SizedBox(height: S.md),
               DropdownButtonFormField<String>(
                 initialValue: bloodType,
-                decoration: const InputDecoration(labelText: 'Blood group'),
+                decoration: const InputDecoration(
+                  labelText: 'Blood group',
+                  prefixIcon: Icon(
+                    Icons.bloodtype_outlined,
+                    color: surakshaSubtle,
+                  ),
+                ),
                 items: bloodTypes
                     .map(
                       (type) => DropdownMenuItem(
@@ -449,9 +471,16 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: saving ? null : save,
+                  onPressed: saving || !inputsValid() ? null : save,
                   style: FilledButton.styleFrom(
                     backgroundColor: surakshaCrimson,
+                    disabledBackgroundColor: surakshaCrimson.withValues(
+                      alpha: kSheetDisabledButtonAlpha,
+                    ),
+                    disabledForegroundColor: surakshaForeground.withValues(
+                      alpha: kSheetDisabledButtonAlpha,
+                    ),
+                    minimumSize: const Size.fromHeight(kSheetButtonHeight),
                   ),
                   child: Text(saving ? 'Saving…' : 'Save'),
                 ),
