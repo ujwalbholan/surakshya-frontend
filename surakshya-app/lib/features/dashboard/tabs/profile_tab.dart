@@ -13,6 +13,7 @@ import 'package:suraksha/features/guardians/guardian_provider.dart';
 import 'package:suraksha/models/guardian_models.dart';
 import 'package:suraksha/router/app_routes.dart';
 import 'package:suraksha/services/ble_service.dart';
+import 'package:suraksha/widgets/app_bottom_sheet.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
@@ -362,13 +363,9 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     var saving = false;
     String? error;
 
-    await showModalBottomSheet<void>(
+    await showAppBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: dashboardSheetBg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(S.radiusXl)),
-      ),
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setSheetState) {
           Future<void> save() async {
@@ -402,72 +399,64 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
             }
           }
 
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              S.lg,
-              S.lg,
-              S.lg,
-              MediaQuery.viewInsetsOf(context).bottom + S.lg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Medical information',
-                    style: SurakshaTypography.dashTitle),
-                const SizedBox(height: S.xs),
-                // Dark bottom sheet: keep the light-on-dark subtitle color.
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Medical information',
+                  style: SurakshaTypography.dashTitle),
+              const SizedBox(height: S.xs),
+              // Dark bottom sheet: keep the light-on-dark subtitle color.
+              Text(
+                'Police will see these details when you activate SOS.',
+                style: SurakshaTypography.dashSubtitle.copyWith(
+                  color: surakshaAuthText,
+                ),
+              ),
+              const SizedBox(height: S.lg),
+              TextField(
+                controller: ageController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Age',
+                  hintText: 'e.g. 25',
+                ),
+              ),
+              const SizedBox(height: S.md),
+              DropdownButtonFormField<String>(
+                initialValue: bloodType,
+                decoration: const InputDecoration(labelText: 'Blood group'),
+                items: bloodTypes
+                    .map(
+                      (type) => DropdownMenuItem(
+                        value: type,
+                        child: Text(type),
+                      ),
+                    )
+                    .toList(),
+                onChanged: saving
+                    ? null
+                    : (value) => setSheetState(() => bloodType = value),
+              ),
+              if (error != null) ...[
+                const SizedBox(height: S.sm),
                 Text(
-                  'Police will see these details when you activate SOS.',
-                  style: SurakshaTypography.dashSubtitle.copyWith(
-                    color: surakshaAuthText,
-                  ),
-                ),
-                const SizedBox(height: S.lg),
-                TextField(
-                  controller: ageController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Age',
-                    hintText: 'e.g. 25',
-                  ),
-                ),
-                const SizedBox(height: S.md),
-                DropdownButtonFormField<String>(
-                  initialValue: bloodType,
-                  decoration: const InputDecoration(labelText: 'Blood group'),
-                  items: bloodTypes
-                      .map(
-                        (type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: saving
-                      ? null
-                      : (value) => setSheetState(() => bloodType = value),
-                ),
-                if (error != null) ...[
-                  const SizedBox(height: S.sm),
-                  Text(
-                    error!,
-                    style: const TextStyle(color: surakshaCrimson),
-                  ),
-                ],
-                const SizedBox(height: S.lg),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: saving ? null : save,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: surakshaCrimson,
-                    ),
-                    child: Text(saving ? 'Saving…' : 'Save'),
-                  ),
+                  error!,
+                  style: const TextStyle(color: surakshaCrimson),
                 ),
               ],
-            ),
+              const SizedBox(height: S.lg),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: saving ? null : save,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: surakshaCrimson,
+                  ),
+                  child: Text(saving ? 'Saving…' : 'Save'),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -476,14 +465,10 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
   }
 
   Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
-    final confirm = await showModalBottomSheet<bool>(
+    final confirm = await showAppBottomSheet<bool>(
       context: context,
-      backgroundColor: dashboardSheetBg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(S.radiusXl)),
-      ),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(S.lg),
+        padding: const EdgeInsets.only(top: S.sm),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
