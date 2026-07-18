@@ -1,5 +1,25 @@
 library parent_models;
 
+/// Parses a backend timestamp. The API stores `timestamptz` and serializes
+/// in UTC; if the zone marker is missing, reinterpret as UTC instead of
+/// letting Dart assume device-local time, so `.toLocal()` renders the real
+/// wall-clock time.
+DateTime? parseServerTime(Object? raw) {
+  if (raw is! String || raw.isEmpty) return null;
+  final parsed = DateTime.tryParse(raw);
+  if (parsed == null || parsed.isUtc) return parsed;
+  return DateTime.utc(
+    parsed.year,
+    parsed.month,
+    parsed.day,
+    parsed.hour,
+    parsed.minute,
+    parsed.second,
+    parsed.millisecond,
+    parsed.microsecond,
+  );
+}
+
 class LinkedWard {
   const LinkedWard({
     required this.id,
@@ -45,9 +65,7 @@ class GuardianPendingRequest {
       GuardianPendingRequest(
         id: json['id'] as String,
         requesterName: json['requester_name'] as String? ?? '',
-        createdAt: json['created_at'] != null
-            ? DateTime.tryParse(json['created_at'] as String)
-            : null,
+        createdAt: parseServerTime(json['created_at']),
       );
 }
 
@@ -66,9 +84,7 @@ class WardLastLocation {
       WardLastLocation(
         latitude: (json['latitude'] as num).toDouble(),
         longitude: (json['longitude'] as num).toDouble(),
-        recordedAt: json['recordedAt'] != null
-            ? DateTime.tryParse(json['recordedAt'] as String)
-            : null,
+        recordedAt: parseServerTime(json['recordedAt']),
       );
 }
 
@@ -95,9 +111,7 @@ class WardSosEvent {
         id: json['id'] as String,
         imei: json['imei'] as String,
         status: json['status'] as String,
-        startedAt: json['startedAt'] != null
-            ? DateTime.tryParse(json['startedAt'] as String)
-            : null,
+        startedAt: parseServerTime(json['startedAt']),
         latitude: json['latitude'] != null
             ? (json['latitude'] as num).toDouble()
             : null,

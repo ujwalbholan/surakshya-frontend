@@ -13,6 +13,7 @@ import 'package:suraksha/router/app_routes.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
+import 'package:suraksha/widgets/app_bottom_sheet.dart';
 import 'package:suraksha/widgets/navigation/notched_sos_bottom_nav.dart';
 
 class ParentProfileTab extends ConsumerWidget {
@@ -61,17 +62,23 @@ class ParentProfileTab extends ConsumerWidget {
                       ),
               ),
             ]),
-            Center(
-              child: TextButton(
-                onPressed: () => _confirmSignOut(context, ref),
-                child: Text(
-                  CopyConstants.profileSignOut,
-                  style: SurakshaTypography.dashSubtitle.copyWith(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: surakshaCrimson,
-                  ),
+            // Same sign-out row as the user profile: white settings card
+            // with a crimson logout icon and label.
+            ProfileSettingsCard(
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: kProfileRowPaddingH,
+                  vertical: kProfileRowPaddingV,
                 ),
+                leading: const ProfileRowIcon(
+                  Icons.logout,
+                  color: surakshaCrimson,
+                ),
+                title: Text(
+                  CopyConstants.profileSignOut,
+                  style: kProfileRowTitleStyle.copyWith(color: surakshaCrimson),
+                ),
+                onTap: () => _confirmSignOut(context, ref),
               ),
             ),
           ],
@@ -115,18 +122,32 @@ class _WardListTile extends StatelessWidget {
       );
 }
 
+/// Same confirmation sheet as the user profile's sign out.
 Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
-  final confirm = await showModalBottomSheet<bool>(
+  final confirm = await showAppBottomSheet<bool>(
     context: context,
-    backgroundColor: dashboardSheetBg,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(S.radiusXl)),
-    ),
     builder: (ctx) => Padding(
-      padding: const EdgeInsets.all(S.lg),
+      padding: const EdgeInsets.only(top: S.sm),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Container(
+            width: kSheetActionIconCircleSize,
+            height: kSheetActionIconCircleSize,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: surakshaCrimson.withValues(
+                alpha: kProfileRowIconBgAlpha,
+              ),
+            ),
+            child: const Icon(
+              Icons.logout,
+              size: kSheetActionIconSize,
+              color: surakshaCrimson,
+            ),
+          ),
+          const SizedBox(height: S.md),
           Text(
             CopyConstants.profileSignOut,
             style: SurakshaTypography.dashTitle,
@@ -134,14 +155,19 @@ Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
           const SizedBox(height: S.sm),
           Text(
             CopyConstants.profileSignOutConfirm,
-            style: SurakshaTypography.dashSubtitle,
-            textAlign: TextAlign.center,
+            style: SurakshaTypography.dashSubtitle.copyWith(
+              color: surakshaAuthText,
+            ),
           ),
           const SizedBox(height: S.lg),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: surakshaForeground,
+                    minimumSize: const Size.fromHeight(kSheetButtonHeight),
+                  ),
                   onPressed: () => Navigator.pop(ctx, false),
                   child: const Text('Cancel'),
                 ),
@@ -151,6 +177,8 @@ Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
                 child: FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: surakshaCrimson,
+                    foregroundColor: surakshaForeground,
+                    minimumSize: const Size.fromHeight(kSheetButtonHeight),
                   ),
                   onPressed: () => Navigator.pop(ctx, true),
                   child: const Text('Sign Out'),

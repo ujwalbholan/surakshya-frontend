@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
-import 'package:suraksha/features/auth/auth_provider.dart';
 import 'package:suraksha/features/dashboard/tracking/widgets/family_member_tile.dart';
 import 'package:suraksha/features/parent/parent_dashboard_provider.dart';
 import 'package:suraksha/models/parent_models.dart';
@@ -109,8 +108,6 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(parentDashboardProvider);
-    final auth = ref.watch(authProvider);
-    final ward = state.selectedWard;
     final sos = state.activeSos;
     final bottomPad = S.bottomNavHeight +
         kSosNotchProtrusion +
@@ -139,14 +136,6 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                   padding:
                       EdgeInsets.fromLTRB(S.lg, S.md, S.lg, bottomPad + S.xl),
                   children: [
-                    if (auth.user?.name != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: S.md),
-                        child: Text(
-                          auth.user!.name,
-                          style: SurakshaTypography.monoLabel,
-                        ),
-                      ),
                     if (state.error != null)
                       _ErrorBanner(message: state.error!),
                     if (state.pendingRequests.isNotEmpty) ...[
@@ -178,34 +167,27 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                     else if (state.wards.isEmpty)
                       _EmptyState()
                     else ...[
+                      // One merged section: each ward is a detail card and
+                      // tapping it selects that child (crimson border).
                       Text(
-                        CopyConstants.parentSelectChild,
+                        CopyConstants.parentChildDetails,
                         style: SurakshaTypography.dashGreeting
                             .copyWith(fontSize: 18),
                       ),
                       const SizedBox(height: S.sm),
-                      ...state.wards.map(
-                        (w) => _WardTile(
+                      for (final w in state.wards) ...[
+                        _ChildDetailsCard(
                           ward: w,
                           selected: w.id == state.selectedWardId,
                           onTap: () => ref
                               .read(parentDashboardProvider.notifier)
                               .selectWard(w.id),
                         ),
-                      ),
-                      const SizedBox(height: S.lg),
-                      if (ward != null) ...[
-                        Text(
-                          CopyConstants.parentChildDetails,
-                          style: SurakshaTypography.dashGreeting
-                              .copyWith(fontSize: 18),
-                        ),
-                        const SizedBox(height: S.sm),
-                        _ChildDetailsCard(ward: ward),
-                        const SizedBox(height: S.lg),
-                        // Status summary only — live map lives on the SOS tab.
-                        _SosStatusCard(sos: sos),
+                        const SizedBox(height: S.md),
                       ],
+                      const SizedBox(height: S.xs),
+                      // Status summary only — live map lives on the SOS tab.
+                      _SosStatusCard(sos: sos),
                     ],
                   ],
                 ),
@@ -294,76 +276,20 @@ class _EmptyState extends StatelessWidget {
       );
 }
 
-class _WardTile extends StatelessWidget {
-  const _WardTile({
+/// Ward details on the same light contact-card chrome as the user home
+/// screen's Emergency Contacts (see [FamilyMemberTile]). Doubles as the
+/// child selector: tapping the card selects the ward, and the selected
+/// card gets the crimson border (mirrors the emergency-contact accent).
+class _ChildDetailsCard extends StatelessWidget {
+  const _ChildDetailsCard({
     required this.ward,
-    required this.selected,
-    required this.onTap,
+    this.selected = false,
+    this.onTap,
   });
 
   final LinkedWard ward;
   final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: S.xs),
-        child: Material(
-          color: selected
-              ? surakshaCrimson.withValues(alpha: 0.15)
-              : dashboardCard,
-          borderRadius: BorderRadius.circular(S.radius),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(S.radius),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: S.md,
-                vertical: S.sm,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(S.radius),
-                border: Border.all(
-                  color: selected ? surakshaCrimson : dashboardBorder,
-                ),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: surakshaCrimson.withValues(alpha: 0.25),
-                    child: Text(
-                      ward.initials,
-                      style: SurakshaTypography.dashTitle.copyWith(
-                        fontSize: 13,
-                        color: surakshaForeground,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: S.md),
-                  Expanded(
-                    child: Text(
-                      ward.fullName,
-                      style: SurakshaTypography.dashTitle.copyWith(fontSize: 16),
-                    ),
-                  ),
-                  if (selected)
-                    const Icon(Icons.check_circle,
-                        color: surakshaCrimson, size: 20),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-}
-
-/// Ward details on the same light contact-card chrome as the user home
-/// screen's Emergency Contacts (see [FamilyMemberTile]).
-class _ChildDetailsCard extends StatelessWidget {
-  const _ChildDetailsCard({required this.ward});
-
-  final LinkedWard ward;
+  final VoidCallback? onTap;
 
   Future<void> _call(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -376,15 +302,27 @@ class _ChildDetailsCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(kGuardianCardPadding),
-        decoration: BoxDecoration(
-          color: kGuardianCardColor,
+  Widget build(BuildContext context) => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(kGuardianCardRadius),
-          border: Border.all(color: kGuardianCardBorder),
-          boxShadow: kGuardianCardShadow,
+          child: Container(
+            padding: const EdgeInsets.all(kGuardianCardPadding),
+            decoration: BoxDecoration(
+              color: kGuardianCardColor,
+              borderRadius: BorderRadius.circular(kGuardianCardRadius),
+              border: Border.all(
+                color: selected ? surakshaCrimson : kGuardianCardBorder,
+              ),
+              boxShadow: kGuardianCardShadow,
+            ),
+            child: _cardBody(context),
+          ),
         ),
-        child: Row(
+      );
+
+  Widget _cardBody(BuildContext context) => Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
@@ -460,7 +398,6 @@ class _ChildDetailsCard extends StatelessWidget {
               ),
             ),
           ],
-        ),
       );
 }
 
@@ -513,15 +450,24 @@ class _SosStatusCard extends StatelessWidget {
           ),
           if (active && sos != null) ...[
             const SizedBox(height: S.sm),
+            // Data fields in JetBrains Mono per the app type system.
             Text(
-              'Band: ${sos!.imei}',
-              style: SurakshaTypography.monoLabel,
-            ),
-            if (timeLabel != null)
-              Text(
-                'Started: $timeLabel',
-                style: SurakshaTypography.dashSubtitle,
+              'BAND ${sos!.imei}',
+              style: SurakshaTypography.monoStat.copyWith(
+                fontSize: 12,
+                color: surakshaMuted,
               ),
+            ),
+            if (timeLabel != null) ...[
+              const SizedBox(height: S.xs),
+              Text(
+                'STARTED $timeLabel',
+                style: SurakshaTypography.monoStat.copyWith(
+                  fontSize: 12,
+                  color: surakshaMuted,
+                ),
+              ),
+            ],
           ],
         ],
       ),
