@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:suraksha/widgets/app_svg_icon.dart';
 import 'package:suraksha/features/dashboard/profile/widgets/profile_section_card.dart';
 import 'package:suraksha/models/user_model.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
@@ -297,11 +298,13 @@ class _EditButton extends StatelessWidget {
           child: const SizedBox(
             width: kProfileEditButtonSize,
             height: kProfileEditButtonSize,
-            child: Icon(
-              Icons.edit_outlined,
-              size: kProfileRowIconSize,
-              color: surakshaOnLight,
-              semanticLabel: 'Edit profile',
+            child: Center(
+              child: AppSvgIcon(
+                AppIcons.edit,
+                size: kProfileRowIconSize,
+                color: surakshaOnLight,
+                semanticLabel: 'Edit profile',
+              ),
             ),
           ),
         ),

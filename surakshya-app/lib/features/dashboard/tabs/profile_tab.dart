@@ -15,6 +15,7 @@ import 'package:suraksha/models/guardian_models.dart';
 import 'package:suraksha/router/app_routes.dart';
 import 'package:suraksha/services/ble_service.dart';
 import 'package:suraksha/widgets/app_bottom_sheet.dart';
+import 'package:suraksha/widgets/app_svg_icon.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
@@ -70,8 +71,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                     horizontal: kProfileRowPaddingH,
                     vertical: kProfileRowPaddingV,
                   ),
-                  leading:
-                      const ProfileRowIcon(Icons.medical_information_outlined),
+                  leading: const ProfileRowSvgIcon(AppIcons.ageBloodGroup),
                   title: Text(
                     'Age & blood group',
                     style: kProfileRowTitleStyle,
@@ -126,7 +126,8 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                         horizontal: kProfileRowPaddingH,
                         vertical: kProfileRowPaddingV,
                       ),
-                      leading: const ProfileRowIcon(Icons.star_rounded),
+                      leading:
+                          const ProfileRowSvgIcon(AppIcons.emergencyContact),
                       title: Text(
                         CopyConstants.emergencyContactTitle,
                         style: kProfileRowTitleStyle,
@@ -251,7 +252,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                         horizontal: kProfileRowPaddingH,
                         vertical: kProfileRowPaddingV,
                       ),
-                      leading: const ProfileRowIcon(Icons.watch_outlined),
+                      leading: const ProfileRowSvgIcon(AppIcons.bandStatus),
                       title: Text(
                         'Band status',
                         style: kProfileRowTitleStyle,
@@ -409,8 +410,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Medical information',
-                  style: SurakshaTypography.dashTitle),
+              Text('Medical information', style: SurakshaTypography.dashTitle),
               const SizedBox(height: S.xs),
               // Dark bottom sheet: keep the light-on-dark subtitle color.
               Text(
@@ -576,7 +576,12 @@ double _profileCompleteness({
   required bool locationSharing,
   required bool bandConnected,
 }) {
-  final signals = [medicalFilled, guardianLinked, locationSharing, bandConnected];
+  final signals = [
+    medicalFilled,
+    guardianLinked,
+    locationSharing,
+    bandConnected
+  ];
   return signals.where((s) => s).length / signals.length;
 }
 
@@ -640,9 +645,11 @@ class _GuardianProfileRow extends StatelessWidget {
                 ),
               IconButton(
                 tooltip: CopyConstants.editPhoneAction,
-                icon:
-                    const Icon(Icons.edit_outlined, size: kProfileRowIconSize),
-                color: kProfileChevronColor,
+                icon: const AppSvgIcon(
+                  AppIcons.edit,
+                  size: kProfileRowIconSize,
+                  color: kProfileChevronColor,
+                ),
                 onPressed: onEdit,
               ),
             ],

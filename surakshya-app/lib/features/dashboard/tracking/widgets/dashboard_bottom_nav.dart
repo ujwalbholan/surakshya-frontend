@@ -6,6 +6,13 @@ import 'package:suraksha/features/dashboard/dashboard_provider.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
+import 'package:suraksha/widgets/app_svg_icon.dart';
+
+/// Nav item glyph size (matches the previous Material icon size).
+const double kNavIconSize = 24;
+
+/// Width of the SOS wordmark glyph inside the crimson circle.
+const double kSosNavGlyphWidth = 34;
 
 class DashboardBottomNav extends StatelessWidget {
   const DashboardBottomNav({
@@ -34,14 +41,15 @@ class DashboardBottomNav extends StatelessWidget {
       height: S.bottomNavHeight,
       decoration: BoxDecoration(
         color: navColor,
-        border: const Border(top: BorderSide(color: dashboardBorder, width: 0.5)),
+        border:
+            const Border(top: BorderSide(color: dashboardBorder, width: 0.5)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _NavItem(
-            icon: Icons.map_outlined,
-            label: CopyConstants.tracking,
+            asset: AppIcons.home,
+            label: CopyConstants.home,
             active: currentTab == DashboardTab.tracking,
             onTap: () => onTabChanged(DashboardTab.tracking),
           ),
@@ -50,7 +58,7 @@ class DashboardBottomNav extends StatelessWidget {
             onTap: () => onTabChanged(DashboardTab.sos),
           ),
           _NavItem(
-            icon: Icons.person_outlined,
+            asset: AppIcons.profile,
             label: CopyConstants.profile,
             active: currentTab == DashboardTab.profile,
             onTap: () => onTabChanged(DashboardTab.profile),
@@ -63,13 +71,13 @@ class DashboardBottomNav extends StatelessWidget {
 
 class _NavItem extends StatelessWidget {
   const _NavItem({
-    required this.icon,
+    required this.asset,
     required this.label,
     required this.active,
     required this.onTap,
   });
 
-  final IconData icon;
+  final String asset;
   final String label;
   final bool active;
   final VoidCallback onTap;
@@ -83,10 +91,11 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
+              AppSvgIcon(
+                asset,
                 color: active ? surakshaForeground : surakshaMuted,
-                size: 24,
+                size: kNavIconSize,
+                semanticLabel: label,
               ),
               const SizedBox(height: 4),
               Text(
@@ -179,14 +188,12 @@ class _SosNavButtonState extends State<_SosNavButton>
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Text(
-                      CopyConstants.sos,
-                      style: SurakshaTypography.dashTitle.copyWith(
-                        color: surakshaForeground,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                      ),
+                  child: const Center(
+                    child: AppSvgIcon(
+                      AppIcons.sos,
+                      size: kSosNavGlyphWidth,
+                      color: surakshaForeground,
+                      semanticLabel: CopyConstants.sos,
                     ),
                   ),
                 ),

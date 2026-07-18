@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
+import 'package:suraksha/widgets/app_svg_icon.dart';
 
 /// Corner radius for Profile section cards (D8: match hero / D1 surface).
 const double kProfileSectionCardRadius = S.radiusLg;
@@ -48,7 +49,8 @@ TextStyle get kProfileRowTitleStyle => SurakshaTypography.dashTitle.copyWith(
     );
 
 /// Subtitle / secondary line for Profile settings rows (dark-on-light, D1-rev).
-TextStyle get kProfileRowSubtitleStyle => SurakshaTypography.dashSubtitle.copyWith(
+TextStyle get kProfileRowSubtitleStyle =>
+    SurakshaTypography.dashSubtitle.copyWith(
       color: surakshaOnLightMuted,
     );
 
@@ -120,6 +122,34 @@ class ProfileRowIcon extends StatelessWidget {
           color: surakshaLightSurfaceAlt,
         ),
         child: Icon(icon, size: kProfileRowIconSize, color: color),
+      );
+}
+
+/// [ProfileRowIcon] variant for the custom SVG icon set.
+class ProfileRowSvgIcon extends StatelessWidget {
+  const ProfileRowSvgIcon(
+    this.asset, {
+    super.key,
+    this.color = surakshaOnLight,
+  });
+
+  final String asset;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: kProfileRowIconCircleSize,
+        height: kProfileRowIconCircleSize,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: surakshaLightSurfaceAlt,
+        ),
+        child: AppSvgIcon(
+          asset,
+          size: kProfileRowIconSize,
+          color: color,
+        ),
       );
 }
 
