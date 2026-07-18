@@ -73,7 +73,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                   ),
                   trailing: const Icon(
                     Icons.chevron_right,
-                    color: surakshaAuthText,
+                    color: kProfileChevronColor,
                   ),
                   onTap: user == null
                       ? null
@@ -105,7 +105,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                       ),
                       trailing: const Icon(
                         Icons.chevron_right,
-                        color: surakshaAuthText,
+                        color: kProfileChevronColor,
                       ),
                       onTap: () => context.push(AppRoutes.guardians),
                     ),
@@ -136,7 +136,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                       ),
                       trailing: const Icon(
                         Icons.chevron_right,
-                        color: surakshaAuthText,
+                        color: kProfileChevronColor,
                       ),
                       onTap: () {
                         final matches = guardians.guardians
@@ -223,7 +223,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                       ),
                       trailing: const Icon(
                         Icons.chevron_right,
-                        color: surakshaAuthText,
+                        color: kProfileChevronColor,
                       ),
                       onTap: () async {
                         await ref.read(bleServiceProvider).startScan();
@@ -250,7 +250,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                         style: kProfileRowTrailingStyle.copyWith(
                           color: dash.bandConnected
                               ? surakshaSuccess
-                              : surakshaAuthText,
+                              : surakshaOnLightMuted,
                         ),
                       ),
                     ),
@@ -292,7 +292,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                       ),
                       trailing: const Icon(
                         Icons.chevron_right,
-                        color: surakshaAuthText,
+                        color: kProfileChevronColor,
                       ),
                       onTap: () => context.push(AppRoutes.home),
                     ),
@@ -309,7 +309,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                       ),
                       trailing: const Icon(
                         Icons.chevron_right,
-                        color: surakshaAuthText,
+                        color: kProfileChevronColor,
                       ),
                       onTap: () {},
                     ),
@@ -407,9 +407,12 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                 Text('Medical information',
                     style: SurakshaTypography.dashTitle),
                 const SizedBox(height: S.xs),
+                // Dark bottom sheet: keep the light-on-dark subtitle color.
                 Text(
                   'Police will see these details when you activate SOS.',
-                  style: kProfileRowSubtitleStyle,
+                  style: SurakshaTypography.dashSubtitle.copyWith(
+                    color: surakshaAuthText,
+                  ),
                 ),
                 const SizedBox(height: S.lg),
                 TextField(
@@ -580,7 +583,7 @@ class _GuardianProfileRow extends StatelessWidget {
                 tooltip: CopyConstants.editPhoneAction,
                 icon:
                     const Icon(Icons.edit_outlined, size: kProfileRowIconSize),
-                color: surakshaAuthText,
+                color: kProfileChevronColor,
                 onPressed: onEdit,
               ),
             ],

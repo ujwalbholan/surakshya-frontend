@@ -49,6 +49,18 @@ const Color surakshaBlackT60 = Color(0x99000000);
 const Color surakshaWhiteT10 = Color(0x1AFFFFFF);
 const Color surakshaWhiteT6 = Color(0x0FFFFFFF);
 
+/// Light container fill for the Profile screen (white/crimson card theme).
+const Color surakshaLightSurface = Color(0xFFF5F5F5);
+
+/// Primary (title) text on [surakshaLightSurface].
+const Color surakshaOnLight = Color(0xFF141414);
+
+/// Secondary (subtitle/meta) text on [surakshaLightSurface].
+const Color surakshaOnLightMuted = Color(0xFF5C5C5C);
+
+/// Hairline dividers on [surakshaLightSurface].
+const Color surakshaOnLightDivider = Color(0xFFE2DEDA);
+
 const Color dashboardBg = Color(0xFF060606);
 const Color dashboardCard = Color(0xFF0E0E0E);
 const Color dashboardBorder = Color(0xFF1C1C1C);

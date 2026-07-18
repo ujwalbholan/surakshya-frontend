@@ -1,6 +1,7 @@
 library profile_hero_card;
 
 import 'package:flutter/material.dart';
+import 'package:suraksha/features/dashboard/profile/widgets/profile_section_card.dart';
 import 'package:suraksha/models/user_model.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
@@ -52,9 +53,15 @@ class ProfileHeroCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: kProfileAvatarOverlap),
             child: Material(
-              color: dashboardCard,
-              borderRadius: BorderRadius.circular(kProfileHeroCardRadius),
+              color: surakshaLightSurface,
               clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(kProfileHeroCardRadius),
+                side: const BorderSide(
+                  color: kProfileCardBorderColor,
+                  width: kProfileCardBorderWidth,
+                ),
+              ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                   kProfileHeroCardPaddingH,
@@ -69,7 +76,9 @@ class ProfileHeroCard extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: SurakshaTypography.dashGreeting,
+                      style: SurakshaTypography.dashGreeting.copyWith(
+                        color: surakshaOnLight,
+                      ),
                     ),
                     if (secondary.isNotEmpty) ...[
                       const SizedBox(height: kProfileHeroTextGap),
@@ -79,7 +88,7 @@ class ProfileHeroCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: SurakshaTypography.monoLabel.copyWith(
-                          color: surakshaAuthText,
+                          color: surakshaOnLightMuted,
                         ),
                       ),
                     ],

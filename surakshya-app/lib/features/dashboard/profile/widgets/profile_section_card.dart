@@ -32,18 +32,29 @@ const double kProfileRowPaddingV = S.sm;
 /// Crimson tint behind leading row icons.
 const double kProfileRowIconBgAlpha = 0.15;
 
-/// Title style for Profile settings rows (D10 contrast).
-TextStyle get kProfileRowTitleStyle =>
-    SurakshaTypography.dashTitle.copyWith(fontSize: 15);
+/// Border width for the white/crimson Profile cards (D1-rev).
+const double kProfileCardBorderWidth = 1.0;
 
-/// Subtitle / secondary line for Profile settings rows (D10 contrast).
-TextStyle get kProfileRowSubtitleStyle => SurakshaTypography.dashSubtitle.copyWith(
-      color: surakshaAuthText,
+/// Border color for the white/crimson Profile cards (D1-rev).
+const Color kProfileCardBorderColor = surakshaCrimson;
+
+/// Chevrons and trailing action icons on [surakshaLightSurface].
+const Color kProfileChevronColor = surakshaOnLightMuted;
+
+/// Title style for Profile settings rows (dark-on-light, D1-rev).
+TextStyle get kProfileRowTitleStyle => SurakshaTypography.dashTitle.copyWith(
+      fontSize: 15,
+      color: surakshaOnLight,
     );
 
-/// Trailing status / chevron-adjacent muted text.
+/// Subtitle / secondary line for Profile settings rows (dark-on-light, D1-rev).
+TextStyle get kProfileRowSubtitleStyle => SurakshaTypography.dashSubtitle.copyWith(
+      color: surakshaOnLightMuted,
+    );
+
+/// Trailing status / chevron-adjacent muted text (dark-on-light, D1-rev).
 TextStyle get kProfileRowTrailingStyle => SurakshaTypography.monoLabel.copyWith(
-      color: surakshaAuthText,
+      color: surakshaOnLightMuted,
       fontSize: 11,
     );
 
@@ -70,7 +81,7 @@ class ProfileSection extends StatelessWidget {
       );
 }
 
-/// Rounded `dashboardCard` surface for Profile section content.
+/// White surface with a crimson border for Profile section content (D1-rev).
 class ProfileSettingsCard extends StatelessWidget {
   const ProfileSettingsCard({super.key, required this.child});
 
@@ -78,9 +89,15 @@ class ProfileSettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        color: dashboardCard,
-        borderRadius: BorderRadius.circular(kProfileSectionCardRadius),
+        color: surakshaLightSurface,
         clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kProfileSectionCardRadius),
+          side: const BorderSide(
+            color: kProfileCardBorderColor,
+            width: kProfileCardBorderWidth,
+          ),
+        ),
         child: child,
       );
 }
@@ -113,7 +130,7 @@ class ProfileRowDivider extends StatelessWidget {
   Widget build(BuildContext context) => const Divider(
         height: 1,
         thickness: 1,
-        color: dashboardBorder,
+        color: surakshaOnLightDivider,
         indent: kProfileRowPaddingH +
             kProfileRowIconCircleSize +
             kProfileRowPaddingH,
