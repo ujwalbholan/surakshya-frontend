@@ -69,6 +69,8 @@ class UserModel {
         name: json['full_name'] as String? ?? json['name'] as String? ?? 'User',
         email: json['email'] as String,
         phone: json['phone'] as String?,
+        bloodType: json['blood_type'] as String?,
+        age: (json['age'] as num?)?.toInt(),
         avatarPath: 'assets/images/avatars/avatar_profile.png',
         role: json['role'] as String? ?? 'USER',
       );

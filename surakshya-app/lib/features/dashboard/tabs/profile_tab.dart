@@ -52,6 +52,35 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
           children: [
             ProfileHeroCard(user: user),
             const SizedBox(height: S.xl),
+            ProfileSection('Medical information', [
+              ProfileSettingsCard(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: kProfileRowPaddingH,
+                    vertical: kProfileRowPaddingV,
+                  ),
+                  leading:
+                      const ProfileRowIcon(Icons.medical_information_outlined),
+                  title: Text(
+                    'Age & blood group',
+                    style: kProfileRowTitleStyle,
+                  ),
+                  subtitle: Text(
+                    user?.age != null && user?.bloodType != null
+                        ? '${user!.age} years · ${user.bloodType}'
+                        : 'Add details for emergency responders',
+                    style: kProfileRowSubtitleStyle,
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: surakshaAuthText,
+                  ),
+                  onTap: user == null
+                      ? null
+                      : () => _editMedicalProfile(context, ref),
+                ),
+              ),
+            ]),
             ProfileSection(CopyConstants.familyMembersTitle, [
               ProfileSettingsCard(
                 child: Column(
@@ -311,6 +340,129 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
     );
   }
 
+  Future<void> _editMedicalProfile(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    final user = ref.read(authProvider).user;
+    final ageController = TextEditingController(
+      text: user?.age?.toString() ?? '',
+    );
+    var bloodType = user?.bloodType;
+    var saving = false;
+    String? error;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: dashboardSheetBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(S.radiusXl)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          Future<void> save() async {
+            final age = int.tryParse(ageController.text.trim());
+            if (age == null || age < 1 || age > 120 || bloodType == null) {
+              setSheetState(() {
+                error = 'Enter an age from 1–120 and select a blood group.';
+              });
+              return;
+            }
+            setSheetState(() {
+              saving = true;
+              error = null;
+            });
+            try {
+              await ref.read(authProvider.notifier).updateMedicalProfile(
+                    age: age,
+                    bloodType: bloodType!,
+                  );
+              if (sheetContext.mounted) Navigator.pop(sheetContext);
+              if (mounted) {
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  const SnackBar(content: Text('Medical profile updated')),
+                );
+              }
+            } catch (err) {
+              setSheetState(() {
+                saving = false;
+                error = err.toString();
+              });
+            }
+          }
+
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              S.lg,
+              S.lg,
+              S.lg,
+              MediaQuery.viewInsetsOf(context).bottom + S.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Medical information',
+                    style: SurakshaTypography.dashTitle),
+                const SizedBox(height: S.xs),
+                Text(
+                  'Police will see these details when you activate SOS.',
+                  style: kProfileRowSubtitleStyle,
+                ),
+                const SizedBox(height: S.lg),
+                TextField(
+                  controller: ageController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Age',
+                    hintText: 'e.g. 25',
+                  ),
+                ),
+                const SizedBox(height: S.md),
+                DropdownButtonFormField<String>(
+                  initialValue: bloodType,
+                  decoration: const InputDecoration(labelText: 'Blood group'),
+                  items: bloodTypes
+                      .map(
+                        (type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(type),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: saving
+                      ? null
+                      : (value) => setSheetState(() => bloodType = value),
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: S.sm),
+                  Text(
+                    error!,
+                    style: const TextStyle(color: surakshaCrimson),
+                  ),
+                ],
+                const SizedBox(height: S.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: saving ? null : save,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: surakshaCrimson,
+                    ),
+                    child: Text(saving ? 'Saving…' : 'Save'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    ageController.dispose();
+  }
+
   Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
     final confirm = await showModalBottomSheet<bool>(
       context: context,
@@ -426,7 +578,8 @@ class _GuardianProfileRow extends StatelessWidget {
                 ),
               IconButton(
                 tooltip: CopyConstants.editPhoneAction,
-                icon: const Icon(Icons.edit_outlined, size: kProfileRowIconSize),
+                icon:
+                    const Icon(Icons.edit_outlined, size: kProfileRowIconSize),
                 color: surakshaAuthText,
                 onPressed: onEdit,
               ),

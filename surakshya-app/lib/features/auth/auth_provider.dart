@@ -126,6 +126,20 @@ class AuthNotifier extends StateNotifier<AuthData> {
     state = AuthData(isLoggedIn: true, user: user);
   }
 
+  Future<void> updateMedicalProfile({
+    required int age,
+    required String bloodType,
+  }) async {
+    final updated = await _api.updateMedicalProfile(
+      age: age,
+      bloodType: bloodType,
+    );
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('user_age', age);
+    await prefs.setString('user_blood', bloodType);
+    state = state.copyWith(user: updated);
+  }
+
   Future<void> logout() async {
     // Best-effort server invalidation first (needs the still-stored token);
     // local sign-out below completes even if the server call fails.

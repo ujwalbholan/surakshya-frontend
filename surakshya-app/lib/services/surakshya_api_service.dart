@@ -110,10 +110,8 @@ class SurakshyaApiService {
         );
       }
 
-      final requiresPasswordChange =
-          data['requiresPasswordChange'] == true;
-      final requiresActivationOtp =
-          data['requiresActivationOtp'] == true;
+      final requiresPasswordChange = data['requiresPasswordChange'] == true;
+      final requiresActivationOtp = data['requiresActivationOtp'] == true;
       if (requiresPasswordChange || requiresActivationOtp) {
         final challengeToken = data['challengeToken'] as String? ?? '';
         if (challengeToken.isEmpty) {
@@ -226,8 +224,7 @@ class SurakshyaApiService {
         statusCode: response.statusCode,
       );
     }
-    return data['message'] as String? ??
-        'A new verification code was sent.';
+    return data['message'] as String? ?? 'A new verification code was sent.';
   }
 
   Future<void> register({
@@ -371,6 +368,36 @@ class SurakshyaApiService {
       throw SurakshyaApiException(kSessionExpiredMessage, statusCode: 401);
     }
     return retryResponse;
+  }
+
+  Future<UserModel> updateMedicalProfile({
+    required int age,
+    required String bloodType,
+  }) {
+    return _guardNetwork(() async {
+      final response = await _authorizedSend(
+        (headers) => _client.patch(
+          Uri.parse('$_base/user/me'),
+          headers: headers,
+          body: jsonEncode({
+            'age': age,
+            'blood_type': bloodType,
+          }),
+        ),
+      );
+      final data = _decode(response);
+      if (response.statusCode != 200) {
+        throw SurakshyaApiException(
+          _errorMessage(
+            response,
+            data,
+            fallback: 'Could not update medical profile',
+          ),
+          statusCode: response.statusCode,
+        );
+      }
+      return UserModel.fromSurakshyaJson(data);
+    });
   }
 
   /// Single-flight token refresh. Returns false when the refresh token is
@@ -879,15 +906,13 @@ class SurakshyaApiService {
     final token = await _tokenStorage.getAccessToken();
     if (token == null || token.isEmpty) return;
     try {
-      await _client
-          .post(
-            Uri.parse('$_base${AppConstants.authLogoutEndpoint}'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-          )
-          .timeout(kApiRequestTimeout);
+      await _client.post(
+        Uri.parse('$_base${AppConstants.authLogoutEndpoint}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(kApiRequestTimeout);
     } catch (_) {
       // Intentional: local logout proceeds regardless of the server result.
     }
