@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
 import 'package:suraksha/features/auth/auth_provider.dart';
+import 'package:suraksha/features/dashboard/profile/widgets/profile_hero_card.dart';
 import 'package:suraksha/features/dashboard/profile/widgets/profile_section_card.dart';
 import 'package:suraksha/features/parent/parent_dashboard_provider.dart';
 import 'package:suraksha/models/parent_models.dart';
@@ -13,11 +14,6 @@ import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
 import 'package:suraksha/widgets/navigation/notched_sos_bottom_nav.dart';
-import 'package:suraksha/widgets/user_avatar.dart';
-
-/// Guardian profile avatar size (hero, centered).
-const double kParentAvatarRadius = 56;
-const double kParentAvatarInitialsSize = 28;
 
 class ParentProfileTab extends ConsumerWidget {
   const ParentProfileTab({super.key});
@@ -38,36 +34,16 @@ class ParentProfileTab extends ConsumerWidget {
         child: ListView(
           padding: EdgeInsets.fromLTRB(S.lg, S.lg, S.lg, bottomPad + S.lg),
           children: [
-            Center(
-              child: Column(
-                children: [
-                  UserAvatar(
-                    user: user,
-                    radius: kParentAvatarRadius,
-                    initialsStyle: SurakshaTypography.dashGreeting.copyWith(
-                      fontSize: kParentAvatarInitialsSize,
-                    ),
-                  ),
-                  const SizedBox(height: S.md),
-                  Text(
-                    user?.name ?? 'Guardian',
-                    style: SurakshaTypography.dashGreeting,
-                  ),
-                  const SizedBox(height: S.xs),
-                  if (user?.email.isNotEmpty ?? false)
-                    Text(
-                      user!.email,
-                      style: SurakshaTypography.monoLabel,
-                    ),
-                  if (user?.phone != null && user!.phone!.isNotEmpty) ...[
-                    const SizedBox(height: S.xs),
-                    Text(
-                      user.phone!,
-                      style: SurakshaTypography.monoLabel,
-                    ),
-                  ],
-                ],
+            // Same hero as the user profile: halo avatar over a frosted
+            // white card with name, email, edit button, and completion bar.
+            ProfileHeroCard(
+              user: user,
+              completeness: _guardianCompleteness(
+                nameSet: user?.name.trim().isNotEmpty ?? false,
+                phoneSet: user?.phone?.trim().isNotEmpty ?? false,
+                wardLinked: dash.wards.isNotEmpty,
               ),
+              onEdit: () => context.push(AppRoutes.editProfile),
             ),
             const SizedBox(height: S.xl),
             ProfileSection(CopyConstants.parentSelectChild, [
@@ -108,6 +84,20 @@ class ParentProfileTab extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Guardian profile-completion signals: identity filled + a ward linked.
+double _guardianCompleteness({
+  required bool nameSet,
+  required bool phoneSet,
+  required bool wardLinked,
+}) {
+  const total = 3;
+  var done = 0;
+  if (nameSet) done++;
+  if (phoneSet) done++;
+  if (wardLinked) done++;
+  return done / total;
 }
 
 class _WardListTile extends StatelessWidget {
