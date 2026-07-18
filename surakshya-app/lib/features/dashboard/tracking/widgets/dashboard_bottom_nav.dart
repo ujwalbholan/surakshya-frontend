@@ -12,7 +12,21 @@ import 'package:suraksha/widgets/app_svg_icon.dart';
 const double kNavIconSize = 24;
 
 /// Width of the SOS wordmark glyph inside the crimson circle.
-const double kSosNavGlyphWidth = 34;
+const double kSosNavGlyphWidth = 24;
+
+/// Hit target / layout slot for the SOS button.
+const double kSosNavButtonSlot = 72;
+
+/// Diameter of the solid crimson SOS circle — nearly fills its slot so it
+/// reads as anchored in the bar rather than floating in empty space.
+const double kSosNavCircleSize = 68;
+
+/// Extra diameter the pulse ring adds at its widest (kept inside the slot).
+const double kSosNavPulseGrowth = 4;
+
+/// Soft glow around the SOS circle (tight, per reference).
+const double kSosNavGlowBlur = 10;
+const double kSosNavGlowAlpha = 0.4;
 
 class DashboardBottomNav extends StatelessWidget {
   const DashboardBottomNav({
@@ -158,16 +172,18 @@ class _SosNavButtonState extends State<_SosNavButton>
         child: GestureDetector(
           onTap: widget.onTap,
           child: SizedBox(
-            width: 72,
-            height: 72,
+            width: kSosNavButtonSlot,
+            height: kSosNavButtonSlot,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 AnimatedBuilder(
                   animation: _pulse,
                   builder: (_, __) => Container(
-                    width: 62 + _pulse.value * 16,
-                    height: 62 + _pulse.value * 16,
+                    width:
+                        kSosNavCircleSize + _pulse.value * kSosNavPulseGrowth,
+                    height:
+                        kSosNavCircleSize + _pulse.value * kSosNavPulseGrowth,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: surakshaCrimsonRing,
@@ -175,16 +191,17 @@ class _SosNavButtonState extends State<_SosNavButton>
                   ),
                 ),
                 Container(
-                  width: 62,
-                  height: 62,
+                  width: kSosNavCircleSize,
+                  height: kSosNavCircleSize,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: surakshaCrimson,
                     boxShadow: [
                       BoxShadow(
-                        color: surakshaCrimson.withValues(alpha: 0.45),
-                        blurRadius: 16,
-                        spreadRadius: 2,
+                        color: surakshaCrimson.withValues(
+                          alpha: kSosNavGlowAlpha,
+                        ),
+                        blurRadius: kSosNavGlowBlur,
                       ),
                     ],
                   ),
