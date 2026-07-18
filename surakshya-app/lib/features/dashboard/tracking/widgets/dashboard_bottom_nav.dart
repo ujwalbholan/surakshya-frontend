@@ -28,6 +28,22 @@ const double kSosNavPulseGrowth = 4;
 const double kSosNavGlowBlur = 10;
 const double kSosNavGlowAlpha = 0.4;
 
+/// Gap between the SOS circle and the notch edge cut into the bar.
+const double kSosNotchMargin = 6;
+
+/// Radius of the concave notch carved out of the bar's top edge.
+const double kSosNotchRadius = kSosNavCircleSize / 2 + kSosNotchMargin;
+
+/// How far the SOS button rises above the bar (its center sits on the
+/// bar's top edge, docked-FAB style per the reference).
+const double kSosNotchProtrusion = kSosNavButtonSlot / 2;
+
+/// Rounded top corners of the notched bar.
+const double kNavBarCornerRadius = 24;
+
+/// Hairline outline weight for the notched bar.
+const double kNavBarBorderWidth = 0.5;
+
 class DashboardBottomNav extends StatelessWidget {
   const DashboardBottomNav({
     super.key,
@@ -51,36 +67,97 @@ class DashboardBottomNav extends StatelessWidget {
         ? Color.alphaBlend(surakshaCrimsonFaint, surakshaNavBg)
         : surakshaNavBg;
 
-    return Container(
-      height: S.bottomNavHeight,
-      decoration: BoxDecoration(
-        color: navColor,
-        border:
-            const Border(top: BorderSide(color: dashboardBorder, width: 0.5)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+    // Docked-FAB composition: the bar is drawn with a concave notch carved
+    // out of its top edge, and the SOS circle rises out of that notch.
+    return SizedBox(
+      height: S.bottomNavHeight + kSosNotchProtrusion,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          _NavItem(
-            asset: AppIcons.home,
-            label: CopyConstants.home,
-            active: currentTab == DashboardTab.tracking,
-            onTap: () => onTabChanged(DashboardTab.tracking),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: S.bottomNavHeight,
+            child: CustomPaint(
+              painter: _NotchedBarPainter(color: navColor),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _NavItem(
+                    asset: AppIcons.home,
+                    label: CopyConstants.home,
+                    active: currentTab == DashboardTab.tracking,
+                    onTap: () => onTabChanged(DashboardTab.tracking),
+                  ),
+                  // Keeps Home/Profile clear of the notch.
+                  const SizedBox(width: kSosNavButtonSlot),
+                  _NavItem(
+                    asset: AppIcons.profile,
+                    label: CopyConstants.profile,
+                    active: currentTab == DashboardTab.profile,
+                    onTap: () => onTabChanged(DashboardTab.profile),
+                  ),
+                ],
+              ),
+            ),
           ),
-          _SosNavButton(
-            pulseFast: sosActive,
-            onTap: () => onTabChanged(DashboardTab.sos),
-          ),
-          _NavItem(
-            asset: AppIcons.profile,
-            label: CopyConstants.profile,
-            active: currentTab == DashboardTab.profile,
-            onTap: () => onTabChanged(DashboardTab.profile),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: _SosNavButton(
+                pulseFast: sosActive,
+                onTap: () => onTabChanged(DashboardTab.sos),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+/// Paints the nav bar surface: rounded top corners with a semicircular
+/// notch cut out of the top-center edge, hugging the docked SOS button.
+class _NotchedBarPainter extends CustomPainter {
+  const _NotchedBarPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bar = Path()
+      ..addRRect(
+        RRect.fromRectAndCorners(
+          Offset.zero & size,
+          topLeft: const Radius.circular(kNavBarCornerRadius),
+          topRight: const Radius.circular(kNavBarCornerRadius),
+        ),
+      );
+    final notch = Path()
+      ..addOval(
+        Rect.fromCircle(
+          center: Offset(size.width / 2, 0),
+          radius: kSosNotchRadius,
+        ),
+      );
+    final shape = Path.combine(PathOperation.difference, bar, notch);
+
+    canvas.drawPath(shape, Paint()..color = color);
+    canvas.drawPath(
+      shape,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = kNavBarBorderWidth
+        ..color = dashboardBorder,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_NotchedBarPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class _NavItem extends StatelessWidget {
