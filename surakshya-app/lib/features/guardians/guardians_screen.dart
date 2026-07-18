@@ -197,64 +197,65 @@ class _GuardiansScreenState extends ConsumerState<GuardiansScreen> {
                 padding: const EdgeInsets.only(bottom: S.md),
                 child: Text(
                   state.error!,
-                  style: const TextStyle(color: surakshaCrimson),
+                  style: SurakshaTypography.dashSubtitle.copyWith(
+                    color: surakshaCrimson,
+                  ),
                 ),
               ),
-            const _SectionHeader(title: CopyConstants.pendingRequestsTitle),
-            if (state.pendingRequests.isEmpty && !state.loading)
-              Text(
-                CopyConstants.noPendingRequests,
-                style: SurakshaTypography.monoLabel.copyWith(
-                  color: surakshaAuthText,
+            ProfileSection(CopyConstants.pendingRequestsTitle, [
+              if (state.pendingRequests.isEmpty && !state.loading)
+                const _EmptyStateCard(
+                  icon: Icons.mark_email_read_outlined,
+                  message: CopyConstants.noPendingRequests,
+                )
+              else
+                ...state.pendingRequests.map(
+                  (request) => _PendingRequestTile(
+                    request: request,
+                    onAccept: () => _handleAccept(request.id),
+                    onReject: () => _handleReject(request.id),
+                  ),
                 ),
-              )
-            else
-              ...state.pendingRequests.map(
-                (request) => _PendingRequestTile(
-                  request: request,
-                  onAccept: () => _handleAccept(request.id),
-                  onReject: () => _handleReject(request.id),
+            ]),
+            ProfileSection(CopyConstants.linkedGuardiansTitle, [
+              if (state.guardians.isEmpty && !state.loading)
+                const _EmptyStateCard(
+                  icon: Icons.group_outlined,
+                  message: CopyConstants.noLinkedGuardians,
+                )
+              else ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: S.sm),
+                  child: Text(
+                    CopyConstants.emergencyContactSubtitle,
+                    style: SurakshaTypography.dashSubtitle.copyWith(
+                      color: surakshaAuthText,
+                    ),
+                  ),
                 ),
-              ),
-            const SizedBox(height: S.xl),
-            const _SectionHeader(title: CopyConstants.linkedGuardiansTitle),
-            if (state.guardians.isEmpty && !state.loading)
-              Text(
-                CopyConstants.noLinkedGuardians,
-                style: SurakshaTypography.monoLabel.copyWith(
-                  color: surakshaAuthText,
-                ),
-              )
-            else ...[
-              Text(
-                CopyConstants.emergencyContactSubtitle,
-                style: SurakshaTypography.monoLabel.copyWith(
-                  color: surakshaAuthText,
-                ),
-              ),
-              const SizedBox(height: S.sm),
-              ProfileSettingsCard(
-                child: Column(
-                  children: [
-                    for (var i = 0; i < state.guardians.length; i++) ...[
-                      if (i > 0) const ProfileRowDivider(),
-                      _GuardianTile(
-                        guardian: state.guardians[i],
-                        onSetEmergency: () => _setEmergency(
-                          state.guardians[i],
-                          !state.guardians[i].isEmergencyContact,
-                        ),
-                        onEditPhone: () => showEditGuardianPhoneSheet(
-                          context: context,
-                          ref: ref,
+                ProfileSettingsCard(
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < state.guardians.length; i++) ...[
+                        if (i > 0) const ProfileRowDivider(),
+                        _GuardianTile(
                           guardian: state.guardians[i],
+                          onSetEmergency: () => _setEmergency(
+                            state.guardians[i],
+                            !state.guardians[i].isEmergencyContact,
+                          ),
+                          onEditPhone: () => showEditGuardianPhoneSheet(
+                            context: context,
+                            ref: ref,
+                            guardian: state.guardians[i],
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ]),
           ],
         ),
       ),
@@ -318,17 +319,26 @@ class _GuardiansScreenState extends ConsumerState<GuardiansScreen> {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
+/// White/crimson card with an icon and muted message for empty sections.
+class _EmptyStateCard extends StatelessWidget {
+  const _EmptyStateCard({required this.icon, required this.message});
 
-  final String title;
+  final IconData icon;
+  final String message;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: S.sm),
-        child: Text(
-          title.toUpperCase(),
-          style: SurakshaTypography.monoLabel.copyWith(color: surakshaAuthText),
+  Widget build(BuildContext context) => ProfileSettingsCard(
+        child: Padding(
+          padding: const EdgeInsets.all(S.lg),
+          child: Row(
+            children: [
+              ProfileRowIcon(icon),
+              const SizedBox(width: S.md),
+              Expanded(
+                child: Text(message, style: kProfileRowSubtitleStyle),
+              ),
+            ],
+          ),
         ),
       );
 }

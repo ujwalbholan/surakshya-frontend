@@ -78,16 +78,17 @@ class CopyConstants {
   static const String guardiansTitle = 'Guardians';
   static const String inviteGuardianTitle = 'Invite a guardian';
   static const String inviteGuardianSubtitle =
-      'They will receive login credentials by email to sign in and accept the link.';
+      'We\'ll email them sign-in credentials so they can accept your link request.';
   static const String pendingRequestsTitle = 'Pending requests';
   static const String linkedGuardiansTitle = 'Linked guardians';
-  static const String noPendingRequests = 'No pending link requests.';
+  static const String noPendingRequests =
+      'You\'re all caught up — no pending requests.';
   static const String noLinkedGuardians =
-      'No guardians linked yet. Invite someone or accept an incoming request.';
+      'No guardians yet. Invite a trusted family member or friend to receive your SOS alerts.';
   static const String manageGuardians = 'Manage guardians';
   static const String emergencyContactTitle = 'Emergency contact';
   static const String emergencyContactSubtitle =
-      'Pick one guardian number for SOS alerts. Only one can be selected.';
+      'Star one guardian as your emergency contact — their number is dialed during an SOS.';
   static const String emergencyContactBadge = 'Emergency';
   static const String setAsEmergencyContact = 'Set as emergency contact';
   static const String clearEmergencyContact = 'Remove emergency contact';
