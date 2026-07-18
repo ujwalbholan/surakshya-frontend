@@ -89,14 +89,15 @@ class ProfileHeroCard extends StatelessWidget {
   const ProfileHeroCard({
     super.key,
     required this.user,
-    required this.completeness,
+    this.completeness,
     required this.onEdit,
   });
 
   final UserModel? user;
 
   /// Profile-setup completeness in [0, 1], derived from real signals (D4-rev).
-  final double completeness;
+  /// Null hides the progress section (guardian profile).
+  final double? completeness;
 
   /// Opens the edit-profile screen (D5-rev pencil action).
   final VoidCallback onEdit;
@@ -105,7 +106,7 @@ class ProfileHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = user?.name ?? 'User';
     final secondary = user?.email ?? user?.phone ?? '';
-    final percent = (completeness * 100).round();
+    final completeness = this.completeness;
 
     return SizedBox(
       width: double.infinity,
@@ -235,41 +236,45 @@ class ProfileHeroCard extends StatelessWidget {
                             _EditButton(onEdit: onEdit),
                           ],
                         ),
-                        const SizedBox(height: kProfileProgressGap),
-                        // Progress row: label left, percentage right, bar below.
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                kProfileProgressLabel,
-                                style: SurakshaTypography.dashSubtitle.copyWith(
-                                  color: surakshaOnLightMuted,
-                                  fontSize: kProfileProgressLabelFontSize,
+                        if (completeness != null) ...[
+                          const SizedBox(height: kProfileProgressGap),
+                          // Progress row: label left, percentage right,
+                          // bar below.
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  kProfileProgressLabel,
+                                  style:
+                                      SurakshaTypography.dashSubtitle.copyWith(
+                                    color: surakshaOnLightMuted,
+                                    fontSize: kProfileProgressLabelFontSize,
+                                  ),
                                 ),
                               ),
-                            ),
-                            Text(
-                              '$percent%',
-                              style: SurakshaTypography.dashTitle.copyWith(
-                                color: surakshaOnLight,
-                                fontSize: kProfilePercentFontSize,
-                                fontWeight: FontWeight.w700,
+                              Text(
+                                '${(completeness * 100).round()}%',
+                                style: SurakshaTypography.dashTitle.copyWith(
+                                  color: surakshaOnLight,
+                                  fontSize: kProfilePercentFontSize,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: kProfileProgressLabelGap),
-                        ClipRRect(
-                          borderRadius:
-                              BorderRadius.circular(kProfileProgressHeight),
-                          child: LinearProgressIndicator(
-                            value: completeness,
-                            minHeight: kProfileProgressHeight,
-                            color: surakshaCrimson,
-                            backgroundColor: surakshaLightSurfaceAlt,
+                            ],
                           ),
-                        ),
+                          const SizedBox(height: kProfileProgressLabelGap),
+                          ClipRRect(
+                            borderRadius:
+                                BorderRadius.circular(kProfileProgressHeight),
+                            child: LinearProgressIndicator(
+                              value: completeness,
+                              minHeight: kProfileProgressHeight,
+                              color: surakshaCrimson,
+                              backgroundColor: surakshaLightSurfaceAlt,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

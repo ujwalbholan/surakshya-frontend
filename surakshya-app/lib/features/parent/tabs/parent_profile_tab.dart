@@ -35,14 +35,9 @@ class ParentProfileTab extends ConsumerWidget {
           padding: EdgeInsets.fromLTRB(S.lg, S.lg, S.lg, bottomPad + S.lg),
           children: [
             // Same hero as the user profile: halo avatar over a frosted
-            // white card with name, email, edit button, and completion bar.
+            // white card with name, email, and edit button (no progress bar).
             ProfileHeroCard(
               user: user,
-              completeness: _guardianCompleteness(
-                nameSet: user?.name.trim().isNotEmpty ?? false,
-                phoneSet: user?.phone?.trim().isNotEmpty ?? false,
-                wardLinked: dash.wards.isNotEmpty,
-              ),
               onEdit: () => context.push(AppRoutes.editProfile),
             ),
             const SizedBox(height: S.xl),
@@ -84,20 +79,6 @@ class ParentProfileTab extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// Guardian profile-completion signals: identity filled + a ward linked.
-double _guardianCompleteness({
-  required bool nameSet,
-  required bool phoneSet,
-  required bool wardLinked,
-}) {
-  const total = 3;
-  var done = 0;
-  if (nameSet) done++;
-  if (phoneSet) done++;
-  if (wardLinked) done++;
-  return done / total;
 }
 
 class _WardListTile extends StatelessWidget {
