@@ -24,8 +24,10 @@ class DashboardBottomNav extends StatelessWidget {
     final sosActive = sosPhase == SosPhase.counting ||
         sosPhase == SosPhase.dispatching ||
         sosPhase == SosPhase.active;
+    // alphaBlend keeps the bar fully opaque; Color.lerp would interpolate
+    // toward the faint tint's ~10% alpha and let content bleed through.
     final navColor = sosActive
-        ? Color.lerp(surakshaNavBg, surakshaCrimsonFaint, 0.3)!
+        ? Color.alphaBlend(surakshaCrimsonFaint, surakshaNavBg)
         : surakshaNavBg;
 
     return Container(
