@@ -40,7 +40,7 @@ export class UserController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update current user medical profile' })
+  @ApiOperation({ summary: 'Update current user profile (name, medical)' })
   @UseGuards(JwtAuthGuard)
   @Patch('me')
   updateMe(@Req() req: Request, @Body() dto: UpdateProfileDto) {

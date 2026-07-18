@@ -59,12 +59,16 @@ class ProfileHeroCard extends StatelessWidget {
     super.key,
     required this.user,
     required this.completeness,
+    required this.onEdit,
   });
 
   final UserModel? user;
 
   /// Profile-setup completeness in [0, 1], derived from real signals (D4-rev).
   final double completeness;
+
+  /// Opens the edit-profile screen (D5-rev pencil action).
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +145,17 @@ class ProfileHeroCard extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
+          ),
+          Positioned(
+            top: kProfileAvatarOverlap + S.xs,
+            right: S.xs,
+            child: IconButton(
+              tooltip: 'Edit profile',
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit_outlined),
+              color: surakshaCrimson,
+              iconSize: kProfileRowIconSize,
             ),
           ),
           Positioned(

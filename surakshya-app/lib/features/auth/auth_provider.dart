@@ -127,6 +127,14 @@ class AuthNotifier extends StateNotifier<AuthData> {
     state = AuthData(isLoggedIn: true, user: user);
   }
 
+  /// Updates the user's display name on the server and locally.
+  Future<void> updateName(String fullName) async {
+    final updated = await _api.updateName(fullName);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', updated.name);
+    state = state.copyWith(user: updated);
+  }
+
   Future<void> updateMedicalProfile({
     required int age,
     required String bloodType,

@@ -370,6 +370,31 @@ class SurakshyaApiService {
     return retryResponse;
   }
 
+  /// Updates the user's display name via `PATCH /user/me`.
+  Future<UserModel> updateName(String fullName) {
+    return _guardNetwork(() async {
+      final response = await _authorizedSend(
+        (headers) => _client.patch(
+          Uri.parse('$_base/user/me'),
+          headers: headers,
+          body: jsonEncode({'full_name': fullName}),
+        ),
+      );
+      final data = _decode(response);
+      if (response.statusCode != 200) {
+        throw SurakshyaApiException(
+          _errorMessage(
+            response,
+            data,
+            fallback: 'Could not update profile',
+          ),
+          statusCode: response.statusCode,
+        );
+      }
+      return UserModel.fromSurakshyaJson(data);
+    });
+  }
+
   Future<UserModel> updateMedicalProfile({
     required int age,
     required String bloodType,

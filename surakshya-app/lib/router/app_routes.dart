@@ -13,6 +13,7 @@ class AppRoutes {
   static const String tracking = '/tracking';
   static const String parent = '/parent';
   static const String profile = '/profile';
+  static const String editProfile = '/profile/edit';
   static const String guardians = '/guardians';
   static const String notifications = '/notifications';
   static const String guardianSetup = '/guardian/setup';

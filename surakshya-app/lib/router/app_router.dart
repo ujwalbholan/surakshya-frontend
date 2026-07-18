@@ -10,6 +10,7 @@ import 'package:suraksha/features/auth/forgot_password_screen.dart';
 import 'package:suraksha/features/auth/login_screen.dart';
 import 'package:suraksha/features/auth/signup_screen.dart';
 import 'package:suraksha/features/dashboard/dashboard_shell.dart';
+import 'package:suraksha/features/dashboard/profile/edit_profile_screen.dart';
 import 'package:suraksha/features/guardians/guardian_activate_screen.dart';
 import 'package:suraksha/features/guardians/guardians_screen.dart';
 import 'package:suraksha/features/guardians/guardian_setup_screen.dart';
@@ -175,6 +176,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.profile,
         redirect: (context, state) => AppRoutes.tracking,
+      ),
+      GoRoute(
+        path: AppRoutes.editProfile,
+        redirect: (context, state) async {
+          final prefs = await SharedPreferences.getInstance();
+          final loggedIn = prefs.getBool(AppConstants.prefsLoggedIn) ?? false;
+          if (!loggedIn) return AppRoutes.login;
+          return null;
+        },
+        pageBuilder: (context, state) => CustomTransitionPage<void>(
+          child: const EditProfileScreen(),
+          transitionsBuilder: (context, animation, secondary, child) =>
+              FadeTransition(opacity: animation, child: child),
+        ),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

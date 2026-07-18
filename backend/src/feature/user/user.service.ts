@@ -184,6 +184,7 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
+    if (dto.full_name !== undefined) user.full_name = dto.full_name;
     if (dto.age !== undefined) user.age = dto.age;
     if (dto.blood_type !== undefined) user.blood_type = dto.blood_type;
 

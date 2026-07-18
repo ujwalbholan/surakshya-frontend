@@ -58,6 +58,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                 locationSharing: dash.locationSharingActive,
                 bandConnected: dash.bandConnected,
               ),
+              onEdit: () => context.push(AppRoutes.editProfile),
             ),
             const SizedBox(height: S.xl),
             ProfileSection('Medical information', [
