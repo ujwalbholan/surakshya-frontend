@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
+import 'package:suraksha/features/dashboard/profile/widgets/profile_section_card.dart';
 import 'package:suraksha/features/guardians/edit_guardian_phone_sheet.dart';
 import 'package:suraksha/features/guardians/guardian_provider.dart';
 import 'package:suraksha/models/guardian_models.dart';
@@ -11,6 +12,22 @@ import 'package:suraksha/services/surakshya_api_service.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
+import 'package:suraksha/widgets/app_bottom_sheet.dart';
+
+/// Extra list padding so the last card clears the Invite FAB.
+const double kGuardiansFabClearance = 88.0;
+
+/// Emergency badge horizontal padding.
+const double kEmergencyBadgePaddingH = 6.0;
+
+/// Emergency badge vertical padding.
+const double kEmergencyBadgePaddingV = 2.0;
+
+/// Emergency badge corner radius.
+const double kEmergencyBadgeRadius = 4.0;
+
+/// Emergency badge label size.
+const double kEmergencyBadgeFontSize = 10.0;
 
 class GuardiansScreen extends ConsumerStatefulWidget {
   const GuardiansScreen({super.key});
@@ -33,72 +50,87 @@ class _GuardiansScreenState extends ConsumerState<GuardiansScreen> {
     final emailController = TextEditingController();
     final phoneController = TextEditingController(text: '98');
 
-    final sent = await showModalBottomSheet<bool>(
+    final sent = await showAppBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: dashboardSheetBg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(S.radiusXl)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: S.lg,
-          right: S.lg,
-          top: S.lg,
-          bottom: MediaQuery.viewInsetsOf(ctx).bottom + S.lg,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(CopyConstants.inviteGuardianTitle,
-                style: SurakshaTypography.dashTitle),
-            const SizedBox(height: S.sm),
-            Text(
-              CopyConstants.inviteGuardianSubtitle,
-              style: SurakshaTypography.monoLabel,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            CopyConstants.inviteGuardianTitle,
+            style: SurakshaTypography.dashTitle,
+          ),
+          const SizedBox(height: S.sm),
+          Text(
+            CopyConstants.inviteGuardianSubtitle,
+            style: SurakshaTypography.dashSubtitle.copyWith(
+              color: surakshaAuthText,
             ),
-            const SizedBox(height: S.lg),
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Guardian name'),
+          ),
+          const SizedBox(height: S.lg),
+          TextField(
+            controller: nameController,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: 'Guardian name',
+              prefixIcon: Icon(Icons.person_outline, color: surakshaSubtle),
             ),
-            const SizedBox(height: S.md),
-            TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
+          ),
+          const SizedBox(height: S.md),
+          TextField(
+            controller: emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              prefixIcon: Icon(Icons.email_outlined, color: surakshaSubtle),
             ),
-            const SizedBox(height: S.md),
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Phone (Nepal mobile)',
-                hintText: '98XXXXXXXX',
-              ),
+          ),
+          const SizedBox(height: S.md),
+          TextField(
+            controller: phoneController,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(
+              labelText: 'Phone (Nepal mobile)',
+              hintText: '98XXXXXXXX',
+              prefixIcon: Icon(Icons.phone_outlined, color: surakshaSubtle),
             ),
-            const SizedBox(height: S.lg),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: surakshaCrimson),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Send invite'),
+          ),
+          const SizedBox(height: S.lg),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: surakshaCrimson,
+              foregroundColor: surakshaForeground,
+              minimumSize: const Size.fromHeight(kSheetButtonHeight),
             ),
-          ],
-        ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Send invite'),
+          ),
+        ],
       ),
     );
+
+    final name = nameController.text.trim();
+    final email = emailController.text.trim();
+    final phone = phoneController.text.trim();
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
 
     if (sent != true || !mounted) return;
 
     try {
-      final message = await ref.read(guardianLinkingProvider.notifier).inviteGuardian(
-            fullName: nameController.text.trim(),
-            email: emailController.text.trim(),
-            phone: phoneController.text.trim(),
-          );
+      final message =
+          await ref.read(guardianLinkingProvider.notifier).inviteGuardian(
+                fullName: name,
+                email: email,
+                phone: phone,
+              );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
       }
     } on SurakshyaApiException catch (e) {
       if (mounted) {
@@ -119,13 +151,18 @@ class _GuardiansScreenState extends ConsumerState<GuardiansScreen> {
       appBar: AppBar(
         backgroundColor: dashboardBg,
         foregroundColor: surakshaForeground,
-        title: const Text(CopyConstants.guardiansTitle),
+        elevation: 0,
+        title: Text(
+          CopyConstants.guardiansTitle,
+          style: SurakshaTypography.dashTitle,
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
         actions: [
           IconButton(
+            tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
             onPressed: () =>
                 ref.read(guardianLinkingProvider.notifier).refresh(),
@@ -134,6 +171,7 @@ class _GuardiansScreenState extends ConsumerState<GuardiansScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: surakshaCrimson,
+        foregroundColor: surakshaForeground,
         onPressed: _showInviteSheet,
         icon: const Icon(Icons.person_add_outlined),
         label: const Text('Invite'),
@@ -142,7 +180,12 @@ class _GuardiansScreenState extends ConsumerState<GuardiansScreen> {
         color: surakshaCrimson,
         onRefresh: () => ref.read(guardianLinkingProvider.notifier).refresh(),
         child: ListView(
-          padding: EdgeInsets.fromLTRB(S.lg, S.md, S.lg, bottomPad + 88),
+          padding: EdgeInsets.fromLTRB(
+            S.lg,
+            S.md,
+            S.lg,
+            bottomPad + kGuardiansFabClearance,
+          ),
           children: [
             if (state.loading && state.guardians.isEmpty)
               const Padding(
@@ -157,11 +200,13 @@ class _GuardiansScreenState extends ConsumerState<GuardiansScreen> {
                   style: const TextStyle(color: surakshaCrimson),
                 ),
               ),
-            _SectionHeader(title: CopyConstants.pendingRequestsTitle),
+            const _SectionHeader(title: CopyConstants.pendingRequestsTitle),
             if (state.pendingRequests.isEmpty && !state.loading)
               Text(
                 CopyConstants.noPendingRequests,
-                style: SurakshaTypography.monoLabel,
+                style: SurakshaTypography.monoLabel.copyWith(
+                  color: surakshaAuthText,
+                ),
               )
             else
               ...state.pendingRequests.map(
@@ -172,27 +217,27 @@ class _GuardiansScreenState extends ConsumerState<GuardiansScreen> {
                 ),
               ),
             const SizedBox(height: S.xl),
-            _SectionHeader(title: CopyConstants.linkedGuardiansTitle),
+            const _SectionHeader(title: CopyConstants.linkedGuardiansTitle),
             if (state.guardians.isEmpty && !state.loading)
               Text(
                 CopyConstants.noLinkedGuardians,
-                style: SurakshaTypography.monoLabel,
+                style: SurakshaTypography.monoLabel.copyWith(
+                  color: surakshaAuthText,
+                ),
               )
             else ...[
               Text(
                 CopyConstants.emergencyContactSubtitle,
-                style: SurakshaTypography.monoLabel,
+                style: SurakshaTypography.monoLabel.copyWith(
+                  color: surakshaAuthText,
+                ),
               ),
               const SizedBox(height: S.sm),
-              Material(
-                color: dashboardCard,
-                borderRadius: BorderRadius.circular(S.radiusLg),
-                clipBehavior: Clip.antiAlias,
+              ProfileSettingsCard(
                 child: Column(
                   children: [
                     for (var i = 0; i < state.guardians.length; i++) ...[
-                      if (i > 0)
-                        const Divider(height: 1, color: dashboardBorder),
+                      if (i > 0) const ProfileRowDivider(),
                       _GuardianTile(
                         guardian: state.guardians[i],
                         onSetEmergency: () => _setEmergency(
@@ -221,7 +266,8 @@ class _GuardiansScreenState extends ConsumerState<GuardiansScreen> {
       final message =
           await ref.read(guardianLinkingProvider.notifier).acceptRequest(id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
       }
     } on SurakshyaApiException catch (e) {
       if (mounted) {
@@ -237,7 +283,8 @@ class _GuardiansScreenState extends ConsumerState<GuardiansScreen> {
       final message =
           await ref.read(guardianLinkingProvider.notifier).rejectRequest(id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
       }
     } on SurakshyaApiException catch (e) {
       if (mounted) {
@@ -279,7 +326,10 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: S.sm),
-        child: Text(title.toUpperCase(), style: SurakshaTypography.monoLabel),
+        child: Text(
+          title.toUpperCase(),
+          style: SurakshaTypography.monoLabel.copyWith(color: surakshaAuthText),
+        ),
       );
 }
 
@@ -303,39 +353,47 @@ class _PendingRequestTile extends StatelessWidget {
         ? 'Wants to link as your guardian'
         : request.targetEmail;
 
-    return Card(
-      color: dashboardSheetBg,
-      margin: const EdgeInsets.only(bottom: S.sm),
-      child: Padding(
-        padding: const EdgeInsets.all(S.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: SurakshaTypography.dashTitle),
-            const SizedBox(height: 4),
-            Text(subtitle, style: SurakshaTypography.monoLabel),
-            const SizedBox(height: S.md),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onReject,
-                    child: const Text('Reject'),
-                  ),
-                ),
-                const SizedBox(width: S.md),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: surakshaCrimson,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: S.sm),
+      child: ProfileSettingsCard(
+        child: Padding(
+          padding: const EdgeInsets.all(S.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: kProfileRowTitleStyle),
+              const SizedBox(height: S.xs),
+              Text(subtitle, style: kProfileRowSubtitleStyle),
+              const SizedBox(height: S.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: surakshaOnLight,
+                        side: const BorderSide(color: surakshaOnLightDivider),
+                        minimumSize: const Size.fromHeight(kSheetButtonHeight),
+                      ),
+                      onPressed: onReject,
+                      child: const Text('Reject'),
                     ),
-                    onPressed: onAccept,
-                    child: const Text('Accept'),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: S.md),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: surakshaCrimson,
+                        foregroundColor: surakshaForeground,
+                        minimumSize: const Size.fromHeight(kSheetButtonHeight),
+                      ),
+                      onPressed: onAccept,
+                      child: const Text('Accept'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -356,46 +414,68 @@ class _GuardianTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: S.md),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: kProfileRowPaddingH,
+        vertical: kProfileRowPaddingV,
+      ),
       onTap: onEditPhone,
       leading: CircleAvatar(
-        backgroundColor: surakshaCrimson.withValues(alpha: 0.2),
+        radius: kProfileGuardianAvatarRadius,
+        backgroundColor: surakshaLightSurfaceAlt,
         child: Text(
           guardian.initials,
-          style: const TextStyle(color: surakshaCrimson),
+          style: SurakshaTypography.dashTitle.copyWith(
+            fontSize: 12,
+            color: surakshaOnLight,
+          ),
         ),
       ),
       title: Row(
         children: [
-          Flexible(child: Text(guardian.fullName)),
+          Flexible(
+            child: Text(
+              guardian.fullName,
+              style: kProfileRowTitleStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           if (guardian.isEmergencyContact) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: S.sm),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(
+                horizontal: kEmergencyBadgePaddingH,
+                vertical: kEmergencyBadgePaddingV,
+              ),
               decoration: BoxDecoration(
-                color: surakshaCrimson.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(4),
+                color: surakshaCrimson.withValues(alpha: kProfileRowIconBgAlpha),
+                borderRadius: BorderRadius.circular(kEmergencyBadgeRadius),
               ),
               child: Text(
                 CopyConstants.emergencyContactBadge,
                 style: SurakshaTypography.monoLabel.copyWith(
                   color: surakshaCrimson,
-                  fontSize: 10,
+                  fontSize: kEmergencyBadgeFontSize,
                 ),
               ),
             ),
           ],
         ],
       ),
-      subtitle: Text('Guardian · ${guardian.phone}'),
+      subtitle: Text(
+        'Guardian · ${guardian.phone}',
+        style: kProfileRowSubtitleStyle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             tooltip: CopyConstants.editPhoneAction,
             onPressed: onEditPhone,
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            color: surakshaMuted,
+            icon: const Icon(Icons.edit_outlined, size: kProfileRowIconSize),
+            color: kProfileChevronColor,
           ),
           IconButton(
             tooltip: guardian.isEmergencyContact
@@ -406,8 +486,9 @@ class _GuardianTile extends StatelessWidget {
               guardian.isEmergencyContact
                   ? Icons.star_rounded
                   : Icons.star_outline_rounded,
-              color:
-                  guardian.isEmergencyContact ? surakshaCrimson : surakshaMuted,
+              color: guardian.isEmergencyContact
+                  ? surakshaCrimson
+                  : kProfileChevronColor,
             ),
           ),
         ],

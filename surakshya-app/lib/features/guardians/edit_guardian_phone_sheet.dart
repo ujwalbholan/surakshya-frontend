@@ -10,6 +10,7 @@ import 'package:suraksha/services/surakshya_api_service.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
+import 'package:suraksha/widgets/app_bottom_sheet.dart';
 
 /// Nepal mobile: optional +977, then 9[678]XXXXXXXX.
 final _nepalMobilePattern = RegExp(r'^(\+977)?9[678]\d{8}$');
@@ -35,13 +36,9 @@ Future<bool> showEditGuardianPhoneSheet({
   required WidgetRef ref,
   required LinkedGuardian guardian,
 }) async {
-  final saved = await showModalBottomSheet<bool>(
+  final saved = await showAppBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: dashboardSheetBg,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(S.radiusXl)),
-    ),
     builder: (ctx) => _EditGuardianPhoneSheet(
       guardian: guardian,
       onSubmit: (phone) => ref
@@ -126,111 +123,107 @@ class _EditGuardianPhoneSheetState extends State<_EditGuardianPhoneSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: S.lg,
-        right: S.lg,
-        top: S.lg,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + S.lg,
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: S.md),
-                decoration: BoxDecoration(
-                  color: dashboardBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+    return Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            CopyConstants.editGuardianPhoneTitle,
+            style: SurakshaTypography.dashTitle,
+          ),
+          const SizedBox(height: S.xs),
+          Text(
+            widget.guardian.fullName,
+            style: SurakshaTypography.monoLabel.copyWith(
+              color: surakshaForeground,
             ),
-            Text(
-              CopyConstants.editGuardianPhoneTitle,
-              style: SurakshaTypography.dashTitle,
+          ),
+          const SizedBox(height: S.sm),
+          Text(
+            CopyConstants.editGuardianPhoneSubtitle,
+            style: SurakshaTypography.dashSubtitle.copyWith(
+              color: surakshaAuthText,
             ),
-            const SizedBox(height: S.xs),
-            Text(
-              widget.guardian.fullName,
-              style: SurakshaTypography.monoLabel.copyWith(
-                color: surakshaForeground,
-              ),
+          ),
+          const SizedBox(height: S.lg),
+          TextFormField(
+            controller: _phoneController,
+            enabled: !_saving,
+            autofocus: true,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+              LengthLimitingTextInputFormatter(14),
+            ],
+            decoration: const InputDecoration(
+              labelText: CopyConstants.editGuardianPhoneLabel,
+              hintText: CopyConstants.editGuardianPhoneHint,
+              prefixIcon: Icon(Icons.phone_outlined, color: surakshaSubtle),
             ),
+            validator: (value) {
+              if (value == null || !isValidNepalMobile(value)) {
+                return CopyConstants.editGuardianPhoneInvalid;
+              }
+              return null;
+            },
+            onFieldSubmitted: (_) {
+              if (!_saving) _save();
+            },
+          ),
+          if (_error != null) ...[
             const SizedBox(height: S.sm),
             Text(
-              CopyConstants.editGuardianPhoneSubtitle,
-              style: SurakshaTypography.monoLabel,
-            ),
-            const SizedBox(height: S.lg),
-            TextFormField(
-              controller: _phoneController,
-              enabled: !_saving,
-              autofocus: true,
-              keyboardType: TextInputType.phone,
-              textInputAction: TextInputAction.done,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
-                LengthLimitingTextInputFormatter(14),
-              ],
-              decoration: const InputDecoration(
-                labelText: CopyConstants.editGuardianPhoneLabel,
-                hintText: CopyConstants.editGuardianPhoneHint,
-                prefixIcon: Icon(Icons.phone_outlined),
-              ),
-              validator: (value) {
-                if (value == null || !isValidNepalMobile(value)) {
-                  return CopyConstants.editGuardianPhoneInvalid;
-                }
-                return null;
-              },
-              onFieldSubmitted: (_) {
-                if (!_saving) _save();
-              },
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: S.sm),
-              Text(
-                _error!,
-                style: const TextStyle(color: surakshaCrimson, fontSize: 13),
-              ),
-            ],
-            const SizedBox(height: S.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _saving ? null : () => Navigator.pop(context, false),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: S.md),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: surakshaCrimson,
-                    ),
-                    onPressed: _saving ? null : _save,
-                    child: _saving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(CopyConstants.editGuardianPhoneSave),
-                  ),
-                ),
-              ],
+              _error!,
+              style: const TextStyle(color: surakshaCrimson, fontSize: 13),
             ),
           ],
-        ),
+          const SizedBox(height: S.lg),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: surakshaForeground,
+                    minimumSize: const Size.fromHeight(kSheetButtonHeight),
+                  ),
+                  onPressed:
+                      _saving ? null : () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: S.md),
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: surakshaCrimson,
+                    foregroundColor: surakshaForeground,
+                    disabledBackgroundColor: surakshaCrimson.withValues(
+                      alpha: kSheetDisabledButtonAlpha,
+                    ),
+                    disabledForegroundColor: surakshaForeground.withValues(
+                      alpha: kSheetDisabledButtonAlpha,
+                    ),
+                    minimumSize: const Size.fromHeight(kSheetButtonHeight),
+                  ),
+                  onPressed: _saving ? null : _save,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: surakshaForeground,
+                          ),
+                        )
+                      : const Text(CopyConstants.editGuardianPhoneSave),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
