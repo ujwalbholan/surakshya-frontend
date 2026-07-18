@@ -15,6 +15,7 @@ class EmailDomains {
 
   static const List<EmailSuffixOption> suffixes = [
     EmailSuffixOption(label: '@gmail.com', domain: 'gmail.com'),
+    EmailSuffixOption(label: '@icloud.com', domain: 'icloud.com'),
     EmailSuffixOption(label: '@protonmail.org', domain: 'protonmail.org'),
     EmailSuffixOption(label: '@live.net', domain: 'live.net'),
   ];
