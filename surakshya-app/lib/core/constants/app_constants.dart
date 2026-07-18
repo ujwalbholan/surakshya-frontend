@@ -36,6 +36,25 @@ class AppConstants {
   static const String authVerifyResetOtpEndpoint = '/auth/verify-reset-otp';
   static const String authResetPasswordEndpoint = '/auth/reset-password';
 
+  /// Socket.IO tracking namespace on the Surakshya backend.
+  static const String trackingNamespace = '/tracking';
+  static const String socketEventSos = 'sos_event';
+  static const String socketEventLocationUpdate = 'location_update';
+  static const String socketSubscribeDevice = 'subscribe_device';
+  static const String socketUnsubscribeDevice = 'unsubscribe_device';
+
+  /// App-created SOS devices use IMEI `phone-{userId}` (backend resolveDeviceForUser).
+  static const String phoneDeviceIdPrefix = 'phone-';
+
+  /// After this many failed reconnect attempts, fall back to HTTP SOS polling.
+  /// Chosen to match ~30s of backoff before accepting that the socket is down.
+  static const int socketReconnectMaxAttempts = 5;
+  static const int socketReconnectDelayMs = 1000;
+  static const int socketReconnectDelayMaxMs = 10000;
+
+  /// Legacy HTTP poll interval used only when the tracking socket is unavailable.
+  static const Duration activeSosPollInterval = Duration(seconds: 4);
+
   /// When true, also fire AMS `sendSosToPoliceDashboard` as non-blocking dual-write.
   static const bool sosDualWriteToAmsEnabled = true;
 
