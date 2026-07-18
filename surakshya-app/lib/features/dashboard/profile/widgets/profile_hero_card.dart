@@ -1,6 +1,7 @@
 library profile_hero_card;
 
 import 'dart:io';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:suraksha/features/dashboard/profile/widgets/profile_section_card.dart';
@@ -12,8 +13,16 @@ import 'package:suraksha/theme/suraksha_typography.dart';
 /// Avatar circle radius for the Profile hero (reference-scale).
 const double kProfileAvatarRadius = 70;
 
-/// How far the avatar overlaps the top edge of the hero card.
-const double kProfileAvatarOverlap = kProfileAvatarRadius;
+/// How far the avatar sticks up above the card's top edge. The card then
+/// covers the avatar's remaining bottom portion behind a frosted band,
+/// matching the reference composition.
+const double kProfileAvatarOverlap = kProfileAvatarRadius * 1.2;
+
+/// Blur strength of the frosted band where the card covers the avatar.
+const double kProfileHeroBlurSigma = 12.0;
+
+/// Card fill opacity — translucent enough to reveal the avatar behind it.
+const double kProfileHeroCardFillAlpha = 0.88;
 
 /// Crimson halo blur — matches SOS center-button glow.
 const double kProfileHaloBlur = 16;
@@ -100,108 +109,8 @@ class ProfileHeroCard extends StatelessWidget {
         clipBehavior: Clip.none,
         alignment: Alignment.topCenter,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: kProfileAvatarOverlap),
-            child: Material(
-              color: surakshaLightSurface,
-              clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(kProfileHeroCardRadius),
-                side: const BorderSide(
-                  color: kProfileCardBorderColor,
-                  width: kProfileCardBorderWidth,
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  kProfileHeroCardPaddingH,
-                  kProfileAvatarRadius + kProfileHeroCardPaddingV,
-                  kProfileHeroCardPaddingH,
-                  kProfileHeroCardPaddingV,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Identity row: name + secondary on the left, circular
-                    // edit button on the right (reference layout).
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style:
-                                    SurakshaTypography.dashGreeting.copyWith(
-                                  color: surakshaOnLight,
-                                  fontSize: kProfileHeroNameFontSize,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              if (secondary.isNotEmpty) ...[
-                                const SizedBox(height: kProfileHeroTextGap),
-                                Text(
-                                  secondary,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style:
-                                      SurakshaTypography.dashSubtitle.copyWith(
-                                    color: surakshaOnLightMuted,
-                                    fontSize: kProfileHeroSecondaryFontSize,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: S.md),
-                        _EditButton(onEdit: onEdit),
-                      ],
-                    ),
-                    const SizedBox(height: kProfileProgressGap),
-                    // Progress row: label left, percentage right, bar below.
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            kProfileProgressLabel,
-                            style: SurakshaTypography.dashSubtitle.copyWith(
-                              color: surakshaOnLightMuted,
-                              fontSize: kProfileProgressLabelFontSize,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          '$percent%',
-                          style: SurakshaTypography.dashTitle.copyWith(
-                            color: surakshaOnLight,
-                            fontSize: kProfilePercentFontSize,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: kProfileProgressLabelGap),
-                    ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(kProfileProgressHeight),
-                      child: LinearProgressIndicator(
-                        value: completeness,
-                        minHeight: kProfileProgressHeight,
-                        color: surakshaCrimson,
-                        backgroundColor: surakshaLightSurfaceAlt,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          // Avatar layer painted FIRST: it sits in the background and the
+          // frosted card below covers its bottom portion (reference layering).
           Positioned(
             top: 0,
             child: Stack(
@@ -254,6 +163,116 @@ class ProfileHeroCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          // Frosted card painted OVER the avatar's bottom: translucent white
+          // fill + backdrop blur so the covered avatar shows through softly.
+          Padding(
+            padding: const EdgeInsets.only(top: kProfileAvatarOverlap),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(kProfileHeroCardRadius),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: kProfileHeroBlurSigma,
+                  sigmaY: kProfileHeroBlurSigma,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: surakshaLightSurface.withValues(
+                      alpha: kProfileHeroCardFillAlpha,
+                    ),
+                    borderRadius: BorderRadius.circular(kProfileHeroCardRadius),
+                    border: Border.all(
+                      color: kProfileCardBorderColor,
+                      width: kProfileCardBorderWidth,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(kProfileHeroCardPaddingH),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Identity row: name + secondary on the left, circular
+                        // edit button on the right (reference layout).
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: SurakshaTypography.dashGreeting
+                                        .copyWith(
+                                      color: surakshaOnLight,
+                                      fontSize: kProfileHeroNameFontSize,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  if (secondary.isNotEmpty) ...[
+                                    const SizedBox(height: kProfileHeroTextGap),
+                                    Text(
+                                      secondary,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: SurakshaTypography.dashSubtitle
+                                          .copyWith(
+                                        color: surakshaOnLightMuted,
+                                        fontSize: kProfileHeroSecondaryFontSize,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: S.md),
+                            _EditButton(onEdit: onEdit),
+                          ],
+                        ),
+                        const SizedBox(height: kProfileProgressGap),
+                        // Progress row: label left, percentage right, bar below.
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                kProfileProgressLabel,
+                                style: SurakshaTypography.dashSubtitle.copyWith(
+                                  color: surakshaOnLightMuted,
+                                  fontSize: kProfileProgressLabelFontSize,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '$percent%',
+                              style: SurakshaTypography.dashTitle.copyWith(
+                                color: surakshaOnLight,
+                                fontSize: kProfilePercentFontSize,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: kProfileProgressLabelGap),
+                        ClipRRect(
+                          borderRadius:
+                              BorderRadius.circular(kProfileProgressHeight),
+                          child: LinearProgressIndicator(
+                            value: completeness,
+                            minHeight: kProfileProgressHeight,
+                            color: surakshaCrimson,
+                            backgroundColor: surakshaLightSurfaceAlt,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
