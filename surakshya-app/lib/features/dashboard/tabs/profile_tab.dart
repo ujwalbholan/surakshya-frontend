@@ -501,6 +501,23 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              width: kSheetActionIconCircleSize,
+              height: kSheetActionIconCircleSize,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: surakshaCrimson.withValues(
+                  alpha: kProfileRowIconBgAlpha,
+                ),
+              ),
+              child: const Icon(
+                Icons.logout,
+                size: kSheetActionIconSize,
+                color: surakshaCrimson,
+              ),
+            ),
+            const SizedBox(height: S.md),
             Text(
               CopyConstants.profileSignOut,
               style: SurakshaTypography.dashTitle,
@@ -517,6 +534,9 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
               children: [
                 Expanded(
                   child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(kSheetButtonHeight),
+                    ),
                     onPressed: () => Navigator.pop(ctx, false),
                     child: const Text('Cancel'),
                   ),
@@ -526,6 +546,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                   child: FilledButton(
                     style: FilledButton.styleFrom(
                       backgroundColor: surakshaCrimson,
+                      minimumSize: const Size.fromHeight(kSheetButtonHeight),
                     ),
                     onPressed: () => Navigator.pop(ctx, true),
                     child: const Text('Sign Out'),

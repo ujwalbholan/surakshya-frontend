@@ -32,6 +32,12 @@ const double kSheetButtonHeight = 48.0;
 /// clearly a button (D6).
 const double kSheetDisabledButtonAlpha = 0.45;
 
+/// Circle diameter for a sheet's header action icon (D7).
+const double kSheetActionIconCircleSize = 48.0;
+
+/// Glyph size inside the sheet header action icon circle.
+const double kSheetActionIconSize = 24.0;
+
 /// Shared modal bottom sheet: consistent background, corner radius, drag
 /// handle, and safe-area/keyboard-aware padding (D1).
 Future<T?> showAppBottomSheet<T>({
