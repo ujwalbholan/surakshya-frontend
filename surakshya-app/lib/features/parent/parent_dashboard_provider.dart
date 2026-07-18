@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:suraksha/models/parent_models.dart';
 import 'package:suraksha/services/surakshya_api_service.dart';
 
-enum ParentTab { home, profile }
+enum ParentTab { home, sos, profile }
 
 class ParentDashboardState {
   const ParentDashboardState({

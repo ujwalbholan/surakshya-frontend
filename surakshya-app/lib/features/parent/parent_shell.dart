@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:suraksha/features/parent/parent_dashboard_provider.dart';
 import 'package:suraksha/features/parent/tabs/parent_home_tab.dart';
 import 'package:suraksha/features/parent/tabs/parent_profile_tab.dart';
+import 'package:suraksha/features/parent/tabs/parent_sos_tab.dart';
 import 'package:suraksha/features/parent/widgets/parent_bottom_nav.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 
@@ -48,6 +49,7 @@ class _ParentShellState extends ConsumerState<ParentShell> {
             index: tabIndex,
             children: const [
               ParentHomeTab(),
+              ParentSosTab(),
               ParentProfileTab(),
             ],
           ),
@@ -57,6 +59,7 @@ class _ParentShellState extends ConsumerState<ParentShell> {
             bottom: 0,
             child: ParentBottomNav(
               currentTab: state.currentTab,
+              sosActive: state.activeSos?.isActive ?? false,
               onTabChanged: notifier.setTab,
             ),
           ),

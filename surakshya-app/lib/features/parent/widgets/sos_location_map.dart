@@ -17,7 +17,9 @@ class SosLocationMap extends StatefulWidget {
 
   final double latitude;
   final double longitude;
-  final double height;
+
+  /// Fixed height, or null to expand to the parent's constraints.
+  final double? height;
 
   @override
   State<SosLocationMap> createState() => _SosLocationMapState();
@@ -57,6 +59,7 @@ class _SosLocationMapState extends State<SosLocationMap> {
 
     return SizedBox(
       height: widget.height,
+      width: double.infinity,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: FlutterMap(

@@ -6,14 +6,13 @@ import 'package:intl/intl.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
 import 'package:suraksha/features/auth/auth_provider.dart';
 import 'package:suraksha/features/parent/parent_dashboard_provider.dart';
-import 'package:suraksha/features/parent/widgets/sos_location_map.dart';
 import 'package:suraksha/models/parent_models.dart';
 import 'package:suraksha/services/surakshya_api_service.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
 import 'package:suraksha/widgets/app_header_bar.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:suraksha/widgets/navigation/notched_sos_bottom_nav.dart';
 
 class ParentHomeTab extends ConsumerStatefulWidget {
   const ParentHomeTab({super.key});
@@ -105,26 +104,15 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
     }
   }
 
-  Future<void> _openMaps(double lat, double lng) async {
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
-    );
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open maps')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(parentDashboardProvider);
     final auth = ref.watch(authProvider);
     final ward = state.selectedWard;
     final sos = state.activeSos;
-    final coords = _sosCoordinates(sos);
-    final bottomPad = S.bottomNavHeight + MediaQuery.paddingOf(context).bottom;
+    final bottomPad = S.bottomNavHeight +
+        kSosNotchProtrusion +
+        MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
       backgroundColor: dashboardBg,
@@ -213,39 +201,8 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                         const SizedBox(height: S.sm),
                         _ChildDetailsCard(ward: ward),
                         const SizedBox(height: S.lg),
+                        // Status summary only — live map lives on the SOS tab.
                         _SosStatusCard(sos: sos),
-                        if (coords != null) ...[
-                          const SizedBox(height: S.md),
-                          SosLocationMap(
-                            latitude: coords.$1,
-                            longitude: coords.$2,
-                          ),
-                          const SizedBox(height: S.sm),
-                          Text(
-                            '${coords.$1.toStringAsFixed(5)}, ${coords.$2.toStringAsFixed(5)}',
-                            style: SurakshaTypography.monoLabel,
-                          ),
-                          const SizedBox(height: S.sm),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: () => _openMaps(coords.$1, coords.$2),
-                              icon: const Icon(Icons.map_outlined, size: 18),
-                              label: const Text(CopyConstants.parentOpenInMaps),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: surakshaForeground,
-                                side: const BorderSide(color: dashboardBorder),
-                              ),
-                            ),
-                          ),
-                        ] else if (sos != null && sos.isActive)
-                          Padding(
-                            padding: const EdgeInsets.only(top: S.sm),
-                            child: Text(
-                              CopyConstants.parentLocationUnavailable,
-                              style: SurakshaTypography.dashSubtitle,
-                            ),
-                          ),
                       ],
                     ],
                   ],
@@ -256,16 +213,6 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
         ),
       ),
     );
-  }
-
-  (double, double)? _sosCoordinates(WardSosEvent? sos) {
-    if (sos == null || !sos.isActive) return null;
-    final last = sos.lastLocation;
-    if (last != null) return (last.latitude, last.longitude);
-    if (sos.latitude != null && sos.longitude != null) {
-      return (sos.latitude!, sos.longitude!);
-    }
-    return null;
   }
 }
 
