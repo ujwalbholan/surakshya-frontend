@@ -150,19 +150,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                         Icons.chevron_right,
                         color: kProfileChevronColor,
                       ),
-                      onTap: () {
-                        final matches = guardians.guardians
-                            .where((g) => g.isEmergencyContact);
-                        if (matches.isEmpty) {
-                          context.push(AppRoutes.guardians);
-                          return;
-                        }
-                        showEditGuardianPhoneSheet(
-                          context: context,
-                          ref: ref,
-                          guardian: matches.first,
-                        );
-                      },
+                      onTap: () => context.push(AppRoutes.guardians),
                     ),
                     if (guardians.guardians.isEmpty && !guardians.loading)
                       Padding(
