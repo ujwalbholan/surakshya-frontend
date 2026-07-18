@@ -75,6 +75,7 @@ export default function VictimProfilePanel({
                 : alert.victim.fullName || prev.victim.fullName,
             phone:
               alert.victim.phone !== "—" ? alert.victim.phone : prev.victim.phone,
+            age: alert.victim.age > 0 ? alert.victim.age : prev.victim.age,
             bloodType:
               alert.victim.bloodType !== "—"
                 ? alert.victim.bloodType
@@ -120,6 +121,8 @@ export default function VictimProfilePanel({
               ...nextBase.victim,
               fullName: user.full_name,
               phone: user.phone,
+              age: user.age ?? 0,
+              bloodType: user.blood_type ?? "—",
               emergencyContacts: guardiansRes.guardians.map((g) => ({
                 relation: "guardian" as const,
                 name: g.is_emergency_contact
@@ -218,7 +221,8 @@ export default function VictimProfilePanel({
               Wristband double-tap SOS
             </p>
             <p className="font-mono text-[10px] text-[#666]">
-              {enriched.id} ·{" "}
+              {enriched.id} · Activated{" "}
+              {new Date(enriched.startedAtIso).toLocaleString()} ·{" "}
               <RelativeTime
                 iso={enriched.startedAtIso}
                 fallback={enriched.triggeredAt}

@@ -377,6 +377,8 @@ export interface PoliceUserInfo {
   email: string
   phone: string
   role: string
+  age: number | null
+  blood_type: string | null
 }
 
 export interface PoliceDeviceLocationResponse {
