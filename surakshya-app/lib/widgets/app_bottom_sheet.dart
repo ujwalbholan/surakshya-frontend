@@ -74,20 +74,23 @@ class AppSheetChrome extends StatelessWidget {
         kSheetPaddingH,
         keyboardInset + safeBottom + kSheetPaddingBottom,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: kSheetHandleWidth,
-            height: kSheetHandleHeight,
-            decoration: BoxDecoration(
-              color: kSheetHandleColor,
-              borderRadius: BorderRadius.circular(kSheetHandleRadius),
+      // Scrollable so short screens with the keyboard open never overflow.
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: kSheetHandleWidth,
+              height: kSheetHandleHeight,
+              decoration: BoxDecoration(
+                color: kSheetHandleColor,
+                borderRadius: BorderRadius.circular(kSheetHandleRadius),
+              ),
             ),
-          ),
-          const SizedBox(height: kSheetHandleBottomGap),
-          child,
-        ],
+            const SizedBox(height: kSheetHandleBottomGap),
+            child,
+          ],
+        ),
       ),
     );
   }
