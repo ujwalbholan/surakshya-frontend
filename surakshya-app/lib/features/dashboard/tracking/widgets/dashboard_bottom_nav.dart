@@ -61,11 +61,9 @@ class DashboardBottomNav extends StatelessWidget {
     final sosActive = sosPhase == SosPhase.counting ||
         sosPhase == SosPhase.dispatching ||
         sosPhase == SosPhase.active;
-    // alphaBlend keeps the bar fully opaque; Color.lerp would interpolate
-    // toward the faint tint's ~10% alpha and let content bleed through.
-    final navColor = sosActive
-        ? Color.alphaBlend(surakshaCrimsonFaint, surakshaNavBg)
-        : surakshaNavBg;
+    // The bar stays black in every state; the SOS button's faster pulse is
+    // the only nav signal that an SOS is active.
+    const navColor = surakshaNavBg;
 
     // Docked-FAB composition: the bar is drawn with a concave notch carved
     // out of its top edge, and the SOS circle rises out of that notch.
@@ -80,7 +78,7 @@ class DashboardBottomNav extends StatelessWidget {
             bottom: 0,
             height: S.bottomNavHeight,
             child: CustomPaint(
-              painter: _NotchedBarPainter(color: navColor),
+              painter: const _NotchedBarPainter(color: navColor),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
