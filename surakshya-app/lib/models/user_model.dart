@@ -71,7 +71,8 @@ class UserModel {
         phone: json['phone'] as String?,
         bloodType: json['blood_type'] as String?,
         age: (json['age'] as num?)?.toInt(),
-        avatarPath: 'assets/images/avatars/avatar_profile.png',
+        // No photo upload exists yet; stays null until the API provides one.
+        avatarPath: json['avatar_path'] as String?,
         role: json['role'] as String? ?? 'USER',
       );
 }

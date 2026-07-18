@@ -53,7 +53,8 @@ class AuthNotifier extends StateNotifier<AuthData> {
         phone: phone,
         bloodType: prefs.getString('user_blood'),
         age: prefs.getInt('user_age'),
-        avatarPath: 'assets/images/avatars/avatar_profile.png',
+        // No photo upload exists yet; null keeps the initials fallback honest.
+        avatarPath: prefs.getString('user_avatar_path'),
         role: role,
       ),
     );

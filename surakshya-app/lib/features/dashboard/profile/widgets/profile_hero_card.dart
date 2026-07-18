@@ -1,5 +1,7 @@
 library profile_hero_card;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:suraksha/features/dashboard/profile/widgets/profile_section_card.dart';
 import 'package:suraksha/models/user_model.dart';
@@ -33,6 +35,15 @@ const double kProfileHeroCardPaddingV = S.lg;
 
 /// Gap between name and secondary line.
 const double kProfileHeroTextGap = S.xs;
+
+/// Diameter of the decorative tick badge on the avatar (D3-rev).
+const double kProfileBadgeSize = 28;
+
+/// White ring around the tick badge so it separates from the avatar.
+const double kProfileBadgeRingWidth = 2;
+
+/// Check glyph size inside the tick badge.
+const double kProfileBadgeIconSize = 16;
 
 class ProfileHeroCard extends StatelessWidget {
   const ProfileHeroCard({super.key, required this.user});
@@ -99,25 +110,56 @@ class ProfileHeroCard extends StatelessWidget {
           ),
           Positioned(
             top: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: surakshaCrimson.withValues(alpha: kProfileHaloAlpha),
-                    blurRadius: kProfileHaloBlur,
-                    spreadRadius: kProfileHaloSpread,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: surakshaCrimson.withValues(
+                          alpha: kProfileHaloAlpha,
+                        ),
+                        blurRadius: kProfileHaloBlur,
+                        spreadRadius: kProfileHaloSpread,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: CircleAvatar(
-                radius: kProfileAvatarRadius,
-                backgroundColor: surakshaCrimson,
-                child: Text(
-                  _userInitials(user),
-                  style: SurakshaTypography.dashGreeting,
+                  child: CircleAvatar(
+                    radius: kProfileAvatarRadius,
+                    backgroundColor: surakshaCrimson,
+                    foregroundImage: _avatarImage(user?.avatarPath),
+                    child: Text(
+                      _userInitials(user),
+                      style: SurakshaTypography.dashGreeting,
+                    ),
+                  ),
                 ),
-              ),
+                // Decorative tick badge (D3-rev): static design element,
+                // intentionally not wired to any verification flag.
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: Container(
+                    width: kProfileBadgeSize,
+                    height: kProfileBadgeSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: surakshaCrimson,
+                      border: Border.all(
+                        color: surakshaLightSurface,
+                        width: kProfileBadgeRingWidth,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      size: kProfileBadgeIconSize,
+                      color: surakshaForeground,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -126,9 +168,20 @@ class ProfileHeroCard extends StatelessWidget {
   }
 }
 
+/// Uploaded photo if one exists; null keeps the initials fallback visible.
+ImageProvider? _avatarImage(String? path) {
+  if (path == null || path.isEmpty) return null;
+  return path.startsWith('assets/')
+      ? AssetImage(path)
+      : FileImage(File(path)) as ImageProvider;
+}
+
+/// Initials derived from the user's email (D3-rev); name is the fallback.
 String _userInitials(UserModel? user) {
-  final name = user?.name.trim() ?? '';
-  if (name.isEmpty) return 'PS';
-  if (name.length == 1) return name.toUpperCase();
-  return name.substring(0, 2).toUpperCase();
+  final source = (user?.email.trim().isNotEmpty ?? false)
+      ? user!.email.trim()
+      : user?.name.trim() ?? '';
+  if (source.isEmpty) return 'PS';
+  if (source.length == 1) return source.toUpperCase();
+  return source.substring(0, 2).toUpperCase();
 }
