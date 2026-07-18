@@ -16,7 +16,7 @@ class HomeFooter extends StatelessWidget {
           children: [
             const Divider(color: surakshaBorder),
             const SizedBox(height: S.xl2),
-            Text('Suraksha', style: SurakshaTypography.playfairLogo),
+            Text('Suraksha', style: SurakshaTypography.brandLogo),
             const SizedBox(height: S.sm),
             Text(
               CopyConstants.tagline,

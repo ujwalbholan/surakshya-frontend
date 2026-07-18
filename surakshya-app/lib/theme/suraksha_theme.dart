@@ -2,6 +2,7 @@ library suraksha_theme;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
@@ -9,9 +10,28 @@ import 'package:suraksha/theme/suraksha_typography.dart';
 class SurakshaTheme {
   SurakshaTheme._();
 
+  /// Inter for body/label slots, Space Grotesk for display/headline/title
+  /// slots — so any Text without an explicit style still follows the pairing.
+  static TextTheme _textTheme(TextTheme base) {
+    final themed = GoogleFonts.interTextTheme(base);
+    return themed.copyWith(
+      displayLarge: GoogleFonts.spaceGrotesk(textStyle: themed.displayLarge),
+      displayMedium: GoogleFonts.spaceGrotesk(textStyle: themed.displayMedium),
+      displaySmall: GoogleFonts.spaceGrotesk(textStyle: themed.displaySmall),
+      headlineLarge: GoogleFonts.spaceGrotesk(textStyle: themed.headlineLarge),
+      headlineMedium:
+          GoogleFonts.spaceGrotesk(textStyle: themed.headlineMedium),
+      headlineSmall: GoogleFonts.spaceGrotesk(textStyle: themed.headlineSmall),
+      titleLarge: GoogleFonts.spaceGrotesk(textStyle: themed.titleLarge),
+      titleMedium: GoogleFonts.spaceGrotesk(textStyle: themed.titleMedium),
+      titleSmall: GoogleFonts.spaceGrotesk(textStyle: themed.titleSmall),
+    );
+  }
+
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
+        textTheme: _textTheme(ThemeData.dark().textTheme),
         scaffoldBackgroundColor: surakshaBlack,
         colorScheme: const ColorScheme.dark(
           primary: surakshaCrimson,

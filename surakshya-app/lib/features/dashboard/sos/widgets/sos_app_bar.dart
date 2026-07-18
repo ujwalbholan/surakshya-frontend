@@ -1,6 +1,7 @@
 library sos_app_bar;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 
@@ -33,9 +34,9 @@ class SosAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           onPressed: backEnabled ? onBack : null,
         ),
-        title: const Text(
+        title: Text(
           CopyConstants.sos,
-          style: TextStyle(
+          style: GoogleFonts.spaceGrotesk(
             fontSize: 17,
             fontWeight: FontWeight.w600,
             color: surakshaForeground,

@@ -161,7 +161,7 @@ class _SurakshyaRevealSplashScreenState extends State<SurakshyaRevealSplashScree
                     final progress = _revealCurved.value.clamp(0.0, 1.0);
                     final wordmarkSize = _wordmarkSize(context);
                     final wordmarkStyle =
-                        SurakshaTypography.playfairBrand.copyWith(
+                        SurakshaTypography.brandWordmark.copyWith(
                       fontSize: wordmarkSize,
                       color: kSplashTextBright,
                     );

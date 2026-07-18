@@ -1,6 +1,7 @@
 library perspective_marquee_section;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:marquee/marquee.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 
@@ -17,19 +18,19 @@ class PerspectiveMarqueeSection extends StatelessWidget {
           children: [
             Marquee(
               text: _text,
-              style: const TextStyle(
+              style: GoogleFonts.spaceGrotesk(
                 fontSize: 80,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF1A1A1A),
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1A1A1A),
               ),
               blankSpace: 40,
               velocity: 60,
             ),
             Marquee(
               text: _text,
-              style: TextStyle(
+              style: GoogleFonts.spaceGrotesk(
                 fontSize: 80,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
                 color: surakshaBorder.withValues(alpha: 0.8),
               ),
               blankSpace: 40,

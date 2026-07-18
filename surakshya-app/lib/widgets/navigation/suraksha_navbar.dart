@@ -20,7 +20,7 @@ class SurakshaNavbar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: S.sectionH),
             child: Row(
               children: [
-                Text('Suraksha', style: SurakshaTypography.playfairLogo),
+                Text('Suraksha', style: SurakshaTypography.brandLogo),
                 const Spacer(),
                 if (!isMobile) ...[
                   _NavLink('Features', () {}),

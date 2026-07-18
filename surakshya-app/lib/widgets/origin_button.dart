@@ -44,7 +44,7 @@ class _OriginButtonState extends State<OriginButton>
   static const _pressFillDuration = Duration(milliseconds: 280);
   static const _releaseFillDuration = Duration(milliseconds: 420);
 
-  static final TextStyle _labelStyle = GoogleFonts.inter(
+  static final TextStyle _labelStyle = GoogleFonts.spaceGrotesk(
     fontSize: 15,
     fontWeight: FontWeight.w500,
     height: 1.2,

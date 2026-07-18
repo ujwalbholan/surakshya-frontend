@@ -28,7 +28,7 @@ class BrandStatementSection extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Suraksha', style: SurakshaTypography.playfairBrand),
+                Text('Suraksha', style: SurakshaTypography.brandWordmark),
                 const SizedBox(height: S.lg),
                 Text(
                   'SAFETY IS NOT A FEATURE.\nIT IS A RIGHT.',

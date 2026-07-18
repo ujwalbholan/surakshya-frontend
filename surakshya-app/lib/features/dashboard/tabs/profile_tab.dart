@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:suraksha/core/constants/app_constants.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
 import 'package:suraksha/features/auth/auth_provider.dart';
 import 'package:suraksha/features/dashboard/dashboard_provider.dart';
@@ -19,6 +20,7 @@ import 'package:suraksha/widgets/app_svg_icon.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileTab extends ConsumerStatefulWidget {
   const ProfileTab({super.key});
@@ -294,7 +296,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                         Icons.chevron_right,
                         color: kProfileChevronColor,
                       ),
-                      onTap: () => context.push(AppRoutes.home),
+                      onTap: () => _openMarketingSite(context),
                     ),
                     const ProfileRowDivider(),
                     ListTile(
@@ -338,6 +340,16 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
         ),
       ),
     );
+  }
+
+  Future<void> _openMarketingSite(BuildContext context) async {
+    final uri = Uri.parse(AppConstants.marketingSiteUrl);
+    final messenger = ScaffoldMessenger.of(context);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not open marketing site')),
+      );
+    }
   }
 
   Future<void> _editMedicalProfile(

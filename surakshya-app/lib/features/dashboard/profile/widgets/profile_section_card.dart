@@ -42,27 +42,40 @@ const Color kProfileCardBorderColor = surakshaCrimson;
 /// Chevrons and trailing action icons on [surakshaLightSurface].
 const Color kProfileChevronColor = surakshaOnLightMuted;
 
-/// Title style for Profile settings rows (dark-on-light, D1-rev).
+/// Profile type scale (top-down hierarchy):
+/// section heading 13 > row title 16 > subtitle 13 > trailing mono 11.
+const double kProfileSectionLabelFontSize = 13.0;
+const double kProfileRowTitleFontSize = 16.0;
+const double kProfileRowSubtitleFontSize = 13.0;
+const double kProfileRowTrailingFontSize = 11.0;
+
+/// Title style for Profile settings rows — Space Grotesk (heading font).
 TextStyle get kProfileRowTitleStyle => SurakshaTypography.dashTitle.copyWith(
-      fontSize: 15,
+      fontSize: kProfileRowTitleFontSize,
       color: surakshaOnLight,
     );
 
-/// Subtitle / secondary line for Profile settings rows (dark-on-light, D1-rev).
+/// Subtitle / secondary line for Profile settings rows — Inter (body font).
 TextStyle get kProfileRowSubtitleStyle =>
     SurakshaTypography.dashSubtitle.copyWith(
+      fontSize: kProfileRowSubtitleFontSize,
       color: surakshaOnLightMuted,
     );
 
-/// Trailing status / chevron-adjacent muted text (dark-on-light, D1-rev).
+/// Trailing status / chevron-adjacent muted text — JetBrains Mono.
 TextStyle get kProfileRowTrailingStyle => SurakshaTypography.monoLabel.copyWith(
       color: surakshaOnLightMuted,
-      fontSize: 11,
+      fontSize: kProfileRowTrailingFontSize,
     );
 
-/// Uppercase section label above a Profile card (D10 contrast).
+/// Uppercase section heading above a Profile card — JetBrains Mono with the
+/// letter-spaced label treatment, sized ABOVE the body copy so the hierarchy
+/// reads heading > title > subtitle (was 9px, smaller than everything else).
 TextStyle get kProfileSectionLabelStyle =>
-    SurakshaTypography.monoLabel.copyWith(color: surakshaAuthText);
+    SurakshaTypography.sectionLabel.copyWith(
+      fontSize: kProfileSectionLabelFontSize,
+      color: surakshaAuthText,
+    );
 
 /// Uppercase section label above a Profile card.
 class ProfileSection extends StatelessWidget {

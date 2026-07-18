@@ -12,6 +12,9 @@ class AppConstants {
 
   static const String amsBaseUrl = 'https://ams-omwj.onrender.com';
 
+  /// Public marketing site opened from Profile → Account.
+  static const String marketingSiteUrl = 'https://surakshya-frontend.vercel.app/';
+
   /// Surakshya backend for auth + guardian linking.
   /// Override at build/run time: `--dart-define=SURAKSHYA_API_URL=http://192.168.x.x:3000`
   static String get surakshyaBaseUrl {

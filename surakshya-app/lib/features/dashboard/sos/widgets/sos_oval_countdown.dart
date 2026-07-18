@@ -3,6 +3,7 @@ library sos_oval_countdown;
 import 'package:flutter/material.dart';
 import 'package:suraksha/core/constants/app_constants.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
+import 'package:suraksha/theme/suraksha_typography.dart';
 
 /// Draws ~30 dots evenly spaced on the oval perimeter.
 /// [progress] 0.0 = just started (all gray), 1.0 = fully filled (all crimson).
@@ -151,10 +152,8 @@ class _SosOvalCountdownState extends State<SosOvalCountdown>
             ),
             child: Text(
               '${widget.seconds}',
-              style: const TextStyle(
+              style: SurakshaTypography.sosCountdownDigit.copyWith(
                 fontSize: 64,
-                fontWeight: FontWeight.w900,
-                color: surakshaForeground,
                 height: 1,
               ),
             ),

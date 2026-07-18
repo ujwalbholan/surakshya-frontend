@@ -152,7 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: S.lg),
             Text(
               'THE SURAKSHA',
-              style: SurakshaTypography.playfairDisplay.copyWith(
+              style: SurakshaTypography.displayTitle.copyWith(
                 fontSize: 20,
                 letterSpacing: 4,
                 color: surakshaAuthText,

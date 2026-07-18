@@ -29,7 +29,7 @@ class AuthAccentTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = SurakshaTypography.playfairDisplay;
+    final style = SurakshaTypography.displayTitle;
     final accentWidth = _accentWidth(style);
 
     return Row(

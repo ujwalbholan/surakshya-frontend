@@ -75,6 +75,7 @@ class CopyConstants {
   static const String signupSuccess =
       'Account created. Please sign in to continue.';
   static const String familyMembersTitle = 'Guardians';
+  static const String emergencyContactsTitle = 'Emergency Contacts';
   static const String guardiansTitle = 'Guardians';
   static const String inviteGuardianTitle = 'Invite a guardian';
   static const String inviteGuardianSubtitle =

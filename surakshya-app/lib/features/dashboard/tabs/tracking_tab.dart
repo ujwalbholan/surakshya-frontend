@@ -6,7 +6,7 @@ import 'package:suraksha/core/constants/copy_constants.dart';
 import 'package:suraksha/features/dashboard/dashboard_provider.dart';
 import 'package:suraksha/features/dashboard/tracking/widgets/dark_map_widget.dart';
 import 'package:suraksha/features/dashboard/tracking/widgets/family_header_bar.dart';
-import 'package:suraksha/features/dashboard/tracking/widgets/guardians_masonry_grid.dart';
+import 'package:suraksha/features/dashboard/tracking/widgets/guardians_card_list.dart';
 import 'package:suraksha/features/dashboard/tracking/widgets/map_location_sharing_banner.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
@@ -38,6 +38,7 @@ class _TrackingTabState extends ConsumerState<TrackingTab> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             FamilyHeaderBar(unreadCount: dash.unreadNotifications),
+            const SizedBox(height: S.md),
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -58,24 +59,14 @@ class _TrackingTabState extends ConsumerState<TrackingTab> {
                 ),
               ],
             ),
-            const SizedBox(height: S.lg),
+            // Banner overhangs the map by kMapBannerOverlap, so add that on
+            // top of the regular gap to keep the heading clear of it.
+            const SizedBox(height: kMapBannerOverlap + S.lg),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: S.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    CopyConstants.familyMembersTitle,
-                    style: SurakshaTypography.dashGreeting.copyWith(fontSize: 18),
-                  ),
-                  const SizedBox(height: S.xs),
-                  Text(
-                    CopyConstants.familyMembersSubtitle,
-                    style: SurakshaTypography.dashSubtitle.copyWith(
-                      color: surakshaAuthText,
-                    ),
-                  ),
-                ],
+              child: Text(
+                CopyConstants.emergencyContactsTitle,
+                style: SurakshaTypography.dashGreeting.copyWith(fontSize: 18),
               ),
             ),
             const SizedBox(height: S.sm),
@@ -111,7 +102,7 @@ class _TrackingTabState extends ConsumerState<TrackingTab> {
                       ),
                     )
                   else
-                    GuardiansMasonryGrid(members: family),
+                    GuardiansCardList(members: family),
                 ],
               ),
             ),

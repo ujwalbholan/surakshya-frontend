@@ -1,6 +1,7 @@
 library sos_swipe_cancel_bar;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
 import 'package:suraksha/core/utils/haptics.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
@@ -24,6 +25,14 @@ class _SosSwipeCancelBarState extends State<SosSwipeCancelBar>
   static const _trackBorder = Color(0xFF2A2A2A);
   static const _barHeight = 52.0;
   static const _horizontalMargin = 16.0;
+
+  /// Shared between the rendered label and [_measureLabelWidth] so the drag
+  /// math matches the actual glyph widths.
+  static final TextStyle _labelStyle = GoogleFonts.inter(
+    color: surakshaForeground,
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+  );
 
   double _dragX = 0;
   bool _isDragging = false;
@@ -130,13 +139,9 @@ class _SosSwipeCancelBarState extends State<SosSwipeCancelBar>
                             : surakshaCrimson,
                         borderRadius: BorderRadius.circular(100),
                       ),
-                      child: const Text(
+                      child: Text(
                         CopyConstants.swipeToCancelLabel,
-                        style: TextStyle(
-                          color: surakshaForeground,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: _labelStyle,
                       ),
                     ),
                   ),
@@ -157,9 +162,9 @@ class _SosSwipeCancelBarState extends State<SosSwipeCancelBar>
 
   double _measureLabelWidth(BuildContext context) {
     final painter = TextPainter(
-      text: const TextSpan(
+      text: TextSpan(
         text: CopyConstants.swipeToCancelLabel,
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        style: _labelStyle,
       ),
       textDirection: TextDirection.ltr,
     )..layout();

@@ -1,10 +1,10 @@
 library profile_hero_card;
 
-import 'dart:io';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:suraksha/widgets/app_svg_icon.dart';
+import 'package:suraksha/widgets/user_avatar.dart';
 import 'package:suraksha/features/dashboard/profile/widgets/profile_section_card.dart';
 import 'package:suraksha/models/user_model.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
@@ -12,7 +12,10 @@ import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
 
 /// Avatar circle radius for the Profile hero (reference-scale).
-const double kProfileAvatarRadius = 70;
+const double kProfileAvatarRadius = 92;
+
+/// Initials size scaled to the large hero avatar.
+const double kProfileAvatarInitialsSize = 40;
 
 /// How far the avatar sticks up above the card's top edge. The card then
 /// covers the avatar's remaining bottom portion behind a frosted band,
@@ -130,13 +133,11 @@ class ProfileHeroCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: CircleAvatar(
+                  child: UserAvatar(
+                    user: user,
                     radius: kProfileAvatarRadius,
-                    backgroundColor: surakshaCrimson,
-                    foregroundImage: _avatarImage(user?.avatarPath),
-                    child: Text(
-                      _userInitials(user),
-                      style: SurakshaTypography.dashGreeting,
+                    initialsStyle: SurakshaTypography.dashGreeting.copyWith(
+                      fontSize: kProfileAvatarInitialsSize,
                     ),
                   ),
                 ),
@@ -311,20 +312,3 @@ class _EditButton extends StatelessWidget {
       );
 }
 
-/// Uploaded photo if one exists; null keeps the initials fallback visible.
-ImageProvider? _avatarImage(String? path) {
-  if (path == null || path.isEmpty) return null;
-  return path.startsWith('assets/')
-      ? AssetImage(path)
-      : FileImage(File(path)) as ImageProvider;
-}
-
-/// Initials derived from the user's email (D3-rev); name is the fallback.
-String _userInitials(UserModel? user) {
-  final source = (user?.email.trim().isNotEmpty ?? false)
-      ? user!.email.trim()
-      : user?.name.trim() ?? '';
-  if (source.isEmpty) return 'PS';
-  if (source.length == 1) return source.toUpperCase();
-  return source.substring(0, 2).toUpperCase();
-}

@@ -3,91 +3,134 @@ library family_header_bar;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:suraksha/features/auth/auth_provider.dart';
 import 'package:suraksha/features/dashboard/dashboard_provider.dart';
 import 'package:suraksha/router/app_routes.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
+import 'package:suraksha/theme/suraksha_typography.dart';
+import 'package:suraksha/widgets/user_avatar.dart';
 
-/// Compact Tracking header wordmark (placement A — center between icons).
-const double kTrackingWordmarkFontSize = 18.0;
-const FontWeight kTrackingWordmarkFontWeight = FontWeight.w900;
-const double kTrackingWordmarkLetterSpacing = -0.5;
+/// Avatar and bell share one diameter so the bar's ends read as a matched
+/// pair, like the reference.
+const double kHeaderCircleSize = 48.0;
 
-TextStyle get kTrackingWordmarkStyle => GoogleFonts.inter(
-      fontSize: kTrackingWordmarkFontSize,
-      fontWeight: kTrackingWordmarkFontWeight,
-      letterSpacing: kTrackingWordmarkLetterSpacing,
-      height: 1.0,
-      color: surakshaForeground,
-    );
+/// Top-bar avatar radius (plain, no halo — hero-card treatment is too heavy
+/// at this size).
+const double kHeaderAvatarRadius = kHeaderCircleSize / 2;
 
+/// Initials size inside the small top-bar avatar.
+const double kHeaderAvatarInitialsSize = 16.0;
+
+/// Bell glyph size inside the circular button.
+const double kHeaderBellIconSize = 22.0;
+
+/// Breathing room between the wordmark and the side circles.
+const double kHeaderWordmarkGap = S.sm;
+
+/// Understated neutral outline for the bell button (reference style).
+const Color kHeaderBellOutlineColor = surakshaBorder;
+
+/// Unread-dot diameter and inset on the bell button.
+const double kHeaderUnreadDotSize = 8.0;
+const double kHeaderUnreadDotInset = 2.0;
+
+/// Tracking top bar: tappable avatar (left) — SURAKSHYA wordmark (center) —
+/// circular outlined notification bell (right).
 class FamilyHeaderBar extends ConsumerWidget {
   const FamilyHeaderBar({super.key, required this.unreadCount});
 
   final int unreadCount;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: S.md, vertical: S.sm),
-        child: Row(
-          children: [
-            Semantics(
-              label: 'Settings',
-              button: true,
-              child: IconButton(
-                icon: const Icon(
-                  Icons.settings_outlined,
-                  color: surakshaForeground,
-                ),
-                onPressed: () => ref
-                    .read(dashboardProvider.notifier)
-                    .setTab(DashboardTab.profile),
-              ),
-            ),
-            Expanded(
-              child: Semantics(
-                header: true,
-                label: 'Surakshya',
-                child: Text(
-                  'Surakshya',
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: kTrackingWordmarkStyle,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authProvider).user;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: S.md, vertical: S.sm),
+      child: Row(
+        children: [
+          // Avatar replaces the settings gear; same Profile-tab wiring.
+          Semantics(
+            label: 'Profile',
+            button: true,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => ref
+                  .read(dashboardProvider.notifier)
+                  .setTab(DashboardTab.profile),
+              child: UserAvatar(
+                user: user,
+                radius: kHeaderAvatarRadius,
+                initialsStyle: SurakshaTypography.dashTitle.copyWith(
+                  fontSize: kHeaderAvatarInitialsSize,
                 ),
               ),
             ),
-            Semantics(
-              label: 'Notifications',
-              button: true,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.notifications_outlined,
-                      color: surakshaForeground,
-                    ),
-                    onPressed: () => context.push(AppRoutes.notifications),
+          ),
+          Expanded(
+            child: Semantics(
+              header: true,
+              label: 'Surakshya',
+              child: const Padding(
+                padding:
+                    EdgeInsets.symmetric(horizontal: kHeaderWordmarkGap),
+                // Scale down instead of ellipsizing if a narrow screen can't
+                // fit the display-size wordmark.
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'SURAKSHYA',
+                    maxLines: 1,
+                    style: kSurakshyaWordmarkStyle,
                   ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      right: 10,
-                      top: 10,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: surakshaYellow,
-                        ),
+                ),
+              ),
+            ),
+          ),
+          Semantics(
+            label: 'Notifications',
+            button: true,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Material(
+                  color: Colors.transparent,
+                  shape: const CircleBorder(
+                    side: BorderSide(color: kHeaderBellOutlineColor),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => context.push(AppRoutes.notifications),
+                    child: const SizedBox(
+                      width: kHeaderCircleSize,
+                      height: kHeaderCircleSize,
+                      child: Icon(
+                        Icons.notifications_outlined,
+                        color: surakshaForeground,
+                        size: kHeaderBellIconSize,
                       ),
                     ),
-                ],
-              ),
+                  ),
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: kHeaderUnreadDotInset,
+                    top: kHeaderUnreadDotInset,
+                    child: Container(
+                      width: kHeaderUnreadDotSize,
+                      height: kHeaderUnreadDotSize,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: surakshaYellow,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 }

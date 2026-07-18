@@ -48,3 +48,9 @@ flutter:
     - assets/images/
     - assets/images/avatars/
     - assets/icons/
+  fonts:
+    # Bundled locally (not runtime-fetched) so the wordmark renders reliably
+    # offline; scoped to the SURAKSHYA wordmark only.
+    - family: Anton
+      fonts:
+        - asset: assets/fonts/Anton-Regular.ttf
