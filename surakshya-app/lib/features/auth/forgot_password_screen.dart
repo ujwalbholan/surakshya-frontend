@@ -7,6 +7,7 @@ import 'package:suraksha/core/utils/email_utils.dart';
 import 'package:suraksha/features/auth/widgets/auth_accent_title.dart';
 import 'package:suraksha/features/auth/widgets/auth_cinematic_background.dart';
 import 'package:suraksha/features/auth/widgets/auth_footer_link.dart';
+import 'package:suraksha/features/auth/widgets/auth_register_prompt.dart';
 import 'package:suraksha/features/auth/widgets/auth_reveal_transition.dart';
 import 'package:suraksha/features/auth/widgets/auth_ticket_status_overlay.dart';
 import 'package:suraksha/features/auth/widgets/auth_ticket_status_presenter.dart';
@@ -221,9 +222,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 const SizedBox(height: S.xl2),
                 ..._buildStepFields(),
                 const SizedBox(height: authFooterLinkTopGap),
-                AuthFooterLink(
-                  label: 'Back to login',
-                  onPressed: () => context.go(AppRoutes.login),
+                // Same underline-fill treatment as the login screen links.
+                Center(
+                  child: AuthBarActionText(
+                    label: 'Back to login',
+                    onPressed: () => context.go(AppRoutes.login),
+                  ),
                 ),
               ],
             ),

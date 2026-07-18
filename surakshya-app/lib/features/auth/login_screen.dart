@@ -214,7 +214,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: S.xl),
+                const SizedBox(height: S.md),
+                // Same underline-fill treatment as "Register now" below.
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: AuthBarActionText(
+                    label: 'Forgot your password?',
+                    onPressed: () => context.go(AppRoutes.forgotPassword),
+                    padding: const EdgeInsets.symmetric(vertical: S.xs),
+                  ),
+                ),
+                const SizedBox(height: S.md),
                 SizedBox(
                   width: double.infinity,
                   child: OriginButton(
@@ -224,10 +234,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: authFooterLinkTopGap),
-                AuthFooterLink(
-                  label: 'Forgot password?',
-                  onPressed: () => context.go(AppRoutes.forgotPassword),
-                ),
                 AuthRegisterPrompt(
                   onPressed: () => context.go(AppRoutes.signup),
                 ),

@@ -9,7 +9,7 @@ import 'package:suraksha/theme/suraksha_spacing.dart';
 const String kRegisterPromptPrefix = 'Not a member yet? ';
 const String kRegisterPromptAction = 'Register now';
 
-/// Empty track under "Register now" (reference light-gray hairline).
+/// Empty track under bar-action text (reference light-gray hairline).
 Color get kRegisterBarEmpty =>
     surakshaMuted.withValues(alpha: kRegisterBarEmptyOpacity);
 
@@ -18,50 +18,54 @@ const double kRegisterBarEmptyThickness = 1.0;
 const double kRegisterBarFilledThickness = 2.0;
 const double kRegisterBarGap = 2.0;
 
-/// Sign In register CTA: empty bar under bold "Register now"; on first tap
-/// the bar fills crimson, then [onPressed] runs (navigate to signup).
-class AuthRegisterPrompt extends StatefulWidget {
-  const AuthRegisterPrompt({
+/// Default type for bar-action labels (register / forgot-password links).
+TextStyle kAuthBarActionStyle({double fontSize = 13}) => GoogleFonts.inter(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.1,
+      height: 1.3,
+      color: surakshaAuthText,
+      decoration: TextDecoration.none,
+    );
+
+/// Bold action text over an empty hairline bar; on first tap the bar fills
+/// crimson left → right, then [onPressed] runs. Shared by "Register now"
+/// and "Forgot your password?".
+class AuthBarActionText extends StatefulWidget {
+  const AuthBarActionText({
     super.key,
+    required this.label,
     required this.onPressed,
-    this.prefix = kRegisterPromptPrefix,
-    this.action = kRegisterPromptAction,
+    this.style,
+    this.padding = const EdgeInsets.symmetric(
+      vertical: S.xs,
+      horizontal: S.sm,
+    ),
   });
 
+  final String label;
   final VoidCallback onPressed;
-  final String prefix;
-  final String action;
+
+  /// Defaults to [kAuthBarActionStyle].
+  final TextStyle? style;
+
+  /// Tap-target padding around the text + bar block.
+  final EdgeInsets padding;
 
   @override
-  State<AuthRegisterPrompt> createState() => _AuthRegisterPromptState();
+  State<AuthBarActionText> createState() => _AuthBarActionTextState();
 }
 
-class _AuthRegisterPromptState extends State<AuthRegisterPrompt>
+class _AuthBarActionTextState extends State<AuthBarActionText>
     with SingleTickerProviderStateMixin {
   late final AnimationController _fillController;
   bool _busy = false;
 
-  static final TextStyle _prefixStyle = GoogleFonts.inter(
-    fontSize: 13,
-    fontWeight: FontWeight.w400,
-    letterSpacing: 0.1,
-    height: 1.3,
-    color: surakshaAuthText,
-    decoration: TextDecoration.none,
-  );
+  TextStyle get _style => widget.style ?? kAuthBarActionStyle();
 
-  static final TextStyle _actionStyle = GoogleFonts.inter(
-    fontSize: 13,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 0.1,
-    height: 1.3,
-    color: surakshaAuthText,
-    decoration: TextDecoration.none,
-  );
-
-  double _actionWidthFor(String action) {
+  double get _labelWidth {
     final painter = TextPainter(
-      text: TextSpan(text: action, style: _actionStyle),
+      text: TextSpan(text: widget.label, style: _style),
       textDirection: TextDirection.ltr,
       maxLines: 1,
     )..layout();
@@ -98,17 +102,17 @@ class _AuthRegisterPromptState extends State<AuthRegisterPrompt>
     widget.onPressed();
   }
 
-  Widget _buildBar(double actionWidth) {
+  Widget _buildBar(double width) {
     return AnimatedBuilder(
       animation: _fillController,
       builder: (context, _) {
         final t = kRegisterUnderlineCurve.transform(_fillController.value);
-        final fillWidth = actionWidth * t;
+        final fillWidth = width * t;
         final fillHeight = kRegisterBarEmptyThickness +
             (kRegisterBarFilledThickness - kRegisterBarEmptyThickness) * t;
 
         return SizedBox(
-          width: actionWidth,
+          width: width,
           height: kRegisterBarFilledThickness,
           child: Stack(
             alignment: Alignment.bottomLeft,
@@ -120,7 +124,7 @@ class _AuthRegisterPromptState extends State<AuthRegisterPrompt>
                 bottom: 0,
                 child: ColoredBox(
                   color: kRegisterBarEmpty,
-                  child: SizedBox(height: kRegisterBarEmptyThickness),
+                  child: const SizedBox(height: kRegisterBarEmptyThickness),
                 ),
               ),
               // Crimson fill — grows left → right on first tap.
@@ -142,35 +146,75 @@ class _AuthRegisterPromptState extends State<AuthRegisterPrompt>
 
   @override
   Widget build(BuildContext context) {
-    final actionWidth = _actionWidthFor(widget.action);
+    final labelWidth = _labelWidth;
 
-    return Center(
+    return Semantics(
+      button: true,
+      label: widget.label,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: S.xs,
-            horizontal: S.sm,
-          ),
-          child: Row(
+          padding: widget.padding,
+          child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(widget.prefix, style: _prefixStyle),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.action, style: _actionStyle),
-                  const SizedBox(height: kRegisterBarGap),
-                  _buildBar(actionWidth),
-                ],
-              ),
+              Text(widget.label, style: _style),
+              const SizedBox(height: kRegisterBarGap),
+              _buildBar(labelWidth),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Sign In register CTA: "Not a member yet?" prefix + bar-action
+/// "Register now" (fill-then-navigate handled by [AuthBarActionText]).
+class AuthRegisterPrompt extends StatelessWidget {
+  const AuthRegisterPrompt({
+    super.key,
+    required this.onPressed,
+    this.prefix = kRegisterPromptPrefix,
+    this.action = kRegisterPromptAction,
+  });
+
+  final VoidCallback onPressed;
+  final String prefix;
+  final String action;
+
+  static final TextStyle _prefixStyle = GoogleFonts.inter(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    letterSpacing: 0.1,
+    height: 1.3,
+    color: surakshaAuthText,
+    decoration: TextDecoration.none,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Padding(
+            // Optical baseline alignment against the action's bar block.
+            padding: const EdgeInsets.only(
+              bottom: kRegisterBarGap + kRegisterBarFilledThickness,
+            ),
+            child: Text(prefix, style: _prefixStyle),
+          ),
+          AuthBarActionText(
+            label: action,
+            onPressed: onPressed,
+            // No horizontal inset: the prefix already ends with a space.
+            padding: const EdgeInsets.symmetric(vertical: S.xs),
+          ),
+        ],
       ),
     );
   }
