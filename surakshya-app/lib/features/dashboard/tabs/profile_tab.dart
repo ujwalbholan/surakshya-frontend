@@ -535,6 +535,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
+                      foregroundColor: surakshaForeground,
                       minimumSize: const Size.fromHeight(kSheetButtonHeight),
                     ),
                     onPressed: () => Navigator.pop(ctx, false),
@@ -546,6 +547,7 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                   child: FilledButton(
                     style: FilledButton.styleFrom(
                       backgroundColor: surakshaCrimson,
+                      foregroundColor: surakshaForeground,
                       minimumSize: const Size.fromHeight(kSheetButtonHeight),
                     ),
                     onPressed: () => Navigator.pop(ctx, true),
