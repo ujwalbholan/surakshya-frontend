@@ -9,8 +9,8 @@ import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
 
-/// Avatar circle radius for the Profile hero.
-const double kProfileAvatarRadius = 50;
+/// Avatar circle radius for the Profile hero (reference-scale).
+const double kProfileAvatarRadius = 70;
 
 /// How far the avatar overlaps the top edge of the hero card.
 const double kProfileAvatarOverlap = kProfileAvatarRadius;
@@ -24,8 +24,8 @@ const double kProfileHaloSpread = 2;
 /// Crimson halo opacity — matches SOS center-button glow.
 const double kProfileHaloAlpha = 0.45;
 
-/// Hero card corner radius (D1: reuse section card radius).
-const double kProfileHeroCardRadius = S.radiusLg;
+/// Hero card corner radius (reference uses a deeper rounding).
+const double kProfileHeroCardRadius = S.radiusXl;
 
 /// Horizontal padding inside the hero card body.
 const double kProfileHeroCardPaddingH = S.lg;
@@ -37,16 +37,16 @@ const double kProfileHeroCardPaddingV = S.lg;
 const double kProfileHeroTextGap = S.xs;
 
 /// Diameter of the decorative tick badge on the avatar (D3-rev).
-const double kProfileBadgeSize = 28;
+const double kProfileBadgeSize = 40;
 
 /// White ring around the tick badge so it separates from the avatar.
 const double kProfileBadgeRingWidth = 2;
 
 /// Check glyph size inside the tick badge.
-const double kProfileBadgeIconSize = 16;
+const double kProfileBadgeIconSize = 22;
 
 /// Progress bar track height inside the hero card (D4-rev).
-const double kProfileProgressHeight = 10;
+const double kProfileProgressHeight = 12;
 
 /// Gap between the identity row and the progress section.
 const double kProfileProgressGap = S.lg;
@@ -55,10 +55,19 @@ const double kProfileProgressGap = S.lg;
 const double kProfileProgressLabelGap = S.sm;
 
 /// Diameter of the circular edit button beside the name.
-const double kProfileEditButtonSize = 44;
+const double kProfileEditButtonSize = 48;
+
+/// Name size in the identity row (reference-scale).
+const double kProfileHeroNameFontSize = 28;
+
+/// Secondary line size in the identity row.
+const double kProfileHeroSecondaryFontSize = 15;
+
+/// Progress label size.
+const double kProfileProgressLabelFontSize = 15;
 
 /// Percentage figure size in the progress row.
-const double kProfilePercentFontSize = 20;
+const double kProfilePercentFontSize = 24;
 
 /// Label copy above the progress bar.
 const String kProfileProgressLabel = 'Profile completion';
@@ -129,6 +138,8 @@ class ProfileHeroCard extends StatelessWidget {
                                 style:
                                     SurakshaTypography.dashGreeting.copyWith(
                                   color: surakshaOnLight,
+                                  fontSize: kProfileHeroNameFontSize,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               if (secondary.isNotEmpty) ...[
@@ -140,6 +151,7 @@ class ProfileHeroCard extends StatelessWidget {
                                   style:
                                       SurakshaTypography.dashSubtitle.copyWith(
                                     color: surakshaOnLightMuted,
+                                    fontSize: kProfileHeroSecondaryFontSize,
                                   ),
                                 ),
                               ],
@@ -160,6 +172,7 @@ class ProfileHeroCard extends StatelessWidget {
                             kProfileProgressLabel,
                             style: SurakshaTypography.dashSubtitle.copyWith(
                               color: surakshaOnLightMuted,
+                              fontSize: kProfileProgressLabelFontSize,
                             ),
                           ),
                         ),
@@ -168,6 +181,7 @@ class ProfileHeroCard extends StatelessWidget {
                           style: SurakshaTypography.dashTitle.copyWith(
                             color: surakshaOnLight,
                             fontSize: kProfilePercentFontSize,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
