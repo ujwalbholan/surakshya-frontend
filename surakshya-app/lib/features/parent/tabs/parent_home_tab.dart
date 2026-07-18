@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
 import 'package:suraksha/features/auth/auth_provider.dart';
+import 'package:suraksha/features/dashboard/tracking/widgets/family_member_tile.dart';
 import 'package:suraksha/features/parent/parent_dashboard_provider.dart';
 import 'package:suraksha/models/parent_models.dart';
 import 'package:suraksha/services/surakshya_api_service.dart';
@@ -13,6 +14,7 @@ import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
 import 'package:suraksha/widgets/app_header_bar.dart';
 import 'package:suraksha/widgets/navigation/notched_sos_bottom_nav.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ParentHomeTab extends ConsumerStatefulWidget {
   const ParentHomeTab({super.key});
@@ -179,7 +181,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                       Text(
                         CopyConstants.parentSelectChild,
                         style: SurakshaTypography.dashGreeting
-                            .copyWith(fontSize: 16),
+                            .copyWith(fontSize: 18),
                       ),
                       const SizedBox(height: S.sm),
                       ...state.wards.map(
@@ -196,7 +198,7 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
                         Text(
                           CopyConstants.parentChildDetails,
                           style: SurakshaTypography.dashGreeting
-                              .copyWith(fontSize: 16),
+                              .copyWith(fontSize: 18),
                         ),
                         const SizedBox(height: S.sm),
                         _ChildDetailsCard(ward: ward),
@@ -332,14 +334,17 @@ class _WardTile extends StatelessWidget {
                     backgroundColor: surakshaCrimson.withValues(alpha: 0.25),
                     child: Text(
                       ward.initials,
-                      style: SurakshaTypography.bodyMedium,
+                      style: SurakshaTypography.dashTitle.copyWith(
+                        fontSize: 13,
+                        color: surakshaForeground,
+                      ),
                     ),
                   ),
                   const SizedBox(width: S.md),
                   Expanded(
                     child: Text(
                       ward.fullName,
-                      style: SurakshaTypography.bodyLarge,
+                      style: SurakshaTypography.dashTitle.copyWith(fontSize: 16),
                     ),
                   ),
                   if (selected)
@@ -353,28 +358,107 @@ class _WardTile extends StatelessWidget {
       );
 }
 
+/// Ward details on the same light contact-card chrome as the user home
+/// screen's Emergency Contacts (see [FamilyMemberTile]).
 class _ChildDetailsCard extends StatelessWidget {
   const _ChildDetailsCard({required this.ward});
 
   final LinkedWard ward;
 
+  Future<void> _call(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final uri = Uri(scheme: 'tel', path: ward.phone);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not open phone app')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(S.md),
+        padding: const EdgeInsets.all(kGuardianCardPadding),
         decoration: BoxDecoration(
-          color: dashboardCard,
-          borderRadius: BorderRadius.circular(S.radiusLg),
-          border: Border.all(color: dashboardBorder),
+          color: kGuardianCardColor,
+          borderRadius: BorderRadius.circular(kGuardianCardRadius),
+          border: Border.all(color: kGuardianCardBorder),
+          boxShadow: kGuardianCardShadow,
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(ward.fullName, style: SurakshaTypography.dashGreeting),
-            const SizedBox(height: S.xs),
-            Text(ward.email, style: SurakshaTypography.monoLabel),
-            const SizedBox(height: S.xs),
-            Text(ward.phone, style: SurakshaTypography.monoLabel),
+            CircleAvatar(
+              radius: kGuardianAvatarRadius,
+              backgroundColor: surakshaCrimsonCard,
+              child: Text(
+                ward.initials,
+                style: SurakshaTypography.dashTitle.copyWith(
+                  fontSize: kGuardianAvatarInitialsSize,
+                  fontWeight: kGuardianAvatarInitialsWeight,
+                  color: surakshaCrimson,
+                ),
+              ),
+            ),
+            const SizedBox(width: S.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ward.fullName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: SurakshaTypography.dashTitle.copyWith(
+                      fontSize: 18,
+                      color: kGuardianCardText,
+                    ),
+                  ),
+                  const SizedBox(height: S.xs),
+                  Text(
+                    ward.phone,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: SurakshaTypography.monoStat.copyWith(
+                      fontSize: 12,
+                      color: kGuardianCardTextMuted,
+                    ),
+                  ),
+                  Text(
+                    ward.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: SurakshaTypography.monoStat.copyWith(
+                      fontSize: 12,
+                      color: kGuardianCardTextMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: S.sm),
+            Semantics(
+              button: true,
+              label: 'Call ${ward.fullName}',
+              child: Material(
+                color: kGuardianActionButtonColor,
+                shape: const CircleBorder(
+                  side: BorderSide(color: kGuardianCardBorder),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => _call(context),
+                  child: const SizedBox(
+                    width: kGuardianActionButtonSize,
+                    height: kGuardianActionButtonSize,
+                    child: Icon(
+                      Icons.phone_outlined,
+                      size: kGuardianActionIconSize,
+                      color: kGuardianCardText,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       );

@@ -5,13 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
 import 'package:suraksha/features/auth/auth_provider.dart';
+import 'package:suraksha/features/dashboard/profile/widgets/profile_section_card.dart';
 import 'package:suraksha/features/parent/parent_dashboard_provider.dart';
 import 'package:suraksha/models/parent_models.dart';
-import 'package:suraksha/models/user_model.dart';
 import 'package:suraksha/router/app_routes.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
+import 'package:suraksha/widgets/navigation/notched_sos_bottom_nav.dart';
+import 'package:suraksha/widgets/user_avatar.dart';
+
+/// Guardian profile avatar size (hero, centered).
+const double kParentAvatarRadius = 56;
+const double kParentAvatarInitialsSize = 28;
 
 class ParentProfileTab extends ConsumerWidget {
   const ParentProfileTab({super.key});
@@ -21,7 +27,9 @@ class ParentProfileTab extends ConsumerWidget {
     final auth = ref.watch(authProvider);
     final dash = ref.watch(parentDashboardProvider);
     final user = auth.user;
-    final bottomPad = S.bottomNavHeight + MediaQuery.paddingOf(context).bottom;
+    final bottomPad = S.bottomNavHeight +
+        kSosNotchProtrusion +
+        MediaQuery.paddingOf(context).bottom;
 
     return Material(
       color: dashboardBg,
@@ -33,12 +41,11 @@ class ParentProfileTab extends ConsumerWidget {
             Center(
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: surakshaCrimson,
-                    child: Text(
-                      _userInitials(user),
-                      style: SurakshaTypography.dashGreeting,
+                  UserAvatar(
+                    user: user,
+                    radius: kParentAvatarRadius,
+                    initialsStyle: SurakshaTypography.dashGreeting.copyWith(
+                      fontSize: kParentAvatarInitialsSize,
                     ),
                   ),
                   const SizedBox(height: S.md),
@@ -46,6 +53,7 @@ class ParentProfileTab extends ConsumerWidget {
                     user?.name ?? 'Guardian',
                     style: SurakshaTypography.dashGreeting,
                   ),
+                  const SizedBox(height: S.xs),
                   if (user?.email.isNotEmpty ?? false)
                     Text(
                       user!.email,
@@ -62,24 +70,20 @@ class ParentProfileTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: S.xl),
-            _Section(CopyConstants.parentSelectChild, [
-              Material(
-                color: dashboardCard,
-                borderRadius: BorderRadius.circular(S.radiusLg),
-                clipBehavior: Clip.antiAlias,
+            ProfileSection(CopyConstants.parentSelectChild, [
+              ProfileSettingsCard(
                 child: dash.wards.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.all(S.md),
                         child: Text(
                           CopyConstants.parentNoChildren,
-                          style: SurakshaTypography.monoLabel,
+                          style: kProfileRowSubtitleStyle,
                         ),
                       )
                     : Column(
                         children: [
                           for (var i = 0; i < dash.wards.length; i++) ...[
-                            if (i > 0)
-                              const Divider(height: 1, color: dashboardBorder),
+                            if (i > 0) const ProfileRowDivider(),
                             _WardListTile(ward: dash.wards[i]),
                           ],
                         ],
@@ -89,9 +93,13 @@ class ParentProfileTab extends ConsumerWidget {
             Center(
               child: TextButton(
                 onPressed: () => _confirmSignOut(context, ref),
-                child: const Text(
+                child: Text(
                   CopyConstants.profileSignOut,
-                  style: TextStyle(color: surakshaCrimson),
+                  style: SurakshaTypography.dashSubtitle.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: surakshaCrimson,
+                  ),
                 ),
               ),
             ),
@@ -109,15 +117,30 @@ class _WardListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: kProfileRowPaddingH,
+          vertical: kProfileRowPaddingV / 2,
+        ),
         leading: CircleAvatar(
-          backgroundColor: surakshaCrimson.withValues(alpha: 0.15),
+          radius: kProfileGuardianAvatarRadius,
+          backgroundColor:
+              surakshaCrimson.withValues(alpha: kProfileRowIconBgAlpha),
           child: Text(
             ward.initials,
-            style: const TextStyle(color: surakshaCrimson),
+            style: SurakshaTypography.dashTitle.copyWith(
+              fontSize: 13,
+              color: surakshaCrimson,
+            ),
           ),
         ),
-        title: Text(ward.fullName),
-        subtitle: Text(ward.phone),
+        title: Text(ward.fullName, style: kProfileRowTitleStyle),
+        subtitle: Text(
+          ward.phone,
+          style: SurakshaTypography.monoStat.copyWith(
+            fontSize: 12,
+            color: surakshaOnLightMuted,
+          ),
+        ),
       );
 }
 
@@ -138,7 +161,11 @@ Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
             style: SurakshaTypography.dashTitle,
           ),
           const SizedBox(height: S.sm),
-          const Text(CopyConstants.profileSignOutConfirm),
+          Text(
+            CopyConstants.profileSignOutConfirm,
+            style: SurakshaTypography.dashSubtitle,
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: S.lg),
           Row(
             children: [
@@ -168,29 +195,4 @@ Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
     ref.read(authProvider.notifier).logout();
     if (context.mounted) context.go(AppRoutes.login);
   }
-}
-
-String _userInitials(UserModel? user) {
-  final name = user?.name.trim() ?? '';
-  if (name.isEmpty) return 'G';
-  if (name.length == 1) return name.toUpperCase();
-  return name.substring(0, 2).toUpperCase();
-}
-
-class _Section extends StatelessWidget {
-  const _Section(this.title, this.children);
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title.toUpperCase(), style: SurakshaTypography.monoLabel),
-          const SizedBox(height: S.sm),
-          ...children,
-          const SizedBox(height: S.lg),
-        ],
-      );
 }
