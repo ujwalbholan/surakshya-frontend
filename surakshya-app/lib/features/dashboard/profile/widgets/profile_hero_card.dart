@@ -46,13 +46,22 @@ const double kProfileBadgeRingWidth = 2;
 const double kProfileBadgeIconSize = 16;
 
 /// Progress bar track height inside the hero card (D4-rev).
-const double kProfileProgressHeight = 6;
+const double kProfileProgressHeight = 10;
 
-/// Gap between the secondary line and the progress bar.
-const double kProfileProgressGap = S.md;
+/// Gap between the identity row and the progress section.
+const double kProfileProgressGap = S.lg;
 
-/// Gap between the progress bar and its percentage label.
-const double kProfileProgressLabelGap = S.xs;
+/// Gap between the progress label row and the bar.
+const double kProfileProgressLabelGap = S.sm;
+
+/// Diameter of the circular edit button beside the name.
+const double kProfileEditButtonSize = 44;
+
+/// Percentage figure size in the progress row.
+const double kProfilePercentFontSize = 20;
+
+/// Label copy above the progress bar.
+const String kProfileProgressLabel = 'Profile completion';
 
 class ProfileHeroCard extends StatelessWidget {
   const ProfileHeroCard({
@@ -102,29 +111,68 @@ class ProfileHeroCard extends StatelessWidget {
                   kProfileHeroCardPaddingV,
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: SurakshaTypography.dashGreeting.copyWith(
-                        color: surakshaOnLight,
-                      ),
-                    ),
-                    if (secondary.isNotEmpty) ...[
-                      const SizedBox(height: kProfileHeroTextGap),
-                      Text(
-                        secondary,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: SurakshaTypography.monoLabel.copyWith(
-                          color: surakshaOnLightMuted,
+                    // Identity row: name + secondary on the left, circular
+                    // edit button on the right (reference layout).
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style:
+                                    SurakshaTypography.dashGreeting.copyWith(
+                                  color: surakshaOnLight,
+                                ),
+                              ),
+                              if (secondary.isNotEmpty) ...[
+                                const SizedBox(height: kProfileHeroTextGap),
+                                Text(
+                                  secondary,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style:
+                                      SurakshaTypography.dashSubtitle.copyWith(
+                                    color: surakshaOnLightMuted,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: S.md),
+                        _EditButton(onEdit: onEdit),
+                      ],
+                    ),
                     const SizedBox(height: kProfileProgressGap),
+                    // Progress row: label left, percentage right, bar below.
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            kProfileProgressLabel,
+                            style: SurakshaTypography.dashSubtitle.copyWith(
+                              color: surakshaOnLightMuted,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '$percent%',
+                          style: SurakshaTypography.dashTitle.copyWith(
+                            color: surakshaOnLight,
+                            fontSize: kProfilePercentFontSize,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: kProfileProgressLabelGap),
                     ClipRRect(
                       borderRadius:
                           BorderRadius.circular(kProfileProgressHeight),
@@ -132,30 +180,12 @@ class ProfileHeroCard extends StatelessWidget {
                         value: completeness,
                         minHeight: kProfileProgressHeight,
                         color: surakshaCrimson,
-                        backgroundColor: surakshaCrimsonFaint,
-                      ),
-                    ),
-                    const SizedBox(height: kProfileProgressLabelGap),
-                    Text(
-                      'PROFILE $percent% COMPLETE',
-                      style: SurakshaTypography.monoLabel.copyWith(
-                        color: surakshaOnLightMuted,
+                        backgroundColor: surakshaLightSurfaceAlt,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-          Positioned(
-            top: kProfileAvatarOverlap + S.xs,
-            right: S.xs,
-            child: IconButton(
-              tooltip: 'Edit profile',
-              onPressed: onEdit,
-              icon: const Icon(Icons.edit_outlined),
-              color: surakshaCrimson,
-              iconSize: kProfileRowIconSize,
             ),
           ),
           Positioned(
@@ -216,6 +246,33 @@ class ProfileHeroCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Circular soft button with a pencil glyph (reference style).
+class _EditButton extends StatelessWidget {
+  const _EditButton({required this.onEdit});
+
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: surakshaLightSurfaceAlt,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onEdit,
+          child: const SizedBox(
+            width: kProfileEditButtonSize,
+            height: kProfileEditButtonSize,
+            child: Icon(
+              Icons.edit_outlined,
+              size: kProfileRowIconSize,
+              color: surakshaOnLight,
+              semanticLabel: 'Edit profile',
+            ),
+          ),
+        ),
+      );
 }
 
 /// Uploaded photo if one exists; null keeps the initials fallback visible.
