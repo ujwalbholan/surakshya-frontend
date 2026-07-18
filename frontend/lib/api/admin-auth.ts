@@ -105,14 +105,14 @@ export function registerAdminUser(payload: RegisterAdminUserRequest) {
 }
 
 export function forgetPassword(email: string) {
-  return adminApiRequest<{ message?: string }>("/auth/forget-password", {
+  return adminApiRequest<{ message?: string }>("/auth/forgot-password", {
     method: "POST",
     body: JSON.stringify({ email }),
   })
 }
 
 export function verifyResetOtp(email: string, otp: string) {
-  return adminApiRequest<VerifyResetOtpResponse>("/auth/verify-reset-opt", {
+  return adminApiRequest<VerifyResetOtpResponse>("/auth/verify-reset-otp", {
     method: "POST",
     body: JSON.stringify({ email, otp }),
   })
