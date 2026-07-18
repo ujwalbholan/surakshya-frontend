@@ -45,15 +45,32 @@ const double kProfileBadgeRingWidth = 2;
 /// Check glyph size inside the tick badge.
 const double kProfileBadgeIconSize = 16;
 
+/// Progress bar track height inside the hero card (D4-rev).
+const double kProfileProgressHeight = 6;
+
+/// Gap between the secondary line and the progress bar.
+const double kProfileProgressGap = S.md;
+
+/// Gap between the progress bar and its percentage label.
+const double kProfileProgressLabelGap = S.xs;
+
 class ProfileHeroCard extends StatelessWidget {
-  const ProfileHeroCard({super.key, required this.user});
+  const ProfileHeroCard({
+    super.key,
+    required this.user,
+    required this.completeness,
+  });
 
   final UserModel? user;
+
+  /// Profile-setup completeness in [0, 1], derived from real signals (D4-rev).
+  final double completeness;
 
   @override
   Widget build(BuildContext context) {
     final name = user?.name ?? 'User';
     final secondary = user?.email ?? user?.phone ?? '';
+    final percent = (completeness * 100).round();
 
     return SizedBox(
       width: double.infinity,
@@ -103,6 +120,24 @@ class ProfileHeroCard extends StatelessWidget {
                         ),
                       ),
                     ],
+                    const SizedBox(height: kProfileProgressGap),
+                    ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(kProfileProgressHeight),
+                      child: LinearProgressIndicator(
+                        value: completeness,
+                        minHeight: kProfileProgressHeight,
+                        color: surakshaCrimson,
+                        backgroundColor: surakshaCrimsonFaint,
+                      ),
+                    ),
+                    const SizedBox(height: kProfileProgressLabelGap),
+                    Text(
+                      'PROFILE $percent% COMPLETE',
+                      style: SurakshaTypography.monoLabel.copyWith(
+                        color: surakshaOnLightMuted,
+                      ),
+                    ),
                   ],
                 ),
               ),

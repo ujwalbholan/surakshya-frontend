@@ -50,7 +50,15 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
         child: ListView(
           padding: EdgeInsets.fromLTRB(S.lg, S.lg, S.lg, bottomPad + S.lg),
           children: [
-            ProfileHeroCard(user: user),
+            ProfileHeroCard(
+              user: user,
+              completeness: _profileCompleteness(
+                medicalFilled: user?.age != null && user?.bloodType != null,
+                guardianLinked: guardians.guardians.isNotEmpty,
+                locationSharing: dash.locationSharingActive,
+                bandConnected: dash.bandConnected,
+              ),
+            ),
             const SizedBox(height: S.xl),
             ProfileSection('Medical information', [
               ProfileSettingsCard(
@@ -519,6 +527,19 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
       if (context.mounted) context.go(AppRoutes.login);
     }
   }
+}
+
+/// Profile-setup completeness (D4-rev): four equally weighted real signals
+/// already shown on this screen. The avatar-photo signal is intentionally
+/// excluded until a photo upload feature exists, so 100% stays reachable.
+double _profileCompleteness({
+  required bool medicalFilled,
+  required bool guardianLinked,
+  required bool locationSharing,
+  required bool bandConnected,
+}) {
+  final signals = [medicalFilled, guardianLinked, locationSharing, bandConnected];
+  return signals.where((s) => s).length / signals.length;
 }
 
 class _GuardianProfileRow extends StatelessWidget {
