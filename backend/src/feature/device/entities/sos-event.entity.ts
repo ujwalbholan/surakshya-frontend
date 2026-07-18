@@ -54,7 +54,7 @@ export class SosEvent {
   @JoinColumn({ name: 'assigned_station_id' })
   assignedStation?: PoliceStation | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   startedAt!: Date;
 
   @Column({ type: 'timestamptz', nullable: true })

@@ -158,6 +158,8 @@ describe('UserService', () => {
           email: user.email,
           phone: user.phone,
           role: user.role,
+          age: user.age ?? null,
+          blood_type: user.blood_type ?? null,
         },
         ...tokens,
       });

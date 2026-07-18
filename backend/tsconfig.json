@@ -14,7 +14,7 @@
     "sourceMap": true,
     "outDir": "./dist",
     "paths": {
-      "src/*": ["src/*"]
+      "src/*": ["./src/*"]
     },
     "ignoreDeprecations": "5.0",
     "incremental": true,

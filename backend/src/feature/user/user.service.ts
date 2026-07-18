@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { Repository, Not } from 'typeorm';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -135,6 +137,8 @@ export class UserService {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        age: user.age ?? null,
+        blood_type: user.blood_type ?? null,
       },
       accessToken: token.accessToken,
       refreshToken: token.refreshToken,
@@ -169,6 +173,21 @@ export class UserService {
 
   async findOneByIdForAuth(id: string): Promise<User | null> {
     return this.userRepository.findOneBy({ id });
+  }
+
+  async updateProfile(
+    id: string,
+    dto: UpdateProfileDto,
+  ): Promise<Partial<User>> {
+    const user = await this.userRepository.findOneBy({ id });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (dto.age !== undefined) user.age = dto.age;
+    if (dto.blood_type !== undefined) user.blood_type = dto.blood_type;
+
+    return safeUser(await this.userRepository.save(user));
   }
 
   async update(

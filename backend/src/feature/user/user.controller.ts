@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from 'src/utils/guard/jwt-auth.guard';
 import type { Request } from 'express';
 import { RolesGuard } from 'src/utils/guard/roles.guard';
@@ -34,10 +35,17 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   me(@Req() req: Request) {
-    return {
-      message: 'Authenticated user',
-      user: req.user,
-    };
+    const user = req.user as { userId: string };
+    return this.userService.findOne(user.userId);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update current user medical profile' })
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  updateMe(@Req() req: Request, @Body() dto: UpdateProfileDto) {
+    const user = req.user as { userId: string };
+    return this.userService.updateProfile(user.userId, dto);
   }
 
   @ApiBearerAuth()

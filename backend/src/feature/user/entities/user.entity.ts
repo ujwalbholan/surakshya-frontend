@@ -28,6 +28,12 @@ export class User {
   @Column({ length: 30, unique: true })
   phone: string;
 
+  @Column({ type: 'smallint', nullable: true })
+  age?: number | null;
+
+  @Column({ name: 'blood_type', type: 'varchar', length: 3, nullable: true })
+  blood_type?: string | null;
+
   @Column({ type: 'text', nullable: true })
   password_hash: string;
 
