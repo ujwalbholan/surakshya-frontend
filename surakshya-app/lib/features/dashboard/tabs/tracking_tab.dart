@@ -5,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:suraksha/core/constants/copy_constants.dart';
 import 'package:suraksha/features/dashboard/dashboard_provider.dart';
 import 'package:suraksha/features/dashboard/tracking/widgets/dark_map_widget.dart';
-import 'package:suraksha/features/dashboard/tracking/widgets/family_header_bar.dart';
 import 'package:suraksha/features/dashboard/tracking/widgets/guardians_card_list.dart';
 import 'package:suraksha/features/dashboard/tracking/widgets/map_location_sharing_banner.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
+import 'package:suraksha/widgets/app_header_bar.dart';
 
 class TrackingTab extends ConsumerStatefulWidget {
   const TrackingTab({super.key});
@@ -37,7 +37,12 @@ class _TrackingTabState extends ConsumerState<TrackingTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FamilyHeaderBar(unreadCount: dash.unreadNotifications),
+            AppHeaderBar(
+              unreadCount: dash.unreadNotifications,
+              onAvatarTap: () => ref
+                  .read(dashboardProvider.notifier)
+                  .setTab(DashboardTab.profile),
+            ),
             const SizedBox(height: S.md),
             Stack(
               clipBehavior: Clip.none,

@@ -12,6 +12,7 @@ import 'package:suraksha/services/surakshya_api_service.dart';
 import 'package:suraksha/theme/suraksha_colors.dart';
 import 'package:suraksha/theme/suraksha_spacing.dart';
 import 'package:suraksha/theme/suraksha_typography.dart';
+import 'package:suraksha/widgets/app_header_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ParentHomeTab extends ConsumerStatefulWidget {
@@ -127,116 +128,130 @@ class _ParentHomeTabState extends ConsumerState<ParentHomeTab> {
 
     return Scaffold(
       backgroundColor: dashboardBg,
-      appBar: AppBar(
-        backgroundColor: dashboardBg,
-        elevation: 0,
-        title: Text(
-          CopyConstants.parentDashboardTitle,
-          style: SurakshaTypography.dashGreeting.copyWith(fontSize: 20),
-        ),
-      ),
-      body: RefreshIndicator(
-        color: surakshaCrimson,
-        onRefresh: () => ref.read(parentDashboardProvider.notifier).refresh(),
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(S.lg, 0, S.lg, bottomPad + S.xl),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (auth.user?.name != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: S.md),
-                child: Text(
-                  auth.user!.name,
-                  style: SurakshaTypography.monoLabel,
-                ),
-              ),
-            if (state.error != null)
-              _ErrorBanner(message: state.error!),
-            if (state.pendingRequests.isNotEmpty) ...[
-              for (final request in state.pendingRequests)
-                _PendingBanner(
-                  request: request,
-                  onAccept: () => _acceptRequest(request.id),
-                  onReject: () => _rejectRequest(request.id),
-                ),
-              const SizedBox(height: S.md),
-            ],
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: _inviteWard,
-                icon: const Icon(Icons.person_add_alt_1, size: 18),
-                label: const Text('Invite ward by email'),
-              ),
+            AppHeaderBar(
+              // Guardian dashboard has no unread-notification state yet.
+              unreadCount: 0,
+              onAvatarTap: () => ref
+                  .read(parentDashboardProvider.notifier)
+                  .setTab(ParentTab.profile),
             ),
-            const SizedBox(height: S.md),
-            if (state.loading && state.wards.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: S.xl2),
-                child: Center(
-                  child: CircularProgressIndicator(color: surakshaCrimson),
-                ),
-              )
-            else if (state.wards.isEmpty)
-              _EmptyState()
-            else ...[
-              Text(
-                CopyConstants.parentSelectChild,
-                style: SurakshaTypography.dashGreeting.copyWith(fontSize: 16),
-              ),
-              const SizedBox(height: S.sm),
-              ...state.wards.map(
-                (w) => _WardTile(
-                  ward: w,
-                  selected: w.id == state.selectedWardId,
-                  onTap: () => ref
-                      .read(parentDashboardProvider.notifier)
-                      .selectWard(w.id),
-                ),
-              ),
-              const SizedBox(height: S.lg),
-              if (ward != null) ...[
-                Text(
-                  CopyConstants.parentChildDetails,
-                  style: SurakshaTypography.dashGreeting.copyWith(fontSize: 16),
-                ),
-                const SizedBox(height: S.sm),
-                _ChildDetailsCard(ward: ward),
-                const SizedBox(height: S.lg),
-                _SosStatusCard(sos: sos),
-                if (coords != null) ...[
-                  const SizedBox(height: S.md),
-                  SosLocationMap(
-                    latitude: coords.$1,
-                    longitude: coords.$2,
-                  ),
-                  const SizedBox(height: S.sm),
-                  Text(
-                    '${coords.$1.toStringAsFixed(5)}, ${coords.$2.toStringAsFixed(5)}',
-                    style: SurakshaTypography.monoLabel,
-                  ),
-                  const SizedBox(height: S.sm),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _openMaps(coords.$1, coords.$2),
-                      icon: const Icon(Icons.map_outlined, size: 18),
-                      label: const Text(CopyConstants.parentOpenInMaps),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: surakshaForeground,
-                        side: const BorderSide(color: dashboardBorder),
+            Expanded(
+              child: RefreshIndicator(
+                color: surakshaCrimson,
+                onRefresh: () =>
+                    ref.read(parentDashboardProvider.notifier).refresh(),
+                child: ListView(
+                  padding:
+                      EdgeInsets.fromLTRB(S.lg, S.md, S.lg, bottomPad + S.xl),
+                  children: [
+                    if (auth.user?.name != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: S.md),
+                        child: Text(
+                          auth.user!.name,
+                          style: SurakshaTypography.monoLabel,
+                        ),
+                      ),
+                    if (state.error != null)
+                      _ErrorBanner(message: state.error!),
+                    if (state.pendingRequests.isNotEmpty) ...[
+                      for (final request in state.pendingRequests)
+                        _PendingBanner(
+                          request: request,
+                          onAccept: () => _acceptRequest(request.id),
+                          onReject: () => _rejectRequest(request.id),
+                        ),
+                      const SizedBox(height: S.md),
+                    ],
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: _inviteWard,
+                        icon: const Icon(Icons.person_add_alt_1, size: 18),
+                        label: const Text('Invite ward by email'),
                       ),
                     ),
-                  ),
-                ] else if (sos != null && sos.isActive)
-                  Padding(
-                    padding: const EdgeInsets.only(top: S.sm),
-                    child: Text(
-                      CopyConstants.parentLocationUnavailable,
-                      style: SurakshaTypography.dashSubtitle,
-                    ),
-                  ),
-              ],
-            ],
+                    const SizedBox(height: S.md),
+                    if (state.loading && state.wards.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: S.xl2),
+                        child: Center(
+                          child:
+                              CircularProgressIndicator(color: surakshaCrimson),
+                        ),
+                      )
+                    else if (state.wards.isEmpty)
+                      _EmptyState()
+                    else ...[
+                      Text(
+                        CopyConstants.parentSelectChild,
+                        style: SurakshaTypography.dashGreeting
+                            .copyWith(fontSize: 16),
+                      ),
+                      const SizedBox(height: S.sm),
+                      ...state.wards.map(
+                        (w) => _WardTile(
+                          ward: w,
+                          selected: w.id == state.selectedWardId,
+                          onTap: () => ref
+                              .read(parentDashboardProvider.notifier)
+                              .selectWard(w.id),
+                        ),
+                      ),
+                      const SizedBox(height: S.lg),
+                      if (ward != null) ...[
+                        Text(
+                          CopyConstants.parentChildDetails,
+                          style: SurakshaTypography.dashGreeting
+                              .copyWith(fontSize: 16),
+                        ),
+                        const SizedBox(height: S.sm),
+                        _ChildDetailsCard(ward: ward),
+                        const SizedBox(height: S.lg),
+                        _SosStatusCard(sos: sos),
+                        if (coords != null) ...[
+                          const SizedBox(height: S.md),
+                          SosLocationMap(
+                            latitude: coords.$1,
+                            longitude: coords.$2,
+                          ),
+                          const SizedBox(height: S.sm),
+                          Text(
+                            '${coords.$1.toStringAsFixed(5)}, ${coords.$2.toStringAsFixed(5)}',
+                            style: SurakshaTypography.monoLabel,
+                          ),
+                          const SizedBox(height: S.sm),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () => _openMaps(coords.$1, coords.$2),
+                              icon: const Icon(Icons.map_outlined, size: 18),
+                              label: const Text(CopyConstants.parentOpenInMaps),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: surakshaForeground,
+                                side: const BorderSide(color: dashboardBorder),
+                              ),
+                            ),
+                          ),
+                        ] else if (sos != null && sos.isActive)
+                          Padding(
+                            padding: const EdgeInsets.only(top: S.sm),
+                            child: Text(
+                              CopyConstants.parentLocationUnavailable,
+                              style: SurakshaTypography.dashSubtitle,
+                            ),
+                          ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -381,7 +396,8 @@ class _WardTile extends StatelessWidget {
                     ),
                   ),
                   if (selected)
-                    const Icon(Icons.check_circle, color: surakshaCrimson, size: 20),
+                    const Icon(Icons.check_circle,
+                        color: surakshaCrimson, size: 20),
                 ],
               ),
             ),
@@ -434,9 +450,7 @@ class _SosStatusCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(S.md),
       decoration: BoxDecoration(
-        color: active
-            ? surakshaCrimson.withValues(alpha: 0.12)
-            : dashboardCard,
+        color: active ? surakshaCrimson.withValues(alpha: 0.12) : dashboardCard,
         borderRadius: BorderRadius.circular(S.radiusLg),
         border: Border.all(
           color: active
