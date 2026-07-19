@@ -87,14 +87,14 @@ class CopyConstants {
   static const String noLinkedGuardians =
       'No guardians yet. Invite a trusted family member or friend to receive your SOS alerts.';
   static const String manageGuardians = 'Manage guardians';
-  static const String emergencyContactTitle = 'Emergency contact';
+  static const String emergencyContactTitle = 'Emergency contacts';
   static const String emergencyContactSubtitle =
-      'Star one guardian as your emergency contact — their number is dialed during an SOS.';
+      'Star every guardian who should receive an automatic call when you trigger an SOS.';
   static const String emergencyContactBadge = 'Emergency';
   static const String setAsEmergencyContact = 'Set as emergency contact';
   static const String clearEmergencyContact = 'Remove emergency contact';
   static const String noEmergencyContactYet =
-      'No emergency contact yet. Choose a guardian below.';
+      'No emergency contacts yet. Choose one or more guardians below.';
   static const String editGuardianPhoneTitle = 'Edit phone number';
   static const String editGuardianPhoneSubtitle =
       'Nepal mobile only. Used for band emergency dial when this guardian is your SOS contact.';

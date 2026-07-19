@@ -100,6 +100,15 @@ class _SosTabState extends ConsumerState<SosTab> {
     });
   }
 
+  /// Real linked guardians for SOS UI / police dual-write.
+  /// Prefer starred emergency contacts; fall back to the full guardian list.
+  List<ContactModel> _sosContacts() {
+    final family =
+        ref.read(familyMembersProvider).where((c) => c.id != 'me').toList();
+    final emergency = family.where((c) => c.isEmergency).toList();
+    return (emergency.isNotEmpty ? emergency : family).take(3).toList();
+  }
+
   Future<void> _completeCountdown() async {
     ref.read(dashboardProvider.notifier).startDispatching();
     await ref.read(notificationServiceProvider).showSosOngoing();
@@ -114,7 +123,7 @@ class _SosTabState extends ConsumerState<SosTab> {
       await _dispatchSosPrimaryAndDualWrite(
         user: user,
         location: dash.currentLocation,
-        familyMembers: dash.contacts,
+        familyMembers: _sosContacts(),
       );
     }
 
@@ -192,8 +201,7 @@ class _SosTabState extends ConsumerState<SosTab> {
   }
 
   Future<void> _runDispatchSequence() async {
-    final contacts =
-        ref.read(dashboardProvider).contacts.where((c) => c.id != 'me').take(3);
+    final contacts = _sosContacts();
     for (var i = 0; i < contacts.length; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 400));
       if (!mounted) return;
@@ -287,6 +295,11 @@ class _SosTabState extends ConsumerState<SosTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
+    // Watch so the orbit refreshes when guardians / emergency stars change.
+    final contacts = ref.watch(familyMembersProvider).where((c) => c.id != 'me');
+    final emergency = contacts.where((c) => c.isEmergency).toList();
+    final orbitContacts =
+        (emergency.isNotEmpty ? emergency : contacts.toList()).take(3).toList();
     final bottomPad = S.bottomNavHeight + MediaQuery.paddingOf(context).bottom;
 
     // Keep contact checkmarks filled when mirroring a live band SOS.
@@ -307,7 +320,7 @@ class _SosTabState extends ConsumerState<SosTab> {
     if (state.sosPhase == SosPhase.counting) {
       return _CountingLayout(
         seconds: state.sosCountdownSeconds,
-        contacts: state.contacts,
+        contacts: orbitContacts,
         bottomPad: bottomPad,
         onCancelled: _cancelSos,
       );
@@ -315,7 +328,7 @@ class _SosTabState extends ConsumerState<SosTab> {
 
     if (state.sosPhase == SosPhase.active) {
       return _ActiveLayout(
-        contacts: state.contacts,
+        contacts: orbitContacts,
         dispatchIndex: _dispatchIndex,
         bottomPad: bottomPad,
         onCancelled: _cancelSos,
@@ -347,7 +360,7 @@ class _SosTabState extends ConsumerState<SosTab> {
                     height: 320,
                     child: SosContactOrbit(
                       phase: state.sosPhase,
-                      contacts: state.contacts,
+                      contacts: orbitContacts,
                       dispatchIndex: _dispatchIndex,
                     ),
                   ),

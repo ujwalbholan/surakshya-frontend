@@ -119,7 +119,7 @@ class GuardianLinkingNotifier extends StateNotifier<GuardianLinkingState> {
           .map(
             (g) => g.copyWith(
               isEmergencyContact:
-                  isEmergencyContact ? g.id == guardianId : false,
+                  g.id == guardianId ? isEmergencyContact : null,
             ),
           )
           .toList(growable: false),
