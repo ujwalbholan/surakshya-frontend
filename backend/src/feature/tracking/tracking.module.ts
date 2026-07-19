@@ -11,12 +11,21 @@ import { TrackingIngestService } from './tracking-ingest.interface';
 import { TrackingGateway } from './tracking.gateway';
 import { TrackingService } from './tracking.service';
 import { SosController } from './sos.controller';
+import { GuardianLink } from '../guardian/entities/guardian-link.entity';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Device, LocationPing, SosEvent, PoliceStation]),
+    TypeOrmModule.forFeature([
+      Device,
+      LocationPing,
+      SosEvent,
+      PoliceStation,
+      GuardianLink,
+    ]),
     JwtModule.register({}),
     forwardRef(() => MqttModule),
+    NotificationModule,
   ],
   controllers: [SosController],
   providers: [

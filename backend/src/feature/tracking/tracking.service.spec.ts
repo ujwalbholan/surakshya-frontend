@@ -10,6 +10,8 @@ import { PoliceStation } from '../police-stations/entities/police-station.entity
 import { TrackingService } from './tracking.service';
 import { TrackingGateway } from './tracking.gateway';
 import { MqttService } from '../mqtt/mqtt.service';
+import { GuardianLink } from '../guardian/entities/guardian-link.entity';
+import { VoiceCallService } from '../notification/voice/voice-call.service';
 
 describe('TrackingService', () => {
   let service: TrackingService;
@@ -17,7 +19,9 @@ describe('TrackingService', () => {
   let pingRepo: jest.Mocked<Repository<LocationPing>>;
   let sosRepo: jest.Mocked<Repository<SosEvent>>;
   let stationRepo: jest.Mocked<Repository<PoliceStation>>;
+  let guardianLinkRepo: jest.Mocked<Repository<GuardianLink>>;
   let gateway: jest.Mocked<TrackingGateway>;
+  let voiceCallService: jest.Mocked<VoiceCallService>;
 
   const mockDevice: Device = {
     id: 'dev-1',
@@ -93,6 +97,10 @@ describe('TrackingService', () => {
           useValue: { find: jest.fn() },
         },
         {
+          provide: getRepositoryToken(GuardianLink),
+          useValue: { find: jest.fn().mockResolvedValue([]) },
+        },
+        {
           provide: TrackingGateway,
           useValue: { emitLocationUpdate: jest.fn(), emitSosEvent: jest.fn() },
         },
@@ -103,6 +111,10 @@ describe('TrackingService', () => {
             publishSosCancelCommand: jest.fn(),
           },
         },
+        {
+          provide: VoiceCallService,
+          useValue: { callEmergencyContact: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -111,7 +123,9 @@ describe('TrackingService', () => {
     pingRepo = module.get(getRepositoryToken(LocationPing));
     sosRepo = module.get(getRepositoryToken(SosEvent));
     stationRepo = module.get(getRepositoryToken(PoliceStation));
+    guardianLinkRepo = module.get(getRepositoryToken(GuardianLink));
     gateway = module.get(TrackingGateway);
+    voiceCallService = module.get(VoiceCallService);
   });
 
   describe('ingestTelemetry', () => {
@@ -579,6 +593,54 @@ describe('TrackingService', () => {
           status: 'active',
         }),
       );
+    });
+
+    it('should place an independent call to every selected emergency contact', async () => {
+      const child = {
+        id: 'user-1',
+        full_name: 'Test User',
+      } as Device['user'];
+      const phoneDevice: Device = {
+        ...mockDevice,
+        id: 'dev-phone',
+        imei: 'phone-user-1',
+        user: child,
+      };
+      deviceRepo.findOne.mockResolvedValue(phoneDevice);
+      sosRepo.findOne.mockResolvedValue(null);
+      stationRepo.find.mockResolvedValue([]);
+      guardianLinkRepo.find.mockResolvedValue([
+        {
+          guardian: { phone: '+9779800000001' },
+        } as GuardianLink,
+        {
+          guardian: { phone: '+9779800000002' },
+        } as GuardianLink,
+      ]);
+
+      const sos = makeSos({
+        id: 'sos-call-all',
+        device: phoneDevice,
+      });
+      sosRepo.create.mockImplementation((data) => data as SosEvent);
+      sosRepo.save.mockResolvedValue(sos);
+
+      await service.startSosForUser('user-1', {
+        connectionType: 'app',
+      });
+      await new Promise<void>((resolve) => setImmediate(resolve));
+
+      expect(voiceCallService.callEmergencyContact).toHaveBeenCalledTimes(2);
+      expect(voiceCallService.callEmergencyContact).toHaveBeenCalledWith({
+        to: '+9779800000001',
+        wardName: 'Test User',
+        sosEventId: 'sos-call-all',
+      });
+      expect(voiceCallService.callEmergencyContact).toHaveBeenCalledWith({
+        to: '+9779800000002',
+        wardName: 'Test User',
+        sosEventId: 'sos-call-all',
+      });
     });
 
     it('should append location for SOS owner via REST path', async () => {

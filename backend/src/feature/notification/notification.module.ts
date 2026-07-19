@@ -8,6 +8,7 @@ import { WelcomeEmailService } from './email/welcome.email';
 import { SmsService } from './sms/sms.service';
 import { NotificationFailure } from './entities/notification-failure.entity';
 import { NotificationBootstrapService } from './notification-bootstrap.service';
+import { VoiceCallService } from './voice/voice-call.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([NotificationFailure])],
@@ -19,12 +20,14 @@ import { NotificationBootstrapService } from './notification-bootstrap.service';
     OtpEmailService,
     WelcomeEmailService,
     SmsService,
+    VoiceCallService,
   ],
   exports: [
     NotificationService,
     OtpEmailService,
     WelcomeEmailService,
     SmsService,
+    VoiceCallService,
     TypeOrmModule,
   ],
 })

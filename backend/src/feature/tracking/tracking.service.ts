@@ -23,6 +23,8 @@ import {
 import { TrackingGateway } from './tracking.gateway';
 import { TrackingIngestService } from './tracking-ingest.interface';
 import { LocationUpdatePayload } from './tracking.types';
+import { GuardianLink } from '../guardian/entities/guardian-link.entity';
+import { VoiceCallService } from '../notification/voice/voice-call.service';
 
 export interface StartSosInput {
   latitude?: number | null;
@@ -72,7 +74,10 @@ export class TrackingService implements TrackingIngestService {
     private readonly sosRepo: Repository<SosEvent>,
     @InjectRepository(PoliceStation)
     private readonly stationRepo: Repository<PoliceStation>,
+    @InjectRepository(GuardianLink)
+    private readonly guardianLinkRepo: Repository<GuardianLink>,
     private readonly trackingGateway: TrackingGateway,
+    private readonly voiceCallService: VoiceCallService,
     @Inject(forwardRef(() => MqttService))
     private readonly mqttService: MqttService,
   ) {}
@@ -526,6 +531,15 @@ export class TrackingService implements TrackingIngestService {
       this.logger.warn(
         `Device ${device.imei} already has an active SOS event ${existing.id}`,
       );
+      // Treat repeated band/app triggers as idempotent. Most importantly, do
+      // not place another round of emergency calls for the same active event.
+      return {
+        id: existing.id,
+        status: 'active',
+        startedAt: existing.startedAt.toISOString(),
+        latitude: existing.latitude ?? null,
+        longitude: existing.longitude ?? null,
+      };
     }
 
     const latitude = input.latitude ?? null;
@@ -591,6 +605,17 @@ export class TrackingService implements TrackingIngestService {
         (input.connectionType ? ` via ${input.connectionType}` : ''),
     );
 
+    // Do not delay the SOS response, websocket event, or location ingest while
+    // external telephony connects. Each recipient is isolated so one invalid
+    // or unreachable number never prevents calls to the others.
+    void this.callEmergencyContacts(device, saved).catch((error) => {
+      const reason =
+        error instanceof Error ? error.message : 'Unknown emergency call error';
+      this.logger.error(
+        `Emergency contact dispatch failed for SOS ${saved.id}: ${reason}`,
+      );
+    });
+
     return {
       id: saved.id,
       status: 'active',
@@ -599,6 +624,54 @@ export class TrackingService implements TrackingIngestService {
       latitude: saved.latitude ?? null,
       longitude: saved.longitude ?? null,
     };
+  }
+
+  private async callEmergencyContacts(
+    device: Device,
+    sos: SosEvent,
+  ): Promise<void> {
+    const child = device.user;
+    if (!child) {
+      this.logger.warn(
+        `SOS ${sos.id} has no assigned user; no emergency contacts to call`,
+      );
+      return;
+    }
+
+    const links = await this.guardianLinkRepo.find({
+      where: {
+        child_user_id: child.id,
+        is_emergency_contact: true,
+      },
+      relations: ['guardian'],
+      order: { created_at: 'ASC' },
+    });
+
+    if (links.length === 0) {
+      this.logger.warn(`No emergency contacts configured for SOS ${sos.id}`);
+      return;
+    }
+
+    const uniquePhones = new Set<string>();
+    for (const link of links) {
+      const phone = link.guardian?.phone?.trim();
+      if (phone) uniquePhones.add(phone);
+    }
+
+    const results = await Promise.allSettled(
+      [...uniquePhones].map((phone) =>
+        this.voiceCallService.callEmergencyContact({
+          to: phone,
+          wardName: child.full_name,
+          sosEventId: sos.id,
+        }),
+      ),
+    );
+    const failed = results.filter((result) => result.status === 'rejected');
+    this.logger.log(
+      `Emergency calls dispatched for SOS ${sos.id}: ` +
+        `${results.length - failed.length}/${results.length} accepted`,
+    );
   }
 
   /** Resolve the caller's wearable, or create a phone-* virtual device. */

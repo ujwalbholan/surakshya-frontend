@@ -745,8 +745,8 @@ export class GuardianService {
   }
 
   /**
-   * Designate (or clear) one linked guardian as the SOS emergency contact.
-   * Only one emergency contact is allowed per child.
+   * Add or remove a linked guardian from the child's SOS emergency contacts.
+   * Multiple linked guardians may be selected.
    */
   async setEmergencyContact(
     childUserId: string,
@@ -765,11 +765,7 @@ export class GuardianService {
       throw new ForbiddenException('You are not linked to this guardian');
     }
 
-    if (isEmergencyContact) {
-      await this.guardianLinkRepository.update(
-        { child_user_id: childUserId, is_emergency_contact: true },
-        { is_emergency_contact: false },
-      );
+    if (isEmergencyContact && !link.is_emergency_contact) {
       link.is_emergency_contact = true;
       await this.guardianLinkRepository.save(link);
     } else if (link.is_emergency_contact) {
@@ -777,15 +773,15 @@ export class GuardianService {
       await this.guardianLinkRepository.save(link);
     }
 
-    await this.pushEmergencyContactToUserDevices(
-      childUserId,
-      isEmergencyContact ? link.guardian.phone : null,
-    );
+    // Wearables currently expose one dial shortcut. Keep that hardware
+    // configuration synchronized to one selected contact; SOS dispatch calls
+    // every selected contact independently on the backend.
+    await this.syncEmergencyContactToUserDevices(childUserId);
 
     return {
       message: isEmergencyContact
-        ? 'Emergency contact updated'
-        : 'Emergency contact cleared',
+        ? 'Emergency contact added'
+        : 'Emergency contact removed',
       guardian: {
         ...this.toPublicUser(link.guardian),
         is_emergency_contact: Boolean(link.is_emergency_contact),
@@ -833,7 +829,7 @@ export class GuardianService {
     });
 
     if (link.is_emergency_contact) {
-      await this.pushEmergencyContactToUserDevices(childUserId, updated.phone);
+      await this.syncEmergencyContactToUserDevices(childUserId);
     }
 
     return {
@@ -1012,8 +1008,11 @@ export class GuardianService {
   }
 
   /**
-   * Re-push the child's current emergency contact to all assigned bands
+   * Re-push one of the child's current emergency contacts to assigned bands
    * (e.g. after device assignment).
+   *
+   * The wearable protocol accepts one dial shortcut. This does not limit
+   * backend SOS dispatch, which contacts every selected guardian.
    */
   async syncEmergencyContactToUserDevices(childUserId: string): Promise<void> {
     const link = await this.guardianLinkRepository.findOne({
@@ -1022,6 +1021,7 @@ export class GuardianService {
         is_emergency_contact: true,
       },
       relations: ['guardian'],
+      order: { created_at: 'ASC' },
     });
     await this.pushEmergencyContactToUserDevices(
       childUserId,

@@ -18,6 +18,7 @@ import { Role } from 'src/feature/auth/dto/auth.dto';
 import { NotificationService } from '../notification/notification.service';
 import { RedisService } from 'src/config/redis/redis.service';
 import { MqttService } from '../mqtt/mqtt.service';
+import { OtpEmailService } from '../notification/email/otp.email';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt', () => ({
@@ -150,6 +151,10 @@ describe('GuardianService', () => {
             sendSms: jest.fn(),
             sendEmail: jest.fn(),
           },
+        },
+        {
+          provide: OtpEmailService,
+          useValue: { sendPasswordResetOtp: jest.fn() },
         },
         {
           provide: RedisService,
@@ -293,6 +298,44 @@ describe('GuardianService', () => {
       expect(result.guardians).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(result.guardians[0].full_name).toBe('Guardian');
+    });
+  });
+
+  describe('setEmergencyContact', () => {
+    it('adds a second emergency contact without clearing existing selections', async () => {
+      const second = mockGuardianLink({
+        id: 'link-2',
+        guardian_user_id: 'guardian-2',
+        guardian: mockUser({
+          id: 'guardian-2',
+          full_name: 'Second Guardian',
+          phone: '+9779800000002',
+          role: Role.GUARDIAN,
+        }),
+      });
+      const first = mockGuardianLink({
+        id: 'link-1',
+        guardian_user_id: 'guardian-1',
+        is_emergency_contact: true,
+      });
+      linkRepo.findOne
+        .mockResolvedValueOnce(second)
+        .mockResolvedValueOnce(first);
+      linkRepo.save.mockImplementation(async (link) => link);
+      deviceRepo.find.mockResolvedValue([]);
+
+      await service.setEmergencyContact(userId, 'guardian-2', true);
+
+      expect(second.is_emergency_contact).toBe(true);
+      expect(linkRepo.save).toHaveBeenCalledWith(second);
+      expect(linkRepo.findOne).toHaveBeenLastCalledWith({
+        where: {
+          child_user_id: userId,
+          is_emergency_contact: true,
+        },
+        relations: ['guardian'],
+        order: { created_at: 'ASC' },
+      });
     });
   });
 

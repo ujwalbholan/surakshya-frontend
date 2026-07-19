@@ -35,7 +35,7 @@ export class GuardianLink {
   @JoinColumn({ name: 'guardian_user_id' })
   guardian: User;
 
-  /** Exactly one emergency contact per child is enforced in service logic. */
+  /** A child may designate multiple linked guardians as emergency contacts. */
   @Column({ type: 'boolean', default: false })
   is_emergency_contact: boolean;
 

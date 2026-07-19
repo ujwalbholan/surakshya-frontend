@@ -79,9 +79,9 @@ export class GuardianController {
   }
 
   @ApiOperation({
-    summary: 'Set or clear a linked guardian as the SOS emergency contact',
+    summary: 'Add or remove a linked guardian as an SOS emergency contact',
     description:
-      'Only one emergency contact is allowed per user. Setting one clears any previous selection.',
+      'Multiple linked guardians may be selected as emergency contacts.',
   })
   @ApiParam({ name: 'guardianId', type: 'string', format: 'uuid' })
   @Roles('USER')
